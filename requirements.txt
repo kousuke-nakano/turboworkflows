@@ -1,0 +1,3 @@
+turbogenius    >= 0.0.1
+turbofilemanager  >= 0.0.1
+paradag        >= 1.2.0
