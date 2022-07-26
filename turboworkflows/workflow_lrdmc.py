@@ -245,7 +245,7 @@ class LRDMC_workflow(Workflow):
                     job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
                     logger.info("Fetch finished.")
 
-                    logger.info(f"Computing lrdmc forces")
+                    logger.info(f"Computing lrdmc energy")
                     lrdmc_genius.compute_energy_and_forces(bin_block=self.lrdmc_bin_block, warmupblocks=self.lrdmc_warmupblocks, correcting_factor=self.lrdmc_correcting_factor, rerun=True)
                     lrdmc_genius.store_result(bin_block=self.lrdmc_bin_block, warmupblocks=self.lrdmc_warmupblocks, output_names=[f"out_fn_{i}" for i in range(icont+1)])
                     energy, error = lrdmc_genius.energy, lrdmc_genius.energy_error
@@ -271,7 +271,7 @@ class LRDMC_workflow(Workflow):
             self.lrdmc_latest_pkl = f"{self.lrdmc_pkl_name}_latest.pkl"
             with open(os.path.join(self.pkl_dir, self.lrdmc_latest_pkl), "rb") as f:
                 lrdmc_genius = pickle.load(f)
-            energy, error = lrdmc_genius.energy, vmc_genius.energy_error
+            energy, error = lrdmc_genius.energy, lrdmc_genius.energy_error
             logger.info(f"LRDMC energy = {energy:.5f} +- {error:3f} Ha")
 
         logger.info("LRDMC workflow ends.")

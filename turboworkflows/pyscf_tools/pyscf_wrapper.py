@@ -67,6 +67,7 @@ class Pyscf_wrapper():
                       dft_xc="LDA_X,LDA_C_PZ",
                       solver_newton=False,
                       MP2_flag=False,
+                      CCSD_flag=False,
                       pyscf_output="out_pyscf",
                       max_cycle = 200,
                       symmetry=False,
@@ -201,10 +202,12 @@ class Pyscf_wrapper():
             logger.info("HF/DFT calculation is done.")
 
             # MP2 part
-            MP2_flag=MP2_flag
-
             if MP2_flag:
                 logger.error("MP2 is not implemented for PBC cases")
+                raise NotImplementedError
+
+            if CCSD_flag:
+                logger.error("CCSD is not implemented for PBC cases")
                 raise NotImplementedError
 
         else: # open system
@@ -306,7 +309,6 @@ class Pyscf_wrapper():
             logger.info("HF/DFT calculation is done.")
 
             # MP2 part
-            MP2_flag=MP2_flag
 
             if MP2_flag:
                 # MP2 calculation
@@ -327,7 +329,7 @@ class Pyscf_wrapper():
 
                 # Molecular orbital and occupations
                 # overwrite the HF/DFT ones!!!
-                logger.warning("The HF/DFT MOs and occ. are overwriten!!")
+                logger.warning("The HF/DFT MOs and occ. are overwritten!!")
                 mf.mo_coeff = no_coeff # natural coeff
                 mf.mo_occ = no_occ # natural orbital
                 mf.mo_energy = [0.0] * len(mf.mo_energy) # orbital energy is not defined. So, they are set to 0.0
@@ -341,6 +343,38 @@ class Pyscf_wrapper():
                 logger.info(f"MP2 correlated energy={mp2_E}")
                 logger.info(f"Total MP2 energy = {total_energy}")
                 logger.info("MP2 calculation is done.")
+
+            elif CCSD_flag:
+                # CCSD calculation
+                logger.info("CCSD_flag is True.")
+                mycc = cc.CCSD(mf)
+                mycc.kernel()
+
+                # construct the one body density matrix
+                rdm1 = mycc.make_rdm1()
+
+                # diagonalize to yield the NOs and NO occupation #s
+                no_occ, no = scipy.linalg.eigh(rdm1)
+                no_occ = no_occ[::-1]
+                no = no[:, ::-1]
+
+                # atomic orbital representation of the NO
+                no_coeff = mf.mo_coeff.dot(no)
+
+                # Molecular orbital and occupations
+                # overwrite the HF/DFT ones!!!
+                logger.warning("The HF/DFT MOs and occ. are overwritten!!")
+                mf.mo_coeff = no_coeff  # natural coeff
+                mf.mo_occ = no_occ  # natural orbital
+                mf.mo_energy = [0.0] * len(mf.mo_energy)  # orbital energy is not defined. So, they are set to 0.0
+
+                logger.debug("MOs-CCSD")
+                logger.debug(mf.mo_coeff)  # HF/DFT coeff
+                logger.debug(mf.mo_occ)  # HF/DFT occ
+                logger.debug(mf.mo_energy)  # HF/DFT energy
+
+                logger.info(f"Total CCSD energy = {mycc.e_tot}")
+                logger.info("CCSD calculation is done.")
 
             # this is a special treatment for one-valence electron case!!
             # because PYSCF seems do UKS calc. for one-valence electron case
@@ -407,6 +441,7 @@ def cli():
 
     parser.add_argument('--solver_newton', help=f'solver_newton', action="store_true", default=False)
     parser.add_argument('--MP2_flag', help=f'MP2_flag', action="store_true", default=False)
+    parser.add_argument('--CCSD_flag', help=f'CCSD_flag', action="store_true", default=False)
 
     parser.add_argument('--symmetry', help=f'symmetry', action="store_true", default=False)
     parser.add_argument('--twist_average', help=f'twist_average', action="store_true", default=False)
@@ -434,6 +469,7 @@ def cli():
     dft_xc = args.dft_xc,
     solver_newton = args.solver_newton,
     MP2_flag = args.MP2_flag,
+    CCSD_flag = args.CCSD_flag,
     pyscf_output = args.pyscf_output,
     max_cycle = args.max_cycle,
     symmetry = args.symmetry,

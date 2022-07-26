@@ -46,8 +46,10 @@ class eWorkflow:
         self.output_values = {}
         self.status="init" # 'init', 'success', 'running', 'failure'
         self.workflow=workflow
+        self.run_file = f"running_{label}"
 
         # project directory
+        self.root_dir=os.getcwd()
         self.project_dir=os.path.join(os.getcwd(), self.dirname)
 
     def __preparation(self):
@@ -60,6 +62,7 @@ class eWorkflow:
         else:
             rename_flag=False
         logger.info(f"rename_flag = {rename_flag}")
+        logger.info(f'cd {os.getcwd()}')
         for i, file in enumerate(self.input_files):
             if os.path.isfile(file): # file
                 if rename_flag:
@@ -79,9 +82,19 @@ class eWorkflow:
                     shutil.copytree(os.path.join(file), os.path.join(self.project_dir, os.path.basename(file)))
 
     async def async_launch(self):
-        self.__preparation()
+        os.chdir(self.root_dir)
+        if not os.path.isfile(self.run_file):
+            logger.info(f"eWorkflow={self.label} has not been launched.")
+            logger.info(f"Copying input files.")
+            self.__preparation()
+        else:
+            logger.info(f"eWorkflow={self.label} has been launched.")
+            logger.info(f"Skip copying input files.")
+        with open(self.run_file, "w") as f: f.write("")
         os.chdir(self.project_dir)
         self.status, self.output_files, self.output_values = await self.workflow.async_launch()
+        os.chdir(self.root_dir)
+        if os.path.isfile(self.run_file): os.remove(self.run_file)
         return self.status, self.output_files, self.output_values
 
     def launch(self):

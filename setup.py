@@ -23,6 +23,8 @@ setup(
     url="https://www.kosuke-nakano-research.info",
     entry_points={
         'console_scripts': [
+            'pyscf-run = turboworkflows.pyscf_tools.pyscf_wrapper.pyscf_wrapper:cli',
+            'pyscf-to-trexio = turboworkflows.pyscf_tools.pyscf_to_trexio:cli'
             ]
     },
     packages=find_packages(),

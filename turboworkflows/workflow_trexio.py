@@ -35,13 +35,14 @@ from pyturbo.io_fort10 import IO_fort10
 # jobmanager
 from turbofilemanager.job_manager import Job_submission
 
-class TREXIO_convert_to(Workflow):
+class TREXIO_convert_to_turboWF(Workflow):
     def __init__(self,
         trexio_filename="trexio.hdf5",
         twist_average=False,
         jastrow_basis_dict={},
         max_occ_conv=0,
         mo_num_conv=-1,
+        only_mol=True,
         trexio_rerun=False,
         trexio_pkl_name="trexio_genius",
                  ):
@@ -50,6 +51,7 @@ class TREXIO_convert_to(Workflow):
         self.jastrow_basis_dict=jastrow_basis_dict
         self.max_occ_conv = max_occ_conv
         self.mo_num_conv = mo_num_conv
+        self.only_mol=only_mol
         self.trexio_rerun=trexio_rerun
         self.trexio_pkl_name=trexio_pkl_name
         ## return values
@@ -99,7 +101,7 @@ class TREXIO_convert_to(Workflow):
 
                 ## trexio -> turborvb_wf
                 trexio_to_turborvb_wf(trexio_file=os.path.join(self.trexio_dir, filename), jas_basis_sets=jas_basis_sets,
-                                      max_occ_conv=self.max_occ_conv, mo_num_conv=self.mo_num_conv)
+                                      max_occ_conv=self.max_occ_conv, mo_num_conv=self.mo_num_conv, only_mol=self.only_mol)
 
                 if self.twist_average:
                     turborvb_scratch_dir = os.path.join(self.trexio_dir, "turborvb.scratch")
@@ -165,7 +167,7 @@ if __name__ == "__main__":
     logger.addHandler(stream_handler)
 
     os.chdir(os.path.join(turbo_workflows_root, "tests", "trexio-workflows"))
-    trexio_workflow=TREXIO_convert_to(
+    trexio_workflow=TREXIO_convert_to_turboWF(
         trexio_filename="trexio.hdf5",
         twist_average=False,
         jastrow_basis_dict={},

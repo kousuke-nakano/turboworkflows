@@ -10,6 +10,7 @@ import time
 import glob
 import asyncio
 import pathlib
+import filecmp
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
@@ -104,14 +105,16 @@ class LRDMC_ext_workflow(Workflow):
         self.root_dir=os.getcwd()
         logger.info(f"Current dir = {self.root_dir}")
         os.chdir(self.root_dir)
-        lrdmc_dir=os.path.join(self.root_dir)
-        logger.info(f"Project root dir = {lrdmc_dir}")
+        self.lrdmc_dir=os.path.join(self.root_dir)
+        logger.info(f"Project root dir = {self.lrdmc_dir}")
 
         async def async_launch_(lrdmc_alat):
+            os.chdir(self.lrdmc_dir)
             logger.info(f"alat={lrdmc_alat}")
-            alat_dir=os.path.join(lrdmc_dir, f"alat_{lrdmc_alat}")
+            alat_dir=os.path.join(self.lrdmc_dir, f"alat_{lrdmc_alat}")
             if not os.path.isdir(os.path.join(alat_dir)):
                 os.makedirs(alat_dir, exist_ok=True)
+                logger.info(f"current dir = {os.getcwd()}")
                 logger.info(f"input files = {self.lrdmc_input_files}")
                 for file in self.lrdmc_input_files:
                     if os.path.isfile(file):
@@ -120,6 +123,20 @@ class LRDMC_ext_workflow(Workflow):
                         if os.path.isdir(os.path.join(alat_dir, os.path.basename(file))):
                             shutil.rmtree(os.path.join(alat_dir, os.path.basename(file)))
                         shutil.copytree(os.path.join(file), os.path.join(alat_dir, os.path.basename(file)))
+
+            # check file/dir consistencies
+            for file in self.lrdmc_input_files:
+                if os.path.isfile(file):
+                    assert filecmp.cmp(os.path.join(self.lrdmc_dir, os.path.basename(file)),
+                                       os.path.join(alat_dir, os.path.basename(file)),
+                                       shallow=True)
+                else:
+                    dircmp=filecmp.dircmp(os.path.join(self.lrdmc_dir, os.path.basename(file)),
+                                          os.path.join(alat_dir, os.path.basename(file)),
+                                          shallow=True)
+                    assert len(dircmp.left_only) == 0
+                    assert len(dircmp.right_only) == 0
+
             os.chdir(alat_dir)
             #await asyncio.sleep(60)
             lrdmc_workflow=LRDMC_workflow(
@@ -150,30 +167,33 @@ class LRDMC_ext_workflow(Workflow):
                 lrdmc_maxtime = self.lrdmc_maxtime,
             )
             await lrdmc_workflow.async_launch()
-            os.chdir(lrdmc_dir)
+            os.chdir(self.lrdmc_dir)
 
         async def async_gather_(lrdmc_alat_list):
             logger.info('=== Launch workflows ===')
             tsks = [asyncio.create_task(async_launch_(lrdmc_alat=lrdmc_alat)) for lrdmc_alat in lrdmc_alat_list]
             await asyncio.gather(*tsks)
+            os.chdir(self.lrdmc_dir)
 
         # run LRDMC several alats
+        os.chdir(self.lrdmc_dir)
         await async_gather_(lrdmc_alat_list=self.lrdmc_alat_list)
+        os.chdir(self.lrdmc_dir)
 
         # run LRDMC extrapolation
-        os.chdir(lrdmc_dir)
+        os.chdir(self.lrdmc_dir)
         logger.info(f"the polynomial degree for fitting of energies with respect to alat^2 is {self.degree_poly}")
         evsa_line = f"{self.degree_poly}  {len(self.lrdmc_alat_list)}  4  1\n"
         evsa_gnu_line = f"# alat  energy  error\n"
 
         for alat in self.lrdmc_alat_list:
-            dir_alat = os.path.join(lrdmc_dir, f"alat_{alat}")
+            dir_alat = os.path.join(self.lrdmc_dir, f"alat_{alat}")
             os.chdir(dir_alat)
             energy, error = LRDMC.read_energy(twist_average=self.lrdmc_twist_average)
             evsa_line = evsa_line + f"{np.abs(alat)} {energy} {error}\n"
             evsa_gnu_line = evsa_gnu_line + f"{np.abs(alat)} {energy} {error}\n"
-            os.chdir(lrdmc_dir)
-        os.chdir(lrdmc_dir)
+            os.chdir(self.lrdmc_dir)
+        os.chdir(self.lrdmc_dir)
         with open("evsa.in", 'w') as f:
             f.writelines(evsa_line)
         with open("evsa.gnu", 'w') as f:
@@ -197,6 +217,7 @@ class LRDMC_ext_workflow(Workflow):
         self.output_values["error"] = error_ext
         poly = np.poly1d(coeff_list)
 
+        os.chdir(self.lrdmc_dir)
         with open("evsa.gnu", "r") as f:
             lines = f.readlines()
             alat = []
@@ -215,6 +236,14 @@ class LRDMC_ext_workflow(Workflow):
         energy = np.array(energy)
         energy_error = np.array(energy_error)
 
+        plt.figure()
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['xtick.direction'] = 'in'
+        plt.rcParams['ytick.direction'] = 'in'
+        plt.rcParams['xtick.major.width'] = 1.0
+        plt.rcParams['ytick.major.width'] = 1.0
+        plt.rcParams['font.size'] = 12
+        plt.rcParams['axes.linewidth'] = 1.5
         plt.xlim([alat_squared_extrapolated.min(), alat_squared_extrapolated.max()])
         plt.annotate("E(alat->0) = {:.5f} Ha +- {:.5f} Ha".format(coeff_list[-1], coeff_error_list[-1]), xy=(0.05, 0.05),
                      xycoords="axes fraction")
@@ -225,6 +254,7 @@ class LRDMC_ext_workflow(Workflow):
         plt.gca().get_yaxis().get_major_formatter().set_useOffset(False)  # No offset for y-axis
         plt.gca().get_xaxis().get_major_formatter().set_useOffset(False)  # No offset for x-axis
         plt.savefig("Energy_vs_alat.png", bbox_inches='tight', pad_inches=0.2)
+        plt.close()
         logger.info("The graph of the extrapolation is saved as Energy_vs_alat.png")
 
         # end

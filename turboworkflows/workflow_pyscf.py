@@ -53,6 +53,7 @@ class PySCF_workflow(Workflow):
         scf_method="DFT",  # HF or DFT
         dft_xc="LDA_X,LDA_C_PZ",
         mp2_flag=False,
+        ccsd_flag=False,
         pyscf_output="out.pyscf",
         pyscf_chkfile="pyscf.chk",
         solver_newton=False,
@@ -82,6 +83,7 @@ class PySCF_workflow(Workflow):
         self.scf_method=scf_method  # HF or DFT
         self.dft_xc=dft_xc
         self.mp2_flag=mp2_flag
+        self.ccsd_flag=ccsd_flag
         self.pyscf_output=pyscf_output
         self.pyscf_chkfile=pyscf_chkfile
         self.solver_newton=solver_newton
@@ -142,6 +144,7 @@ class PySCF_workflow(Workflow):
 
                 if self.twist_average: postoption += " --twist_average "
                 if self.mp2_flag: postoption += " --MP2_flag "
+                if self.ccsd_flag: postoption += " --CCSD_flag "
 
                 job = Job_submission(local_machine_name="localhost",
                                      client_machine_name="localhost",
