@@ -89,7 +89,9 @@ class Convertfort10mol_workflow(Workflow):
             logger.info(f"Start: convertfort10mol")
             os.makedirs(self.pkl_dir, exist_ok=True)
             os.chdir(self.convertfort10mol_dir)
-
+            self.input_file = f"convertfort10mol.input"
+            self.output_file = f"out_mol"
+            
             if self.convertfort10mol_rerun or not os.path.isfile(os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl)):
 
                 convertfort10mol_genius=Convertfort10mol_genius(
@@ -98,8 +100,6 @@ class Convertfort10mol_workflow(Workflow):
                                  additional_mo=self.additional_mo,
                                  )
 
-                self.input_file = f"convertfort10mol.input"
-                self.output_file = f"out_mol"
                 convertfort10mol_genius.generate_input(input_name=self.input_file)
 
                 # Job submission by the job-manager package
