@@ -91,7 +91,7 @@ class Convertfort10mol_workflow(Workflow):
             os.chdir(self.convertfort10mol_dir)
             self.input_file = f"convertfort10mol.input"
             self.output_file = f"out_mol"
-            
+
             if self.convertfort10mol_rerun or not os.path.isfile(os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl)):
 
                 convertfort10mol_genius=Convertfort10mol_genius(
@@ -162,7 +162,7 @@ class Convertfort10mol_workflow(Workflow):
 
                 with open(os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl), "wb") as f:
                     pickle.dump(convertfort10mol_genius, f)
-                with open(os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl), "wb") as f:
+                with open(os.path.join(self.pkl_dir, self.convertfort10mol_pkl), "wb") as f:
                     pickle.dump(convertfort10mol_genius, f)
 
                 os.chdir(self.root_dir)
