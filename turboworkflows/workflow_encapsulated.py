@@ -93,6 +93,7 @@ class eWorkflow:
 
     async def async_launch(self):
         os.chdir(self.root_dir)
+        self.__preparation()
         """avoid complication
         if not os.path.isfile(self.run_file) and not os.path.isfile(self.done_file):
             logger.info(f"eWorkflow={self.label} has not been launched.")
