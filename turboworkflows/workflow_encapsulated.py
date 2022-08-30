@@ -47,6 +47,7 @@ class eWorkflow:
         self.status="init" # 'init', 'success', 'running', 'failure'
         self.workflow=workflow
         self.run_file = f"running_{label}"
+        self.done_file = f"done_{label}"
 
         # project directory
         self.root_dir=os.getcwd()
@@ -83,7 +84,7 @@ class eWorkflow:
 
     async def async_launch(self):
         os.chdir(self.root_dir)
-        if not os.path.isfile(self.run_file):
+        if not os.path.isfile(self.run_file) and not os.path.isfile(self.done_file):
             logger.info(f"eWorkflow={self.label} has not been launched.")
             logger.info(f"Copying input files.")
             self.__preparation()
@@ -95,6 +96,7 @@ class eWorkflow:
         self.status, self.output_files, self.output_values = await self.workflow.async_launch()
         os.chdir(self.root_dir)
         if os.path.isfile(self.run_file): os.remove(self.run_file)
+        with open(self.done_file, "w") as f: f.write("")
         return self.status, self.output_files, self.output_values
 
     def launch(self):
