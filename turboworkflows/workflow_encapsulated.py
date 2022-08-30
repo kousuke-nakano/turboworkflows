@@ -54,6 +54,7 @@ class eWorkflow:
         self.project_dir=os.path.join(os.getcwd(), self.dirname)
 
     def __preparation(self):
+        logger.info(f"project dir. = {self.project_dir}")
         if os.path.isdir(self.project_dir):
             logger.info(f"eWorkflow={self.label} has been launched.")
             logger.info(f"Project dir. has been generated.")
