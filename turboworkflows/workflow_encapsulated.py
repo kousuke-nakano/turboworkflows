@@ -54,36 +54,45 @@ class eWorkflow:
         self.project_dir=os.path.join(os.getcwd(), self.dirname)
 
     def __preparation(self):
-        os.makedirs(self.project_dir, exist_ok=True)
-        #copy input files
-        logger.info(f"input files = {self.input_files}")
-        if len(self.rename_input_files) != 0:
-            assert len(self.input_files) == len(self.rename_input_files)
-            rename_flag=True
+        if os.path.isdir(self.project_dir):
+            logger.info(f"eWorkflow={self.label} has been launched.")
+            logger.info(f"Project dir. has been generated.")
+            logger.info(f"Skip copying input files.")
+            logger.info(f"To start the workflow from scratch, plz. delete the project dir.")
         else:
-            rename_flag=False
-        logger.info(f"rename_flag = {rename_flag}")
-        logger.info(f'cd {os.getcwd()}')
-        for i, file in enumerate(self.input_files):
-            if os.path.isfile(file): # file
-                if rename_flag:
-                    refile=self.rename_input_files[i]
-                    shutil.copy(os.path.join(file), os.path.join(self.project_dir, os.path.basename(refile)))
-                else:
-                    shutil.copy(os.path.join(file), os.path.join(self.project_dir, os.path.basename(file)))
-            else:  # directories
-                if rename_flag:
-                    refile=self.rename_input_files[i]
-                    if os.path.isdir(os.path.join(self.project_dir, os.path.basename(refile))):
-                        shutil.rmtree(os.path.join(self.project_dir, os.path.basename(refile)))
-                    shutil.copytree(os.path.join(file), os.path.join(self.project_dir, os.path.basename(refile)))
-                else:
-                    if os.path.isdir(os.path.join(self.project_dir, os.path.basename(file))):
-                        shutil.rmtree(os.path.join(self.project_dir, os.path.basename(file)))
-                    shutil.copytree(os.path.join(file), os.path.join(self.project_dir, os.path.basename(file)))
+            logger.info(f"eWorkflow={self.label} has not been launched.")
+            logger.info(f"Creating project dir. and copying input files.")
+            os.makedirs(self.project_dir, exist_ok=False)
+            #copy input files
+            logger.info(f"input files = {self.input_files}")
+            if len(self.rename_input_files) != 0:
+                assert len(self.input_files) == len(self.rename_input_files)
+                rename_flag=True
+            else:
+                rename_flag=False
+            logger.info(f"rename_flag = {rename_flag}")
+            logger.info(f'cd {os.getcwd()}')
+            for i, file in enumerate(self.input_files):
+                if os.path.isfile(file): # file
+                    if rename_flag:
+                        refile=self.rename_input_files[i]
+                        shutil.copy(os.path.join(file), os.path.join(self.project_dir, os.path.basename(refile)))
+                    else:
+                        shutil.copy(os.path.join(file), os.path.join(self.project_dir, os.path.basename(file)))
+                else:  # directories
+                    if rename_flag:
+                        refile=self.rename_input_files[i]
+                        if os.path.isdir(os.path.join(self.project_dir, os.path.basename(refile))):
+                            shutil.rmtree(os.path.join(self.project_dir, os.path.basename(refile)))
+                        shutil.copytree(os.path.join(file), os.path.join(self.project_dir, os.path.basename(refile)))
+                    else:
+                        if os.path.isdir(os.path.join(self.project_dir, os.path.basename(file))):
+                            shutil.rmtree(os.path.join(self.project_dir, os.path.basename(file)))
+                        shutil.copytree(os.path.join(file), os.path.join(self.project_dir, os.path.basename(file)))
 
     async def async_launch(self):
         os.chdir(self.root_dir)
+        """avoid complication
         if not os.path.isfile(self.run_file) and not os.path.isfile(self.done_file):
             logger.info(f"eWorkflow={self.label} has not been launched.")
             logger.info(f"Copying input files.")
@@ -91,12 +100,14 @@ class eWorkflow:
         else:
             logger.info(f"eWorkflow={self.label} has been launched.")
             logger.info(f"Skip copying input files.")
+        if os.path.isfile(self.done_file): os.remove(self.done_file)
         with open(self.run_file, "w") as f: f.write("")
+        """
         os.chdir(self.project_dir)
         self.status, self.output_files, self.output_values = await self.workflow.async_launch()
         os.chdir(self.root_dir)
-        if os.path.isfile(self.run_file): os.remove(self.run_file)
-        with open(self.done_file, "w") as f: f.write("")
+        #if os.path.isfile(self.run_file): os.remove(self.run_file)
+        #with open(self.done_file, "w") as f: f.write("")
         return self.status, self.output_files, self.output_values
 
     def launch(self):
