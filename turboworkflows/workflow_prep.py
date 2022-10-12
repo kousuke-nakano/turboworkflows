@@ -48,6 +48,7 @@ class DFT_workflow(Workflow):
         dft_lbox=[15.0, 15.0, 15.0],
         dft_smearing=0.0,
         dft_maxtime=172800,
+        dft_memlarge=False,
         dft_h_field=0.0,
         dft_magnetic_moment_list=[],
         dft_xc='lda',  # lda or lsda
@@ -69,6 +70,7 @@ class DFT_workflow(Workflow):
         self.dft_lbox=dft_lbox
         self.dft_smearing=dft_smearing
         self.dft_maxtime=dft_maxtime
+        self.dft_memlarge=dft_memlarge
         self.dft_h_field=dft_h_field
         self.dft_magnetic_moment_list=dft_magnetic_moment_list
         self.dft_xc=dft_xc
@@ -116,6 +118,7 @@ class DFT_workflow(Workflow):
                                  lbox=self.dft_lbox,
                                  smearing=self.dft_smearing,
                                  maxtime=self.dft_maxtime,
+                                 memlarge=self.dft_memlarge,
                                  h_field=self.dft_h_field,
                                  magnetic_moment_list=self.dft_magnetic_moment_list,
                                  xc=self.dft_xc,
