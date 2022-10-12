@@ -220,6 +220,14 @@ class LRDMCopt_workflow(Workflow):
 
                     lrdmcopt_genius.generate_input(input_name=self.input_file, cont=self.lrdmcopt_continuation_flag)
 
+                    # binary set
+                    if self.cores == self.openmp:
+                        binary = "turborvb-serial.x"
+                        nompi = True
+                    else:
+                        binary="turborvb-mpi.x"
+                        nompi = False
+
                     # Job submission by the job-manager package
                     job=Job_submission(local_machine_name="localhost",
                                        client_machine_name="localhost",
@@ -229,7 +237,8 @@ class LRDMCopt_workflow(Workflow):
                                        openmp=self.openmp,
                                        queue=self.queue,
                                        version=self.version,
-                                       binary="turborvb-mpi.x",
+                                       binary=binary,
+                                       nompi=nompi,
                                        jobname="turbogenius",
                                        input_file=self.input_file,
                                        output_file=self.output_file,
@@ -322,45 +331,4 @@ if __name__ == "__main__":
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "lrdmcopt-workflows"))
-    lrdmcopt_workflow=LRDMCopt_workflow(
-        ## job
-        server_machine_name="kagayaki",
-        cores=64,
-        openmp=1,
-        queue="DEFAULT",
-        version="stable",
-        sleep_time=30, # sec.
-        jobpkl_name="job_manager",
-        ## lrdmcopt
-        lrdmcopt_max_continuation=2,
-        lrdmcopt_pkl_name="lrdmcopt_genius",
-        lrdmcopt_target_error_bar=1.0e-3,  # Ha
-        lrdmcopt_trial_optsteps=50,
-        lrdmcopt_trial_steps=50,
-        lrdmcopt_production_optsteps=20,
-        lrdmcopt_optwarmupsteps_ratio=0.8,
-        lrdmcopt_bin_block=1,
-        lrdmcopt_warmupblocks=0,
-        lrdmcopt_optimizer="sr",
-        lrdmcopt_learning_rate=0.002,
-        lrdmcopt_regularization=0.001,
-        lrdmcopt_alat=-0.20,
-        lrdmcopt_trial_etry=0.0,
-        lrdmcopt_nonlocalmoves="dlatm",  # tmove, dla, dlatm
-        lrdmcopt_onebody=False,
-        lrdmcopt_twobody=False,
-        lrdmcopt_det_mat=True,
-        lrdmcopt_jas_mat=False,
-        lrdmcopt_det_basis_exp=False,
-        lrdmcopt_jas_basis_exp=False,
-        lrdmcopt_det_basis_coeff=False,
-        lrdmcopt_jas_basis_coeff=False,
-        lrdmcopt_num_walkers = -1, # default -1 -> num of MPI process.
-        lrdmcopt_twist_average=False,
-        lrdmcopt_kpoints=[],
-        lrdmcopt_maxtime=172000,
-    )
-
-    lrdmcopt_workflow.launch()
     # moved to examples

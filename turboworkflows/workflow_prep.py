@@ -49,6 +49,7 @@ class DFT_workflow(Workflow):
         dft_smearing=0.0,
         dft_maxtime=172800,
         dft_memlarge=False,
+        dft_maxit=50,
         dft_h_field=0.0,
         dft_magnetic_moment_list=[],
         dft_xc='lda',  # lda or lsda
@@ -71,6 +72,7 @@ class DFT_workflow(Workflow):
         self.dft_smearing=dft_smearing
         self.dft_maxtime=dft_maxtime
         self.dft_memlarge=dft_memlarge
+        self.dft_maxit=dft_maxit
         self.dft_h_field=dft_h_field
         self.dft_magnetic_moment_list=dft_magnetic_moment_list
         self.dft_xc=dft_xc
@@ -119,6 +121,7 @@ class DFT_workflow(Workflow):
                                  smearing=self.dft_smearing,
                                  maxtime=self.dft_maxtime,
                                  memlarge=self.dft_memlarge,
+                                 maxit=self.dft_maxit,
                                  h_field=self.dft_h_field,
                                  magnetic_moment_list=self.dft_magnetic_moment_list,
                                  xc=self.dft_xc,
@@ -127,6 +130,14 @@ class DFT_workflow(Workflow):
                         )
 
                 dft_genius.generate_input(input_name=self.input_file)
+
+                # binary set
+                if self.cores == self.openmp:
+                    binary = "prep-serial.x"
+                    nompi = True
+                else:
+                    binary = "prep-mpi.x"
+                    nompi = False
 
                 # Job submission by the job-manager package
                 job=Job_submission(local_machine_name="localhost",
@@ -137,7 +148,8 @@ class DFT_workflow(Workflow):
                                    openmp=self.openmp,
                                    queue=self.queue,
                                    version=self.version,
-                                   binary="prep-mpi.x",
+                                   binary=binary,
+                                   nompi=nompi,
                                    jobname="turbogenius",
                                    input_file=self.input_file,
                                    output_file=self.output_file,
@@ -224,31 +236,4 @@ if __name__ == "__main__":
     handler_format = Formatter('%(name)s - %(levelname)s - %(lineno)d - %(message)s')
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
-
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "prep-workflows"))
-
-    prep_workflow=DFT_workflow(
-        ## job
-        server_machine_name="kagayaki",
-        cores=64,
-        openmp=1,
-        queue="DEFAULT",
-        version="stable",
-        sleep_time=30, # sec.
-        jobpkl_name="job_manager",
-        ## prep
-        dft_rerun = False,
-        dft_pkl_name = "prep",
-        dft_grid_size=[0.1, 0.1, 0.1],
-        dft_lbox=[15.0, 15.0, 15.0],
-        dft_smearing=0.0,
-        dft_maxtime=172800,
-        dft_h_field=0.0,
-        dft_magnetic_moment_list=[],
-        dft_xc='lda',  # lda or lsda
-        dft_twist_average=True,
-        dft_kpoints=[2, 2, 2, 0, 0, 0]
-    )
-
-    prep_workflow.launch()
     # moved to examples

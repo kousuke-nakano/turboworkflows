@@ -1,5 +1,7 @@
 # TurboWorkflows
 
+<img src="logo/turboworkflows_logo.jpg" width="70%">
+
 `TurboWorkflows` is a python package realizing high-throuput quantum Monte Carlo calculations with the SISSA ab-initio quantum Monte Carlo code, `TurboRVB`.
 
 `TurboRVB` software family is now composed of the 4 layered packages:
@@ -26,7 +28,7 @@ Installing from source
     pip install -e . or pip install .
 
 # Examples
-Examples are in the `tests` directory.
+Examples are in the `examples` directory.
 
 # Documentation
 There is a Read the Docs in the `docs` directory, but still in progress.
