@@ -166,15 +166,3 @@ if __name__ == "__main__":
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "trexio-workflows"))
-    trexio_workflow=TREXIO_convert_to_turboWF(
-        trexio_filename="trexio.hdf5",
-        twist_average=False,
-        jastrow_basis_dict={},
-        max_occ_conv=0,
-        mo_num_conv=-1,
-        trexio_rerun=False,
-        trexio_pkl_name="trexio_genius"
-    )
-
-    trexio_workflow.launch()

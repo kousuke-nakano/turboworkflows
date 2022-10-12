@@ -274,37 +274,4 @@ if __name__ == "__main__":
     handler_format = Formatter('%(name)s - %(levelname)s - %(lineno)d - %(message)s')
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
-
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "lrdmc-ext-workflows"))
-    lrdmc_ext_workflow=LRDMC_ext_workflow(
-        ## job
-        server_machine_name="kagayaki",
-        cores=64,
-        openmp=1,
-        queue="DEFAULT",
-        version="stable",
-        sleep_time=30, # sec.
-        jobpkl_name="job_manager",
-        ## lrdmc
-        lrdmc_max_continuation=3,
-        lrdmc_pkl_name="lrdmc_genius",
-        lrdmc_target_error_bar=1.0e-3, # Ha
-        lrdmc_trial_steps= 150,
-        lrdmc_bin_block = 10,
-        lrdmc_warmupblocks = 5,
-        lrdmc_correcting_factor=10,
-        lrdmc_trial_etry=-17.208,
-        lrdmc_alat_list=[-0.40, -0.30],
-        lrdmc_nonlocalmoves="dlatm",  # tmove, dla, dlatm
-        lrdmc_num_walkers = -1, # default -1 -> num of MPI process.
-        lrdmc_twist_average=False,
-        lrdmc_kpoints=[],
-        lrdmc_force_calc_flag=False,
-        lrdmc_maxtime=172000,
-    )
-
-    lrdmc_ext_workflow.launch()
-    # moved to examples
-
-    launch=Launch( lrdmc_ext_workflow,  lrdmc_ext_workflow,  lrdmc_ext_workflow)
-    launch.launch()
+    

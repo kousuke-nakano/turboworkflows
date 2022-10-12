@@ -1,0 +1,126 @@
+  * * * READ fort.10 and COMPUTE molecular orbitals * * * 
+  Reading the begin in fast. . . . 
+  Reading zeta and rion  in fast . . . . 
+  Reading ieskin in fast. . . . 
+  Reading 2-body jastrow in fast . . . . 
+  Reading det shells in fast. . . . 
+  Reading jas shells in fast. . . . 
+  Reading det occupation in fast. . . .          507
+  Reading jas occupation in fast. . . .          508
+  Reading det nnozero in fast. . . . 
+  Reading det nnozero symmetries in fast....
+  Reading jas nnozero in fast....
+  Reading jas nnozero symmetries in fast....
+  Reading Z-det  symmetries in fast....
+  Reading Z-jas  symmetries in fast....
+ 
+  START reading the wave function fort.10 
+ 
+  Warning: using Crystal periodic basis set definition.  Complex wave function w
+ ith phase is possible now! 
+  Reading celldm . . . . 
+  Warning new mapping used case_map=8 !!! 
+  Reading the begin . . . . 
+  Warning Crystal basis for Jastrow  !!!
+ Phase up spin  :     0.000000    0.000000    0.000000
+ Phase down spin:     0.000000    0.000000    0.000000
+  Gamma Point Caculation 
+  Number of different atomic species =           2
+  Periodic System 
+  Rs =    1.21681594214347     
+  Notice celldm(1) set to            1
+  Unit of length a.u. 
+  LMin =    8.89116141636378     
+  Real Volume of the Cell =    679.212690531198     
+  Rescaled tstep   0.000000000000000E+000
+  celscale before    8.89116141636400        8.89116141636378     
+   9.92106215428500     
+  Warning increased kappa Ewald by =    1.15470053837926     
+  Rescaling Distances . . . 
+  Reading ieskin . . . . 
+ Number of moved ionic coordinates          27
+  Reading 2-body jastrow . . . . 
+ opposite phase = F
+ same  phase = T
+ yes_hermite before = F
+  Reading det shells . . . . 
+ USING          33 CONTRACTED DET ORBITALS
+ USING           0 MOLECULAR  DET ORBITALS
+  iesup dimension  atomic basis =         888         888
+  Reading jas shells . . . . 
+ Warn. Ions are not in ascending order in Jas !
+ Check shell Jas =         142
+  USING CONTRACTED JASTROW ORBITALS           33
+ USING          33 CONTRACTED + CONST JASTROW ORBITALS
+ USING           0 MOLECULAR  JASTROW ORBITALS
+ USING           9 max shells jastrow
+ USING           9 max shells det 
+  Reading det occupation . . . . 
+ Number of total det orbitals         507
+ Number of occupied det orbitals         507
+  Preliminary allocation   2.131200000000000E-005
+  transpip =  3.196800000000000E-005
+ Number of total det orbitals (root)         669
+ Number of occupied det orbitals (root)         669
+  Reading jas occupation . . . . 
+ Number of total Jas orbitals         508
+ Number of occupied Jas orbitals         508
+ Number of total Jas orbitals (root)         670
+ Number of occupied Jas orbitals (root)         670
+  Before allocation standard 
+  nion =            9
+  nel =           90
+  indt=           0
+  npm=            1
+  nwm=            1
+  nws=            1
+  nelorbj=          670
+  iscrapip=            1
+  iscraipsip=       257557
+  nelorb=          669
+  nelcol=          669
+  nelup=           45
+  nelorb_c=          507
+  nelorbj_c=          508
+  nelcol_c=          507
+  nshell=          243
+  nshellj=          244
+  npsamax=            0
+  nintpseudo=            0
+  Memory required DFT =  1.104246400000000E-002 Gbyte
+  Memory winv =  2.676000000000000E-005
+  iscramax for master =       449170
+  Reading det nnozero . . . . 
+  Reading det nnozero symmetries ....
+ Number of non zero geminal lambda for det       128778
+ Number of non fixed geminal lambda for det      128778
+ Number of non zero lambda (root)      224115
+  Reading jas nnozero ....
+ Location constant orbitals in Jastrow
+         508  Constant orbital 
+  Reading jas nnozero symmetries ....           0
+ Number of non zero geminal lambda for Jas       15058
+ Number of non fixed geminal lambda for Jas       15058
+  Number of accepted nnozeron Jas Sz            0
+  Check repeated in the symmetry table Jastrow  
+ Number of non zero Jas lambda (root)      224785
+  Reading Z-AGP symmetries ....
+  Touched det zeta par =         414
+  Reading Z-jas symmetries .... 
+  Touched Jas zeta par =         149
+ Warning: updated kgrid considering Det/Jastrow:        1425        1426
+ Warning: lowest wf discarded=  9.981439995825688E-007
+  Time spent in  update_kgrid=  1.896119117736816E-002
+  Warning number niesd suggested (# par one/two body Jastrow) =            3
+  in such case one has an independent one body for each different  atomic specie
+  Warning one&two body exponential (case_map=5) 
+  scale one body =  -42.2511434173851     
+ 
+  END reading the wave function fort.10 
+ 
+  lattice mesh chosen   0.296372047212133       0.296372047212126     
+  0.330702071809500        3.00000000000000     
+  Chosen nmolmin nmolmax =           1          45
+  Time change fort.10 =  3.085589408874512E-002
+  Passi qui from real to eff V 
+  Passi qui from eff to real  VI 

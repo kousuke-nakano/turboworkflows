@@ -239,36 +239,3 @@ if __name__ == "__main__":
     handler_format = Formatter('%(name)s - %(levelname)s - %(lineno)d - %(message)s')
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
-
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "pyscf-workflows"))
-    pyscf_workflow=PySCF_workflow(
-        ## structure file (mandatory)
-        structure_file="water.xyz",
-        ## job
-        server_machine_name="kagayaki",
-        cores=64,
-        openmp=64,
-        queue="DEFAULT",
-        version="stable",
-        sleep_time=10,  # sec.
-        jobpkl_name="job_manager",
-        ## pyscf
-        pyscf_rerun=False,
-        pyscf_pkl_name="pyscf_genius",
-        charge=0,
-        spin=0,
-        basis="ccecp-ccpvtz",  # defined below
-        ecp="ccecp",  # defined below
-        scf_method="DFT",  # HF or DFT
-        dft_xc="LDA_X,LDA_C_PZ",
-        mp2_flag=False,
-        pyscf_output="out.pyscf",
-        pyscf_chkfile="pyscf.chk",
-        solver_newton=False,
-        twist_average=False,
-        exp_to_discard=0.10,
-        kpt=[0.0, 0.0, 0.0],  # scaled_kpts!! i.e., crystal coord.
-        kpt_grid=[1, 1, 1]
-    )
-
-    pyscf_workflow.launch()

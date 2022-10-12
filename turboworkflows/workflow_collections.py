@@ -38,14 +38,14 @@ class Jastrowcopy_workflow(Workflow):
                  jastrowcopy_pkl_name="jastrowcopy_genius",
                  jastrowcopy_fort10_to="fort.10",
                  jastrowcopy_fort10_from="fort.10_new",
-                 jastrowcopy_args=""
+                 jastrowcopy_twist_average=False
                  ):
         ##copyjas
         self.jastrowcopy_rerun = jastrowcopy_rerun
         self.jastrowcopy_pkl_name = jastrowcopy_pkl_name
         self.jastrowcopy_fort10_to = jastrowcopy_fort10_to
         self.jastrowcopy_fort10_from = jastrowcopy_fort10_from
-        self.jastrowcopy_args = jastrowcopy_args
+        self.jastrowcopy_twist_average = jastrowcopy_twist_average
 
         ## return values
         self.status = "init"
@@ -73,7 +73,7 @@ class Jastrowcopy_workflow(Workflow):
             os.makedirs(self.pkl_dir, exist_ok=True)
             os.chdir(self.jastrowcopy_dir)
 
-            copy_jastrow(fort10_to=self.jastrowcopy_fort10_to, fort10_from=self.jastrowcopy_fort10_from, args=self.jastrowcopy_args)
+            copy_jastrow(fort10_to=self.jastrowcopy_fort10_to, fort10_from=self.jastrowcopy_fort10_from, twist_flag=self.jastrowcopy_twist_average)
 
             with open(os.path.join(self.jastrowcopy_dir, self.jastrowcopy_pkl), "wb") as f:
                 pickle.dump('dummy', f)
@@ -155,7 +155,7 @@ class init_occ_workflow(Workflow):
                     logger.info(f"eigenvalues of the MOs < mo_occ_thr={self.mo_occ_thr} will be used.")
                     for i in range(len(self.mo_occ)):
                         mo_index.append(i)
-                        if mo_occ[i] >= self.mo_occ_thr and self.mo_occ[i + 1] < self.mo_occ_thr:
+                        if self.mo_occ[i] >= self.mo_occ_thr and self.mo_occ[i + 1] < self.mo_occ_thr:
                             logger.info(f"mo_occ < {self.mo_occ_thr} is 1-{i + 1}")
                             break
 
@@ -179,7 +179,7 @@ class init_occ_workflow(Workflow):
                 else:
                     coeff_real[i] = 0.0 + self.mo_occ_delta
 
-            for i in range(len(mo_index), len(mo_occ)):
+            for i in range(len(mo_index), len(self.mo_occ)):
                 sym_const_num_list[i] = -1 * np.abs(sym_const_num_list[i])
                 coeff_real[i] = 0.0
 
@@ -399,88 +399,4 @@ if __name__ == "__main__":
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 
-    """
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "jascopy_workflow"))
-    jascopy_workflow=Jastrowcopy_workflow(
-        ## copyjastrow
-        jastrowcopy_rerun=False,
-        jastrowcopy_pkl_name="jastrowcopy_genius",
-        jastrowcopy_fort10_to="fort.10",
-        jastrowcopy_fort10_from="fort.10_new",
-        jastrowcopy_args=""
-    )
-    jascopy_workflow.launch()
-    """
 
-    """
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "init_occ_workflow"))
-
-    from turbogenius.trexio_wrapper import Trexio_wrapper_r
-
-    trexio_r = Trexio_wrapper_r(trexio_file="trexio.hdf5")
-    mo_occ = trexio_r.mo_occupation
-
-    init_occ_workflow=init_occ_workflow(
-                     init_occ_rerun=True,
-                     init_occ_pkl_name="init_occ_genius",
-                     mo_occ_fixed_list=[0],
-                     mo_occ_thr=1.0e-3,
-                     mo_num_conv=-1,
-                     mo_occ=mo_occ,
-                     mo_occ_delta=0.05
-    )
-    init_occ_workflow.launch()
-    """
-
-    jastrow_basis_dict = {
-        'C':
-            """
-            S  1
-            1       1.637494  1.00000000
-            S  1
-            1       0.921552  1.00000000
-            S  1
-            1       0.409924  1.00000000
-            P  1
-            1       0.935757  1.00000000
-            """,
-    }
-
-    print([jastrow_basis_dict["C"]]*8)
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "makefort10-workflows"))
-    makefort10_workflow=Makefort10_workflow(
-        structure_file="Diamond.cif",
-        ## job
-        makefort10_rerun=True,
-        makefort10_pkl_name="makefort10",
-        ## genius-related arguments
-        supercell=[1, 1, 1],
-        det_basis_set="cc-pVQZ",
-        jas_basis_set=[jastrow_basis_dict["C"]]*8,
-        det_contracted_flag=True,
-        jas_contracted_flag=True,
-        all_electron_jas_basis_set=True,
-        pseudo_potential="ccECP",
-        det_cut_basis_option=True,
-        jas_cut_basis_option=False,
-        jastrow_type=-6,
-        complex=False,
-        phase_up=[0.0, 0.0, 0.0],
-        phase_dn=[0.0, 0.0, 0.0],
-        neldiff=0
-    )
-
-    makefort10_workflow.launch()
-
-    """
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "convertfort10mol-workflows"))
-    convertfort10mol = Convertfort10mol_workflow(
-                     convertfort10mol_rerun=False,
-                     convertfort10mol_pkl_name="convertfort10mol_genius",
-                     add_random_mo=True,
-                     grid_size=0.10,
-                     additional_mo=0,
-                     )
-
-    convertfort10mol.launch()
-    """

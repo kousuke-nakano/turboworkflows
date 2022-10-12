@@ -211,6 +211,14 @@ class VMCopt_workflow(Workflow):
 
                     vmcopt_genius.generate_input(input_name=self.input_file, cont=self.vmcopt_continuation_flag)
 
+                    # binary set
+                    if self.cores == self.openmp:
+                        binary = "turborvb-serial.x"
+                        nompi = True
+                    else:
+                        binary = "turborvb-mpi.x"
+                        nompi = False
+
                     # Job submission by the job-manager package
                     job=Job_submission(local_machine_name="localhost",
                                        client_machine_name="localhost",
@@ -220,7 +228,8 @@ class VMCopt_workflow(Workflow):
                                        openmp=self.openmp,
                                        queue=self.queue,
                                        version=self.version,
-                                       binary="turborvb-mpi.x",
+                                       binary=binary,
+                                       nompi=nompi,
                                        jobname="turbogenius",
                                        input_file=self.input_file,
                                        output_file=self.output_file,
@@ -315,42 +324,4 @@ if __name__ == "__main__":
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "vmcopt-workflows"))
-    vmcopt_workflow=VMCopt_workflow(
-        ## job
-        server_machine_name="kagayaki",
-        cores=64,
-        openmp=1,
-        queue="DEFAULT",
-        version="stable",
-        sleep_time=30, # sec.
-        jobpkl_name="job_manager",
-        ## vmcopt
-        vmcopt_max_continuation=2,
-        vmcopt_pkl_name="vmcopt_genius",
-        vmcopt_target_error_bar=1.0e-3,  # Ha
-        vmcopt_trial_optsteps=50,
-        vmcopt_trial_steps=50,
-        vmcopt_production_optsteps=20,
-        vmcopt_optwarmupsteps_ratio=0.8,
-        vmcopt_bin_block=1,
-        vmcopt_warmupblocks=0,
-        vmcopt_optimizer="lr",
-        vmcopt_learning_rate=0.35,
-        vmcopt_regularization=0.001,
-        vmcopt_onebody=True,
-        vmcopt_twobody=True,
-        vmcopt_det_mat=False,
-        vmcopt_jas_mat=True,
-        vmcopt_det_basis_exp=False,
-        vmcopt_jas_basis_exp=False,
-        vmcopt_det_basis_coeff=False,
-        vmcopt_jas_basis_coeff=False,
-        vmcopt_num_walkers = -1, # default -1 -> num of MPI process.
-        vmcopt_twist_average=False,
-        vmcopt_kpoints=[],
-        vmcopt_maxtime=172000,
-    )
-
-    vmcopt_workflow.launch()
     # moved to examples

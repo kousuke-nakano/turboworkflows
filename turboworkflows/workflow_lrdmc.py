@@ -186,6 +186,14 @@ class LRDMC_workflow(Workflow):
 
                     lrdmc_genius.generate_input(input_name=self.input_file, cont=self.lrdmc_continuation_flag)
 
+                    # binary set
+                    if self.cores == self.openmp:
+                        binary = "turborvb-serial.x"
+                        nompi = True
+                    else:
+                        binary="turborvb-mpi.x"
+                        nompi = False
+
                     # Job submission by the job-manager package
                     job=Job_submission(local_machine_name="localhost",
                                        client_machine_name="localhost",
@@ -195,7 +203,8 @@ class LRDMC_workflow(Workflow):
                                        openmp=self.openmp,
                                        queue=self.queue,
                                        version=self.version,
-                                       binary="turborvb-mpi.x",
+                                       binary=binary,
+                                       nompi=nompi,
                                        jobname="turbogenius",
                                        input_file=self.input_file,
                                        output_file=self.output_file,
@@ -291,33 +300,4 @@ if __name__ == "__main__":
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "lrdmc-workflows"))
-    lrdmc_workflow=LRDMC_workflow(
-        ## job
-        server_machine_name="kagayaki",
-        cores=64,
-        openmp=1,
-        queue="DEFAULT",
-        version="stable",
-        sleep_time=30, # sec.
-        jobpkl_name="job_manager",
-        ## lrdmc
-        lrdmc_max_continuation=3,
-        lrdmc_pkl_name="lrdmc_genius",
-        lrdmc_target_error_bar=1.0e-3, # Ha
-        lrdmc_trial_steps= 150,
-        lrdmc_bin_block = 10,
-        lrdmc_warmupblocks = 5,
-        lrdmc_correcting_factor=10,
-        lrdmc_trial_etry=-17.208,
-        lrdmc_alat=-0.40,
-        lrdmc_nonlocalmoves="dlatm",  # tmove, dla, dlatm
-        lrdmc_num_walkers = -1, # default -1 -> num of MPI process.
-        lrdmc_twist_average=False,
-        lrdmc_kpoints=[],
-        lrdmc_force_calc_flag=False,
-        lrdmc_maxtime=172000,
-    )
-
-    lrdmc_workflow.launch()
     # moved to examples

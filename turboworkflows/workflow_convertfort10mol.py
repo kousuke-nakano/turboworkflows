@@ -102,6 +102,14 @@ class Convertfort10mol_workflow(Workflow):
 
                 convertfort10mol_genius.generate_input(input_name=self.input_file)
 
+                # binary set
+                if self.cores==self.openmp:
+                    binary="convertfort10mol.x"
+                    nompi = True
+                else:
+                    binary="convertfort10mol-mpi.x"
+                    nompi = False
+
                 # Job submission by the job-manager package
                 job = Job_submission(local_machine_name="localhost",
                                      client_machine_name="localhost",
@@ -111,7 +119,8 @@ class Convertfort10mol_workflow(Workflow):
                                      openmp=self.openmp,
                                      queue=self.queue,
                                      version=self.version,
-                                     binary="convertfort10mol-mpi.x",
+                                     binary=binary,
+                                     nompi=nompi,
                                      jobname="turbogenius",
                                      input_file=self.input_file,
                                      output_file=self.output_file,
@@ -190,23 +199,4 @@ if __name__ == "__main__":
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 
-    os.chdir(os.path.join(turbo_workflows_root, "tests", "workflows_test", "convertfort10mol-workflows"))
-    convertfort10mol_workflow=Convertfort10mol_workflow(
-        ## job
-        server_machine_name="kagayaki",
-        cores=128,
-        openmp=1,
-        queue="SINGLE",
-        version="stable",
-        sleep_time=180,  # sec.
-        jobpkl_name="job_manager",
-        # convertfort10mol
-        convertfort10mol_rerun=False,
-        convertfort10mol_pkl_name="convertfort10mol_genius",
-        add_random_mo=True,
-        grid_size=0.10,
-        additional_mo=0
-    )
-
-    convertfort10mol_workflow.launch()
     # moved to examples
