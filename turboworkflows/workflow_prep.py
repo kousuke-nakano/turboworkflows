@@ -54,6 +54,7 @@ class DFT_workflow(Workflow):
         dft_magnetic_moment_list=[],
         dft_xc='lda',  # lda or lsda
         dft_twist_average=False,
+        dft_independent_kpoints=False,
         dft_kpoints=[1, 1, 1, 0, 0, 0]
     ):
         #job
@@ -77,6 +78,7 @@ class DFT_workflow(Workflow):
         self.dft_magnetic_moment_list=dft_magnetic_moment_list
         self.dft_xc=dft_xc
         self.dft_twist_average=dft_twist_average
+        self.dft_independent_kpoints=dft_independent_kpoints
         self.dft_kpoints=dft_kpoints
         ## return values
         self.status = "init"
@@ -126,6 +128,7 @@ class DFT_workflow(Workflow):
                                  magnetic_moment_list=self.dft_magnetic_moment_list,
                                  xc=self.dft_xc,
                                  twist_average=self.dft_twist_average,
+                                 independent_kpoints=self.dft_independent_kpoints,
                                  kpoints=self.dft_kpoints
                         )
 

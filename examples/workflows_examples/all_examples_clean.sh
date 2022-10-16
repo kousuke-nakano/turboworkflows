@@ -4,6 +4,7 @@
 rm -rf init_occ_workflow
 rm -rf jascopy_workflow
 rm -rf jascopy_twist_workflow
+rm -rf convertfort10mol-workflows
 rm -rf lrdmc-ext-workflows
 rm -rf lrdmc-workflows
 rm -rf lrdmcopt-workflows
