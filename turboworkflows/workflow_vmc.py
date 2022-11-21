@@ -232,7 +232,7 @@ class VMC_workflow(Workflow):
                         await asyncio.sleep(self.sleep_time); os.chdir(self.vmc_dir)
                         job_running = job.jobcheck()
                     logger.info("Job finished.")
-                    # job fecth
+                    # job fetch
                     logger.info("Fetch files.")
                     fetch_files=[self.output_file, "fort.11", "fort.12", "parminimized.d"]
                     exclude_files = []
