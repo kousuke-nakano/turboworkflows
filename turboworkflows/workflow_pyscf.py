@@ -127,7 +127,81 @@ class PySCF_workflow(Workflow):
                 pyscf_python_wrapper=os.path.join(turbo_workflows_source_root, "pyscf_tools", "pyscf_wrapper.py")
                 shutil.copy(pyscf_python_wrapper, self.pyscf_dir)
 
-                postoption=f"""\
+                def rg(arg):
+                    if type(arg) == str:
+                        return '\"' + arg + '\"'
+                    else:
+                        return arg
+
+                run_py=f"""
+from pyscf_wrapper import Pyscf_wrapper
+
+# input variables
+pyscf_chkfile={rg(self.pyscf_chkfile)}
+structure_file={rg(self.structure_file)}
+
+# input variables
+omp_num_threads={rg(self.openmp)}
+charge={rg(self.charge)}
+spin={rg(self.spin)}
+basis={rg(self.basis)}
+ecp={rg(self.ecp)}
+scf_method={rg(self.scf_method)}
+dft_xc={rg(self.dft_xc)}
+solver_newton={rg(self.solver_newton)}
+MP2_flag={rg(self.mp2_flag)}
+CCSD_flag={rg(self.ccsd_flag)}
+pyscf_output={rg(self.pyscf_output)}
+twist_average={rg(self.twist_average)}
+exp_to_discard={rg(self.exp_to_discard)}
+kpt={rg(self.kpt)}
+kpt_grid={rg(self.kpt_grid)}
+
+pyscf_calc=Pyscf_wrapper(
+                        structure_file=structure_file,
+                        chkfile=pyscf_chkfile,
+                        )
+
+pyscf_calc.run_pyscf(
+                  omp_num_threads=omp_num_threads,
+                  charge=charge,
+                  spin=spin,
+                  basis=basis,
+                  ecp=ecp,
+                  scf_method=scf_method,
+                  dft_xc=dft_xc,
+                  solver_newton=solver_newton,
+                  MP2_flag=MP2_flag,
+                  CCSD_flag=CCSD_flag,
+                  pyscf_output=pyscf_output,
+                  twist_average=twist_average,
+                  exp_to_discard=exp_to_discard,
+                  kpt=kpt,
+                  kpt_grid=kpt_grid
+                  )
+                """
+
+                with open(os.path.join(self.pyscf_dir,"run.py"), "w") as f:
+                    f.write(run_py)
+
+                job = Job_submission(local_machine_name="localhost",
+                                     client_machine_name="localhost",
+                                     server_machine_name=self.server_machine_name,
+                                     package="python",
+                                     cores=self.cores,
+                                     openmp=self.openmp,
+                                     queue=self.queue,
+                                     version=self.version,
+                                     jobname="pyscf",
+                                     input_file="run.py",
+                                     nompi=True,
+                                     input_redirect=False,
+                                     pkl_name=self.jobpkl
+                                     )
+                job.generate_script(submission_script="submit.sh")
+
+                """
+                postoption=f'''\
                 --structure_file {self.structure_file} \
                 --charge {self.charge} \
                 --spin {self.spin} \
@@ -140,7 +214,7 @@ class PySCF_workflow(Workflow):
                 --exp_to_discard {self.exp_to_discard} \
                 --kpt {" ".join(list(map(str,self.kpt)))} \
                 --kpt_grid {" ".join(list(map(str,self.kpt_grid)))} \
-                """
+                '''
 
                 if self.twist_average: postoption += " --twist_average "
                 if self.mp2_flag: postoption += " --MP2_flag "
@@ -162,6 +236,7 @@ class PySCF_workflow(Workflow):
                                      pkl_name=self.jobpkl
                                      )
                 job.generate_script(submission_script="submit.sh")
+                """
 
                 # job submission
                 job_submission_flag, job_number = job.job_submit(submission_script="submit.sh")
