@@ -50,6 +50,7 @@ class DFT_workflow(Workflow):
         dft_maxtime=172800,
         dft_memlarge=False,
         dft_maxit=50,
+        dft_conv_thr=1.0e-5,
         dft_h_field=0.0,
         dft_magnetic_moment_list=[],
         dft_xc='lda',  # lda or lsda
@@ -74,6 +75,7 @@ class DFT_workflow(Workflow):
         self.dft_maxtime=dft_maxtime
         self.dft_memlarge=dft_memlarge
         self.dft_maxit=dft_maxit
+        self.dft_conv_thr=dft_conv_thr
         self.dft_h_field=dft_h_field
         self.dft_magnetic_moment_list=dft_magnetic_moment_list
         self.dft_xc=dft_xc
@@ -124,6 +126,7 @@ class DFT_workflow(Workflow):
                                  maxtime=self.dft_maxtime,
                                  memlarge=self.dft_memlarge,
                                  maxit=self.dft_maxit,
+                                 epsdft=self.dft_conv_thr,
                                  h_field=self.dft_h_field,
                                  magnetic_moment_list=self.dft_magnetic_moment_list,
                                  xc=self.dft_xc,
