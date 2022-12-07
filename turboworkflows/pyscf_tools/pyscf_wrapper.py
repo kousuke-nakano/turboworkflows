@@ -119,7 +119,7 @@ class Pyscf_wrapper():
                     if twist_average:
                         logger.info("twist_average=True")
                         kpt_grid = cell.make_kpts(kpt_grid)
-                        mf = pbcscf.khf.KRHF(cell, kpt_grid).density_fit()
+                        mf = pbcscf.khf.KRHF(cell, kpt_grid)
                         if solver_newton:
                             logger.info("solver = newton")
                             mf = mf.newton()
@@ -127,7 +127,7 @@ class Pyscf_wrapper():
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
-                        mf = pbcscf.hf.RHF(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0]).density_fit()
+                        mf = pbcscf.hf.RHF(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
                         if solver_newton:
                             logger.info("solver = newton")
                             mf = mf.newton()
@@ -137,7 +137,7 @@ class Pyscf_wrapper():
                     if twist_average:
                         logger.info("twist_average=True")
                         kpt_grid = cell.make_kpts(kpt_grid)
-                        mf = pbcscf.krohf.KROHF(cell, kpt_grid).density_fit()
+                        mf = pbcscf.krohf.KROHF(cell, kpt_grid)
                         if solver_newton:
                             logger.info("solver = newton")
                             mf = mf.newton()
@@ -145,7 +145,7 @@ class Pyscf_wrapper():
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
-                        mf = pbcscf.rohf.ROHF(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0]).density_fit()
+                        mf = pbcscf.rohf.ROHF(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
                         if solver_newton:
                             logger.info("solver = newton")
                             mf = mf.newton()
@@ -169,7 +169,7 @@ class Pyscf_wrapper():
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
-                        mf = pbcdft.rks.RKS(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0]).density_fit()
+                        mf = pbcdft.rks.RKS(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
                         if solver_newton:
                             logger.info("solver = newton")
                             mf = mf.newton()
@@ -186,7 +186,7 @@ class Pyscf_wrapper():
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
-                        mf = pbcdft.roks.ROKS(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0]).density_fit()
+                        mf = pbcdft.roks.ROKS(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
                         if solver_newton:
                             logger.info("solver = newton")
                             mf = mf.newton()
