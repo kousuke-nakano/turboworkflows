@@ -60,7 +60,9 @@ class PySCF_workflow(Workflow):
         twist_average=False,
         exp_to_discard=0.10,
         kpt=[0.0, 0.0, 0.0],  # scaled_kpts!! i.e., crystal coord.
-        kpt_grid=[1, 1, 1]
+        kpt_grid=[1, 1, 1],
+        smearing_method="fermi",
+        smearing_sigma=0.00  # Ha
                  ):
         #structure
         self.structure_file = structure_file
@@ -91,6 +93,8 @@ class PySCF_workflow(Workflow):
         self.exp_to_discard=exp_to_discard
         self.kpt=kpt  # scaled_kpts!! i.e., crystal coord.
         self.kpt_grid=kpt_grid
+        self.smearing_method = smearing_method
+        self.smearing_sigma = smearing_sigma
         ## return values
         self.status = "init"
         self.output_files = []
@@ -156,6 +160,8 @@ twist_average={rg(self.twist_average)}
 exp_to_discard={rg(self.exp_to_discard)}
 kpt={rg(self.kpt)}
 kpt_grid={rg(self.kpt_grid)}
+smearing_method={rg(self.smearing_method)}
+smearing_sigma={rg(self.smearing_sigma)}
 
 pyscf_calc=Pyscf_wrapper(
                         structure_file=structure_file,
@@ -177,7 +183,9 @@ pyscf_calc.run_pyscf(
                   twist_average=twist_average,
                   exp_to_discard=exp_to_discard,
                   kpt=kpt,
-                  kpt_grid=kpt_grid
+                  kpt_grid=kpt_grid,
+                  smearing_method=smearing_method,
+                  smearing_sigma=smearing_sigma
                   )
                 """
 
