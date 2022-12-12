@@ -46,7 +46,6 @@ class PySCF_workflow(Workflow):
         ## pyscf
         pyscf_rerun=False,
         pyscf_pkl_name="pyscf_genius",
-        pyscf_max_memory=480000, # MB
         charge=0,
         spin=0,
         basis="ccecp-ccpvtz",  # defined below
@@ -79,7 +78,6 @@ class PySCF_workflow(Workflow):
         #pyscf
         self.pyscf_rerun=pyscf_rerun
         self.pyscf_pkl_name=pyscf_pkl_name
-        self.pyscf_max_memory=pyscf_max_memory
         self.charge=charge
         self.spin=spin
         self.basis=basis  # defined below
@@ -145,7 +143,6 @@ from pyscf_wrapper import Pyscf_wrapper
 # input variables
 pyscf_chkfile={rg(self.pyscf_chkfile)}
 structure_file={rg(self.structure_file)}
-pyscf_max_memory={rg(self.pyscf_max_memory)}
 
 # input variables
 omp_num_threads={rg(self.openmp)}
@@ -169,7 +166,6 @@ smearing_sigma={rg(self.smearing_sigma)}
 pyscf_calc=Pyscf_wrapper(
                         structure_file=structure_file,
                         chkfile=pyscf_chkfile,
-                        max_memory=pyscf_max_memory,
                         )
 
 pyscf_calc.run_pyscf(

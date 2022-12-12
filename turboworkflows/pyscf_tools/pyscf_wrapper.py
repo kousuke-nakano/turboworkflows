@@ -30,7 +30,6 @@ class Pyscf_wrapper():
     def __init__(self,
             structure_file,
             chkfile="pyscf.chk",
-            max_memory=480000 # MB
     ):
 
         # read structural information from the file using ASE.
@@ -45,7 +44,6 @@ class Pyscf_wrapper():
         else:
             logger.info("Molecule")
         self.chkfile = chkfile
-        self.max_memory=max_memory
 
     def get_mo_index(self, mo_occ_thr = 1.0e-3):
         mf=scf.chkfile.load(self.chkfile, "scf")
@@ -80,9 +78,6 @@ class Pyscf_wrapper():
                       smearing_method="fermi",
                       smearing_sigma=0.00 # Ha
                       ):
-
-        os.environ["OMP_NUM_THREADS"] = str(omp_num_threads)
-        os.environ["PYSCF_MAX_MEMORY"] = str(self.max_memory)
 
         if self.pbc_flag:
             cell = gto_pbc.M()
