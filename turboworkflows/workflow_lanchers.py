@@ -21,8 +21,8 @@ from workflow_encapsulated import eWorkflow, Workflow
 
 class Variable:
     def __init__(self,
-                 label='xxxx',
-                 vtype='file',  # file or value
+                 label='none',
+                 vtype='file',  # file, file-list, value
                  name='xxxx',  # filename or value's label
                  ):
         self.label=label
