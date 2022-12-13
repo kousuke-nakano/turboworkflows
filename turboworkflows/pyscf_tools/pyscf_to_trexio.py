@@ -25,7 +25,7 @@ from pyscf.pbc import dft as pbcdft
 from pyscf.pbc import scf as pbcscf
 from pyscf.scf.chkfile import dump_scf
 
-def pyscf_to_trexio(pyscf_checkfile="pyscf.chk", trexio_filename="trexio.hdf5", twist_average_in=False):
+def pyscf_to_trexio(pyscf_checkfile="pyscf.chk", trexio_filename="trexio.hdf5", twist_average_in=False, force_wf_complex=False):
     # ## pySCF -> TREX-IO
     # - how to install trexio
     # - pip install trexio
@@ -352,15 +352,22 @@ def pyscf_to_trexio(pyscf_checkfile="pyscf.chk", trexio_filename="trexio.hdf5", 
 
         # here, we should think about complex cases
         #logger.info(mo_coefficient[0])
-        # check if the MOs are imag.!
-        imag_flags=[]
-        for mo in mo_coefficient:
-            imag_flags+=list(np.isreal(list(np.real_if_close(mo,tol=100))))
-        #print(imag_flags)
-        if all(imag_flags):
-            complex_flag = False
-        else:
+
+        # force WF complex
+        if force_wf_complex:
             complex_flag = True
+        # check if the MOs have imag.!
+        else:
+            imag_flags=[]
+            for mo in mo_coefficient:
+                imag_flags+=list(np.isreal(list(np.real_if_close(mo,tol=100))))
+            #print(imag_flags)
+            if all(imag_flags):
+                complex_flag = False
+            else:
+                complex_flag = True
+
+        """
         #however, due to numerical error, we need more loose criteria
         imag_flags = []
         imag_thr=1.0e-3
@@ -373,6 +380,7 @@ def pyscf_to_trexio(pyscf_checkfile="pyscf.chk", trexio_filename="trexio.hdf5", 
                 complex_flag = False
             else:
                 complex_flag = True
+        """
 
         if complex_flag:
             logger.info("The WF is complex")

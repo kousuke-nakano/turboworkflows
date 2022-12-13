@@ -62,8 +62,11 @@ class PySCF_workflow(Workflow):
         kpt=[0.0, 0.0, 0.0],  # scaled_kpts!! i.e., crystal coord.
         kpt_grid=[1, 1, 1],
         smearing_method="fermi",
-        smearing_sigma=0.00  # Ha
-                 ):
+        smearing_sigma=0.00,  # Ha
+        ## conversion to trexio file
+        force_wf_complex = False
+        ):
+
         #structure
         self.structure_file = structure_file
         self.trexio_filename=trexio_filename
@@ -95,6 +98,8 @@ class PySCF_workflow(Workflow):
         self.kpt_grid=kpt_grid
         self.smearing_method = smearing_method
         self.smearing_sigma = smearing_sigma
+        #conversion to trexio file
+        self.force_wf_complex = force_wf_complex
         ## return values
         self.status = "init"
         self.output_files = []
@@ -292,7 +297,11 @@ pyscf_calc.run_pyscf(
                 # conversion to the TREXIO format
                 ####
                 logger.info(f"Start: pyscf -> trexio conversion.")
-                pyscf_to_trexio(pyscf_checkfile=self.pyscf_chkfile, trexio_filename=os.path.join(self.pyscf_dir, self.trexio_filename), twist_average_in=self.twist_average)
+                pyscf_to_trexio(pyscf_checkfile=self.pyscf_chkfile,
+                                trexio_filename=os.path.join(self.pyscf_dir, self.trexio_filename),
+                                twist_average_in=self.twist_average,
+                                force_wf_complex=self.force_wf_complex
+                                )
                 logger.info(f"End: pyscf -> trexio conversion.")
 
             with open(os.path.join(self.pyscf_dir, self.pyscf_pkl), "wb") as f:
