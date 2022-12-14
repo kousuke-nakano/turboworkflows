@@ -227,6 +227,7 @@ class Makefort10_workflow(Workflow):
         complex=False,
         phase_up=[0.0, 0.0, 0.0],
         phase_dn=[0.0, 0.0, 0.0],
+        same_phase_up_dn=False,
         neldiff=0
     ):
         #job
@@ -247,6 +248,7 @@ class Makefort10_workflow(Workflow):
         self.complex=complex
         self.phase_up=phase_up
         self.phase_dn=phase_dn
+        self.same_phase_up_dn=same_phase_up_dn
         self.neldiff=neldiff
         ## return values
         self.status = "init"
@@ -292,6 +294,7 @@ class Makefort10_workflow(Workflow):
                              complex=self.complex,
                              phase_up=self.phase_up,
                              phase_dn=self.phase_dn,
+                             same_phase_up_dn=self.same_phase_up_dn,
                              neldiff=self.neldiff
                              )
 
