@@ -158,7 +158,18 @@ class LRDMC_workflow(Workflow):
                         if error < self.lrdmc_target_error_bar:
                             logger.warning(f"The target error bar {self.lrdmc_target_error_bar} Ha has been already achieved!")
                             logger.warning(f"Exiting from the lrdmc continuation loop.")
-                            break
+
+                            self.output_values["energy"] = energy
+                            self.output_values["error"] = error
+
+                            logger.info("LRDMC workflow ends.")
+                            os.chdir(self.root_dir)
+
+                            self.status = "success"
+                            p_list = [pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, '*'))]
+                            self.output_files = [str(p.resolve().relative_to(self.root_dir)) for p in p_list]
+                            return self.status, self.output_files, self.output_values
+
                         lrdmc_steps_estimated_proper = int((mcmc_steps - self.lrdmc_bin_block * self.lrdmc_warmupblocks) * (error / self.lrdmc_target_error_bar) ** 2)
                         logger.info(f"The target error bar is {self.lrdmc_target_error_bar:.5f} Ha")
                         logger.info(f"The estimated steps to achieve the target error bar is {lrdmc_steps_estimated_proper:d} steps")
@@ -282,6 +293,8 @@ class LRDMC_workflow(Workflow):
                 lrdmc_genius = pickle.load(f)
             energy, error = lrdmc_genius.energy, lrdmc_genius.energy_error
             logger.info(f"LRDMC energy = {energy:.5f} +- {error:3f} Ha")
+            self.output_values["energy"] = energy
+            self.output_values["error"] = error
 
         logger.info("LRDMC workflow ends.")
         os.chdir(self.root_dir)
