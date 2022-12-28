@@ -149,7 +149,18 @@ class VMC_workflow(Workflow):
                         if error < self.vmc_target_error_bar:
                             logger.warning(f"The target error bar {self.vmc_target_error_bar} Ha has been already achieved!")
                             logger.warning(f"Exiting from the VMC continuation loop.")
-                            break
+
+                            self.output_values["energy"] = energy
+                            self.output_values["error"] = error
+
+                            logger.info("VMC workflow ends.")
+                            os.chdir(self.root_dir)
+
+                            self.status = "success"
+                            p_list = [pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, '*'))]
+                            self.output_files = [str(p.resolve().relative_to(self.root_dir)) for p in p_list]
+                            return self.status, self.output_files, self.output_values
+
                         vmc_steps_estimated_proper = int((mcmc_steps - self.vmc_bin_block * self.vmc_warmupblocks) * (error / self.vmc_target_error_bar) ** 2)
                         logger.info(f"The target error bar is {self.vmc_target_error_bar:.5f} Ha")
                         logger.info(f"The estimated steps to achieve the target error bar is {vmc_steps_estimated_proper:d} steps")
