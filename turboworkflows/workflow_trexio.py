@@ -124,6 +124,14 @@ class TREXIO_convert_to_turboWF(Workflow):
                     self.kpoints = [kpoints_up, kpoints_dn]
                     self.output_values["kpoints"] = self.kpoints
 
+            #mo occ
+            if self.twist_average:
+                pass # to be implemented!!
+            else:
+                filename = os.path.basename(self.trexio_filename)
+                trexio_r = Trexio_wrapper_r(trexio_file=os.path.join(self.trexio_dir, filename))
+                self.output_values["mo_occ"]=trexio_r.mo_occupation
+
             with open(os.path.join(self.trexio_dir, self.trexio_pkl), "wb") as f:
                 pickle.dump("dummy", f)
 
@@ -142,6 +150,13 @@ class TREXIO_convert_to_turboWF(Workflow):
                         kpoints_dn.append([float(kx), float(ky), float(kz), float(wk)])
                     self.kpoints = [kpoints_up, kpoints_dn]
                     self.output_values["kpoints"] = self.kpoints
+            #mo occ
+            if self.twist_average:
+                pass # to be implemented!!
+            else:
+                filename = os.path.basename(self.trexio_filename)
+                trexio_r = Trexio_wrapper_r(trexio_file=os.path.join(self.trexio_dir, filename))
+                self.output_values["mo_occ"]=trexio_r.mo_occupation
 
         with open(os.path.join(self.trexio_dir, self.trexio_pkl), "wb") as f:
             pickle.dump("dummy", f)
