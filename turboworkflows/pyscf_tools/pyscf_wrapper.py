@@ -59,6 +59,7 @@ class Pyscf_wrapper():
 
     def run_pyscf(self,
                       omp_num_threads=1,
+                      init_guess='minao',
                       charge=0,
                       spin=0,
                       basis="ccecp-ccpvtz",
@@ -141,6 +142,9 @@ class Pyscf_wrapper():
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
                         mf = pbcscf.rohf.ROHF(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
 
+                #init guess
+                mf.init_guess = init_guess
+
                 # smearing
                 if smearing_sigma != 0.0:
                     logger.info("Smearing is added!")
@@ -180,6 +184,9 @@ class Pyscf_wrapper():
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
                         mf = pbcdft.roks.ROKS(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
 
+                #init guess
+                mf.init_guess = init_guess
+
                 # smearing
                 if smearing_sigma != 0.0:
                     logger.info("Smearing is added!")
@@ -193,6 +200,7 @@ class Pyscf_wrapper():
 
                 mf.chkfile = self.chkfile
                 mf.xc = dft_xc
+
             else:
                 raise NotImplementedError
 
@@ -264,6 +272,9 @@ class Pyscf_wrapper():
                     mf = scf.ROHF(mol)
                     mf.max_cycle = max_cycle
 
+                #init guess
+                mf.init_guess = init_guess
+
                 # smearing
                 if smearing_sigma != 0.0:
                     logger.info("Smearing is added!")
@@ -289,6 +300,9 @@ class Pyscf_wrapper():
                     #ROKS
                     mf = scf.ROKS(mol)
                     mf.max_cycle = max_cycle
+
+                #init guess
+                mf.init_guess = init_guess
 
                 # smearing
                 if smearing_sigma != 0.0:

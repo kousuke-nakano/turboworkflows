@@ -46,6 +46,7 @@ class PySCF_workflow(Workflow):
         ## pyscf
         pyscf_rerun=False,
         pyscf_pkl_name="pyscf_genius",
+        init_guess = 'minao',
         charge=0,
         spin=0,
         basis="ccecp-ccpvtz",  # defined below
@@ -81,6 +82,7 @@ class PySCF_workflow(Workflow):
         #pyscf
         self.pyscf_rerun=pyscf_rerun
         self.pyscf_pkl_name=pyscf_pkl_name
+        self.init_guess=init_guess
         self.charge=charge
         self.spin=spin
         self.basis=basis  # defined below
@@ -151,6 +153,7 @@ structure_file={rg(self.structure_file)}
 
 # input variables
 omp_num_threads={rg(self.openmp)}
+init_guess={rg(self.init_guess)}
 charge={rg(self.charge)}
 spin={rg(self.spin)}
 basis={rg(self.basis)}
@@ -175,6 +178,7 @@ pyscf_calc=Pyscf_wrapper(
 
 pyscf_calc.run_pyscf(
                   omp_num_threads=omp_num_threads,
+                  init_guess=init_guess,
                   charge=charge,
                   spin=spin,
                   basis=basis,
@@ -212,44 +216,6 @@ pyscf_calc.run_pyscf(
                                      pkl_name=self.jobpkl
                                      )
                 job.generate_script(submission_script="submit.sh")
-
-                """
-                postoption=f'''\
-                --structure_file {self.structure_file} \
-                --charge {self.charge} \
-                --spin {self.spin} \
-                --basis {self.basis} \
-                --ecp {self.ecp} \
-                --scf_method {self.scf_method} \
-                --dft_xc {self.dft_xc} \
-                --pyscf_output {self.pyscf_output} \
-                --chkfile {self.pyscf_chkfile} \
-                --exp_to_discard {self.exp_to_discard} \
-                --kpt {" ".join(list(map(str,self.kpt)))} \
-                --kpt_grid {" ".join(list(map(str,self.kpt_grid)))} \
-                '''
-
-                if self.twist_average: postoption += " --twist_average "
-                if self.mp2_flag: postoption += " --MP2_flag "
-                if self.ccsd_flag: postoption += " --CCSD_flag "
-
-                job = Job_submission(local_machine_name="localhost",
-                                     client_machine_name="localhost",
-                                     server_machine_name=self.server_machine_name,
-                                     package="python",
-                                     cores=self.cores,
-                                     openmp=self.openmp,
-                                     queue=self.queue,
-                                     version=self.version,
-                                     jobname="pyscf",
-                                     input_file="pyscf_wrapper.py",
-                                     postoption=postoption,
-                                     nompi=True,
-                                     input_redirect=False,
-                                     pkl_name=self.jobpkl
-                                     )
-                job.generate_script(submission_script="submit.sh")
-                """
 
                 # job submission
                 job_submission_flag, job_number = job.job_submit(submission_script="submit.sh")
