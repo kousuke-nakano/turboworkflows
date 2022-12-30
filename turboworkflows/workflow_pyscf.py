@@ -47,6 +47,9 @@ class PySCF_workflow(Workflow):
         pyscf_rerun=False,
         pyscf_pkl_name="pyscf_genius",
         init_guess = 'minao',
+        cell_precision = 1.0e-8,
+        multigrid_fftdf = False,
+        level_shift_factor = 0.0,
         charge=0,
         spin=0,
         basis="ccecp-ccpvtz",  # defined below
@@ -83,6 +86,9 @@ class PySCF_workflow(Workflow):
         self.pyscf_rerun=pyscf_rerun
         self.pyscf_pkl_name=pyscf_pkl_name
         self.init_guess=init_guess
+        self.cell_precision = cell_precision
+        self.multigrid_fftdf = multigrid_fftdf
+        self.level_shift_factor = level_shift_factor
         self.charge=charge
         self.spin=spin
         self.basis=basis  # defined below
@@ -154,6 +160,9 @@ structure_file={rg(self.structure_file)}
 # input variables
 omp_num_threads={rg(self.openmp)}
 init_guess={rg(self.init_guess)}
+cell_precision={rg(self.cell_precision)}
+multigrid_fftdf={rg(self.multigrid_fftdf)}
+level_shift_factor={rg(self.level_shift_factor)}
 charge={rg(self.charge)}
 spin={rg(self.spin)}
 basis={rg(self.basis)}
@@ -179,6 +188,9 @@ pyscf_calc=Pyscf_wrapper(
 pyscf_calc.run_pyscf(
                   omp_num_threads=omp_num_threads,
                   init_guess=init_guess,
+                  cell_precision=cell_precision,
+                  multigrid_fftdf=multigrid_fftdf,
+                  level_shift_factor=level_shift_factor,
                   charge=charge,
                   spin=spin,
                   basis=basis,

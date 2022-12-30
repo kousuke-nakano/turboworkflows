@@ -24,6 +24,7 @@ from pyscf.pbc import gto as gto_pbc
 from pyscf.pbc import dft as pbcdft
 from pyscf.pbc import scf as pbcscf
 from pyscf.scf.chkfile import dump_scf
+from pyscf.pbc.dft import multigrid
 
 class Pyscf_wrapper():
 
@@ -60,6 +61,9 @@ class Pyscf_wrapper():
     def run_pyscf(self,
                       omp_num_threads=1,
                       init_guess='minao',
+                      cell_precision=1.0e-8,
+                      multigrid_fftdf=False,
+                      level_shift_factor=0.0,
                       charge=0,
                       spin=0,
                       basis="ccecp-ccpvtz",
@@ -96,10 +100,12 @@ class Pyscf_wrapper():
             if exp_to_discard != 0.0:
                 cell.exp_to_discard = exp_to_discard
                 logger.info(f"exp_to_discard={exp_to_discard}")
-
             # define ecp or pseudo
             if ecp is not None: cell.ecp = ecp
+            # cell precision (i.e., cutoff)
+            cell.precision=cell_precision
 
+            # cell build
             cell.build(cart=False)
 
             # electron num
@@ -122,41 +128,23 @@ class Pyscf_wrapper():
                         logger.info("twist_average=True")
                         kpt_grid = cell.make_kpts(kpt_grid)
                         mf = pbcscf.khf.KRHF(cell, kpt_grid)
-
                     else:
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
                         mf = pbcscf.hf.RHF(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
-
+                # ROHF calculation
                 else:
                     logger.info("HF kernel=ROHF")
                     if twist_average:
                         logger.info("twist_average=True")
                         kpt_grid = cell.make_kpts(kpt_grid)
                         mf = pbcscf.krohf.KROHF(cell, kpt_grid)
-
                     else:
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
                         mf = pbcscf.rohf.ROHF(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
-
-                #init guess
-                mf.init_guess = init_guess
-
-                # smearing
-                if smearing_sigma != 0.0:
-                    logger.info("Smearing is added!")
-                    logger.info(f"smearing_sigma={smearing_sigma}, smearing_method={smearing_method}")
-                    mf = scf.addons.smearing_(mf, sigma=smearing_sigma, method=smearing_method)
-
-                #newton solver
-                if solver_newton:
-                    logger.info("solver = newton")
-                    mf = mf.newton()
-
-                mf.chkfile = self.chkfile
 
             elif scf_method == "DFT":
                 # DFT calculation
@@ -171,7 +159,7 @@ class Pyscf_wrapper():
                         logger.info(f"kpt={kpt}")
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
                         mf = pbcdft.rks.RKS(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
-
+                # RODFT calculation
                 else:
                     logger.info("DFT kernel=ROKS")
                     if twist_average:
@@ -183,26 +171,33 @@ class Pyscf_wrapper():
                         logger.info(f"kpt={kpt}")
                         logger.info(f'abs kpt = {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}')
                         mf = pbcdft.roks.ROKS(cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0])
-
-                #init guess
-                mf.init_guess = init_guess
-
-                # smearing
-                if smearing_sigma != 0.0:
-                    logger.info("Smearing is added!")
-                    logger.info(f"smearing_sigma={smearing_sigma}, smearing_method={smearing_method}")
-                    mf = scf.addons.smearing_(mf, sigma=smearing_sigma, method=smearing_method)
-
-                #newton solver
-                if solver_newton:
-                    logger.info("solver = newton")
-                    mf = mf.newton()
-
-                mf.chkfile = self.chkfile
+                #xc
                 mf.xc = dft_xc
 
             else:
                 raise NotImplementedError
+
+            #init guess
+            mf.init_guess = init_guess
+            #scf max cycle
+            mf.max_cycle = max_cycle
+            # chkfile
+            mf.chkfile = self.chkfile
+            # smearing
+            if smearing_sigma != 0.0:
+                logger.info("Smearing is added!")
+                logger.info(f"smearing_sigma={smearing_sigma}, smearing_method={smearing_method}")
+                mf = scf.addons.smearing_(mf, sigma=smearing_sigma, method=smearing_method)
+            # newton solver
+            if solver_newton:
+                logger.info("solver = newton")
+                mf = mf.newton()
+            # level_shift
+            if level_shift_factor > 0.0:
+                scf.addons.dynamic_level_shift_(mf, factor=level_shift_factor)
+            # multi DFT grid in the density fitting
+            if multigrid_fftdf:
+                mf.with_df = multigrid.MultiGridFFTDF(cell)
 
             # HF/DFT energy
             total_energy = mf.kernel()
@@ -263,63 +258,45 @@ class Pyscf_wrapper():
             if scf_method == "HF":
                 # HF calculation
                 if mol.spin == 0:
+                    #RHF
                     logger.info("HF kernel=RHF")
                     mf = scf.RHF(mol)
-                    mf.max_cycle = max_cycle
                 else:
-                    logger.info("HF kernel=ROHF")
                     #ROHF
+                    logger.info("HF kernel=ROHF")
                     mf = scf.ROHF(mol)
-                    mf.max_cycle = max_cycle
-
-                #init guess
-                mf.init_guess = init_guess
-
-                # smearing
-                if smearing_sigma != 0.0:
-                    logger.info("Smearing is added!")
-                    logger.info(f"smearing_sigma={smearing_sigma}, smearing_method={smearing_method}")
-                    mf = scf.addons.smearing_(mf, sigma=smearing_sigma, method=smearing_method)
-
-                # newton solver
-                if solver_newton:
-                    logger.info("solver = newton")
-                    mf = mf.newton()
-
-                mf.chkfile = self.chkfile
-
             elif scf_method == "DFT":
                 # DFT calculation
                 if mol.spin == 0:
                     logger.info("DFT kernel=RKS")
                     mf = scf.KS(mol).density_fit()
-                    mf.max_cycle = max_cycle
-
                 else:
                     logger.info("DFT kernel=ROKS")
                     #ROKS
                     mf = scf.ROKS(mol)
-                    mf.max_cycle = max_cycle
-
-                #init guess
-                mf.init_guess = init_guess
-
-                # smearing
-                if smearing_sigma != 0.0:
-                    logger.info("Smearing is added!")
-                    logger.info(f"smearing_sigma={smearing_sigma}, smearing_method={smearing_method}")
-                    mf = scf.addons.smearing_(mf, sigma=smearing_sigma, method=smearing_method)
-
-                # newton solver
-                if solver_newton:
-                    logger.info("solver = newton")
-                    mf = mf.newton()
-
-                mf.chkfile = self.chkfile
+                # xc
                 mf.xc = dft_xc
-
             else:
                 raise NotImplementedError
+
+            #init guess
+            mf.init_guess = init_guess
+            #scf max cycle
+            mf.max_cycle = max_cycle
+            # chkfile
+            mf.chkfile = self.chkfile
+            # smearing
+            if smearing_sigma != 0.0:
+                logger.info("Smearing is added!")
+                logger.info(f"smearing_sigma={smearing_sigma}, smearing_method={smearing_method}")
+                mf = scf.addons.smearing_(mf, sigma=smearing_sigma, method=smearing_method)
+            # newton solver
+            if solver_newton:
+                logger.info("solver = newton")
+                mf = mf.newton()
+            # level_shift
+            if level_shift_factor > 0.0:
+                scf.addons.dynamic_level_shift_(mf, factor=level_shift_factor)
 
             # Molecular Orbitals and occupations
             logger.info("MOs-HF/DFT")
