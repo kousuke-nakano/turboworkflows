@@ -178,9 +178,10 @@ class init_occ_workflow(Workflow):
                     coeff_real[i] = 1.0 - self.mo_occ_delta
                 else:
                     coeff_real[i] = 0.0 + self.mo_occ_delta
-            
-            """
+
+            """ commented out for the time being
             for i in range(len(mo_index), len(self.mo_occ)):
+                logger.info(f"i={i}") 
                 sym_const_num_list[i] = -1 * np.abs(sym_const_num_list[i])
                 coeff_real[i] = 0.0
             """
