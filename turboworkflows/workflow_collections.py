@@ -6,7 +6,6 @@ import numpy as np
 import os, sys
 import shutil
 import pickle
-import numpy as np
 import time
 import asyncio
 import glob

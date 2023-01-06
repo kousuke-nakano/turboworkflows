@@ -126,8 +126,8 @@ class Pyscf_wrapper():
                     logger.info("HF kernel=RHF")
                     if twist_average:
                         logger.info("twist_average=True")
-                        kpt_grid = cell.make_kpts(kpt_grid)
-                        mf = pbcscf.khf.KRHF(cell, kpt_grid)
+                        kpt_grid_m = cell.make_kpts(kpt_grid)
+                        mf = pbcscf.khf.KRHF(cell, kpt_grid_m)
                     else:
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
@@ -138,8 +138,8 @@ class Pyscf_wrapper():
                     logger.info("HF kernel=ROHF")
                     if twist_average:
                         logger.info("twist_average=True")
-                        kpt_grid = cell.make_kpts(kpt_grid)
-                        mf = pbcscf.krohf.KROHF(cell, kpt_grid)
+                        kpt_grid_m = cell.make_kpts(kpt_grid)
+                        mf = pbcscf.krohf.KROHF(cell, kpt_grid_m)
                     else:
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
@@ -152,8 +152,8 @@ class Pyscf_wrapper():
                     logger.info("DFT kernel=RKS")
                     if twist_average:
                         logger.info("twist_average=True")
-                        kpt_grid = cell.make_kpts(kpt_grid)
-                        mf = pbcdft.krks.KRKS(cell, kpt_grid)
+                        kpt_grid_m = cell.make_kpts(kpt_grid)
+                        mf = pbcdft.krks.KRKS(cell, kpt_grid_m)
                     else:
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
@@ -164,8 +164,8 @@ class Pyscf_wrapper():
                     logger.info("DFT kernel=ROKS")
                     if twist_average:
                         logger.info("twist_average=True")
-                        kpt_grid = cell.make_kpts(kpt_grid)
-                        mf = pbcdft.kroks.KROKS(cell, kpt_grid)
+                        kpt_grid_m = cell.make_kpts(kpt_grid)
+                        mf = pbcdft.kroks.KROKS(cell, kpt_grid_m)
                     else:
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
@@ -197,7 +197,12 @@ class Pyscf_wrapper():
                 scf.addons.dynamic_level_shift_(mf, factor=level_shift_factor)
             # multi DFT grid in the density fitting
             if multigrid_fftdf:
-                mf.with_df = multigrid.MultiGridFFTDF(cell)
+                if twist_average:
+                        kpt_grid_m = cell.make_kpts(kpt_grid)
+                        mf.with_df = multigrid.MultiGridFFTDF(cell, kpts=kpt_grid_m)
+                else:
+                        kpt_m=cell.get_abs_kpts(scaled_kpts=[kpt])[0]
+                        mf.with_df = multigrid.MultiGridFFTDF(cell, kpts=kpt_m)
 
             # HF/DFT energy
             total_energy = mf.kernel()
