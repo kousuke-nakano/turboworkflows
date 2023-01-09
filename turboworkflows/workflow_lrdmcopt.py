@@ -303,6 +303,8 @@ class LRDMCopt_workflow(Workflow):
                         pickle.dump(lrdmcopt_genius, f)
                     with open(os.path.join(self.pkl_dir, self.lrdmcopt_pkl), "wb") as f:
                         pickle.dump(lrdmcopt_genius, f)
+                    with open(os.path.join(self.pkl_dir, self.lrdmcopt_latest_pkl), "wb") as f:
+                        pickle.dump(lrdmcopt_genius, f)
 
                 logger.info(f"LRDMCopt run ends for icont={icont}")
 
