@@ -362,14 +362,14 @@ def pyscf_to_trexio(
                 elif current_ang_mom >= 2:  # > d shell
 
                     # print("> d shell/permutation is needed.")
-                    print(
-                        "(pyscf) e.g., f3,-3(l=-3), f3,-2(l=-2), f3,-1(l=-1), \
-                            f3,0(l=0), f3,+1(l=+1), f3,+2(l=+2), f3,+3(l=+3)"
-                    )
-                    print(
-                        "(trexio) e.g, f3,0(l=0), f3,+1(l=+1), f3,-1(l=-1), \
-                            f3,+2(l=+2), f3,-2(l=-2), f3,+3(l=+3), f3,-3(l=-3)"
-                    )
+                    # print(
+                    #    "(pyscf) e.g., f3,-3(l=-3), f3,-2(l=-2), f3,-1(l=-1), \
+                    #        f3,0(l=0), f3,+1(l=+1), f3,+2(l=+2), f3,+3(l=+3)"
+                    # )
+                    # print(
+                    #    "(trexio) e.g, f3,0(l=0), f3,+1(l=+1), f3,-1(l=-1), \
+                    #        f3,+2(l=+2), f3,-2(l=-2), f3,+3(l=+3), f3,-3(l=-3)"
+                    # )
                     l0_index = int((multiplicity - 1) / 2)
                     reorder_index = [l0_index]
                     for i in range(1, int((multiplicity - 1) / 2) + 1):

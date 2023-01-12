@@ -60,8 +60,7 @@ class eWorkflow:
             logger.info("Project dir. has been generated.")
             logger.info("Skip copying input files.")
             logger.info(
-                "To start the workflow from scratch, \
-                    plz. delete the project dir."
+                "To start the workflow from scratch, plz. delete the project dir."
             )
         else:
             logger.info(f"eWorkflow={self.label} has not been launched.")

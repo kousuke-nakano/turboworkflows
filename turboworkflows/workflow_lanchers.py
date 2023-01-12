@@ -18,7 +18,7 @@ from turboworkflows.utils_turboworkflows.turboworkflows_env import (
 from turboworkflows.workflow_encapsulated import eWorkflow, Workflow
 
 try:
-    from turboworkflows._version.py import (
+    from turboworkflows._version import (
         version as turboworkflows_version,
     )
 except (ModuleNotFoundError, ImportError):
