@@ -1,4 +1,0 @@
-turbogenius    >= 0.0.2
-turbofilemanager  >= 0.0.1
-paradag        >= 1.2.0
-graphviz       >= 0.20.1
