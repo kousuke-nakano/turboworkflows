@@ -142,16 +142,13 @@ class LRDMC_workflow(Workflow):
                     os.path.join(self.lrdmc_dir, self.lrdmc_pkl)
                 ):
                     logger.info(
-                        f"{self.lrdmc_pkl} does not exist. \
-                            or lrdmc_rerun = .true."
+                        f"{self.lrdmc_pkl} does not exist. or lrdmc_rerun = .true."
                     )
 
                     if icont == 0:
                         self.lrdmc_continuation_flag = False
                         logger.info(
-                            f"Run test for estimating steps for achieving \
-                                the target error bar = \
-                                    {self.lrdmc_target_error_bar}"
+                            f"Run test for estimating steps for achieving the target error bar = {self.lrdmc_target_error_bar}"
                         )
                         # estimated necesary steps per optimization
                         # to achieve the target error bar.
@@ -161,14 +158,10 @@ class LRDMC_workflow(Workflow):
                             + self.lrdmc_bin_block * self.lrdmc_warmupblocks
                         ):
                             logger.warning(
-                                f"lrdmcsteps = {self.lrdmc_trial_steps} is too small! < \
-                                    40 * bin_block + bin_block * warmupblocks = \
-                                        {40 * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
+                                f"lrdmcsteps = {self.lrdmc_trial_steps} is too small! < 40 * bin_block + bin_block * warmupblocks = {40 * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
                             )
                             logger.warning(
-                                f"lrdmcsteps = {self.lrdmc_trial_steps} is set to \
-                                    40 * bin_block + bin_block * warmupblocks = \
-                                        {40 * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
+                                f"lrdmcsteps = {self.lrdmc_trial_steps} is set to 40 * bin_block + bin_block * warmupblocks = {40 * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
                             )
                             self.lrdmc_trial_steps = (
                                 40 * self.lrdmc_bin_block
@@ -192,14 +185,11 @@ class LRDMC_workflow(Workflow):
                             lrdmc_genius.energy_error,
                         )
                         logger.info(
-                            f"The errorbar of lrdmc energy {error:.5f} Ha \
-                                per mcmc step=\
-                                    {(mcmc_steps - self.lrdmc_bin_block * self.lrdmc_warmupblocks)}"
+                            f"The errorbar of lrdmc energy {error:.5f} Ha per mcmc step={(mcmc_steps - self.lrdmc_bin_block * self.lrdmc_warmupblocks)}"
                         )
                         if error < self.lrdmc_target_error_bar:
                             logger.warning(
-                                f"The target errorbar {self.lrdmc_target_error_bar} Ha \
-                                    has been already achieved!"
+                                f"The target errorbar {self.lrdmc_target_error_bar} Ha has been already achieved!"
                             )
                             logger.warning(
                                 "Exiting from the lrdmc continuation loop."
@@ -240,8 +230,7 @@ class LRDMC_workflow(Workflow):
                             f"The target error bar is {self.lrdmc_target_error_bar:.5f} Ha"
                         )
                         logger.info(
-                            f"The estimated steps to achieve the target error bar is \
-                                {lrdmc_steps_estimated_proper:d} steps"
+                            f"The estimated steps to achieve the target error bar is {lrdmc_steps_estimated_proper:d} steps"
                         )
 
                         estimated_time_for_1_generation = (
@@ -395,8 +384,7 @@ class LRDMC_workflow(Workflow):
                         f"LRDMC energy = {energy:.5f} +- {error:3f} Ha"
                     )
                     logger.info(
-                        f"estimated_time_for_1_generation = \
-                            {estimated_time_for_1_generation:.5f} sec"
+                        f"estimated_time_for_1_generation = {estimated_time_for_1_generation:.5f} sec"
                     )
                     self.output_values["energy"] = energy
                     self.output_values["error"] = error

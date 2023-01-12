@@ -156,8 +156,7 @@ class VMCopt_workflow(Workflow):
                     os.path.join(self.vmcopt_dir, self.vmcopt_pkl)
                 ):
                     logger.info(
-                        f"{self.vmcopt_pkl} does not exist. or \
-                            vmcopt_rerun = .true."
+                        f"{self.vmcopt_pkl} does not exist. or vmcopt_rerun = .true."
                     )
 
                     if icont == 0:

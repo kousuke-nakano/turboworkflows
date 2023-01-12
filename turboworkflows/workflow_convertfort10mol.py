@@ -171,8 +171,7 @@ class Convertfort10mol_workflow(Workflow):
                 os.path.join(self.pkl_dir, self.convertfort10mol_pkl)
             ):
                 logger.info(
-                    f"{self.convertfort10mol_pkl} does not \
-                        exist in {self.pkl_dir}."
+                    f"{self.convertfort10mol_pkl} does not exist in {self.pkl_dir}."
                 )
                 logger.info("job is running or fetch has not been done yet.")
                 # job waiting

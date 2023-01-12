@@ -160,22 +160,19 @@ class init_occ_workflow(Workflow):
             # here, specify how many MOs are used!!
             if self.mo_occ_thr == 0 and self.mo_num_conv == -1:  # default
                 logger.info(
-                    f"All eigenvalues of the MOs {len(self.mo_occ)} are used \
-                        for the LRDMC opt."
+                    f"All eigenvalues of the MOs {len(self.mo_occ)} are used for the LRDMC opt."
                 )
                 mo_index = list(range(len(self.mo_occ)))
             elif self.mo_occ_thr != 0 and self.mo_num_conv != -1:
                 logger.error(
-                    "mo_occ_thr and mo_num_conv options cannot \
-                        be used at the same time."
+                    "mo_occ_thr and mo_num_conv options cannot be used at the same time."
                 )
                 raise ValueError
             else:
                 if self.mo_occ_thr != 0:
                     mo_index = []
                     logger.info(
-                        f"eigenvalues of the MOs < \
-                            mo_occ_thr:{self.mo_occ_thr} will be used."
+                        f"eigenvalues of the MOs < mo_occ_thr:{self.mo_occ_thr} will be used."
                     )
                     for i in range(len(self.mo_occ)):
                         mo_index.append(i)
@@ -190,8 +187,7 @@ class init_occ_workflow(Workflow):
 
                 else:  # mo_num_conv != -1:
                     logger.info(
-                        f"eigenvalues of the MOs \
-                            mo_num_conv = {self.mo_num_conv} will be used."
+                        f"eigenvalues of the MOs mo_num_conv = {self.mo_num_conv} will be used."
                     )
                     mo_index = list(range(self.mo_num_conv))
 
@@ -214,7 +210,7 @@ class init_occ_workflow(Workflow):
 
             """ commented out for the time being
             for i in range(len(mo_index), len(self.mo_occ)):
-                logger.info(f"i={i}") 
+                logger.info(f"i={i}")
                 sym_const_num_list[i] = -1 * np.abs(sym_const_num_list[i])
                 coeff_real[i] = 0.0
             """

@@ -194,8 +194,7 @@ class LRDMC_ext_workflow(Workflow):
         # run LRDMC extrapolation
         os.chdir(self.lrdmc_dir)
         logger.info(
-            f"the polynomial degree for fitting of energies \
-                with respect to alat^2 is {self.degree_poly}"
+            f"the polynomial degree for fitting of energies with respect to alat^2 is {self.degree_poly}"
         )
         evsa_line = f"{self.degree_poly}  {len(self.lrdmc_alat_list)}  4  1\n"
         evsa_gnu_line = "# alat  energy  error\n"
@@ -243,8 +242,7 @@ class LRDMC_ext_workflow(Workflow):
         energy_ext = coeff_list[-1]
         error_ext = coeff_error_list[-1]
         logger.info(
-            f"Extrapolated LRDMC energy (a->0) = \
-                {energy_ext} Ha +- {error_ext} Ha"
+            f"Extrapolated LRDMC energy (a->0) = {energy_ext} Ha +- {error_ext} Ha"
         )
         self.output_values["energy"] = energy_ext
         self.output_values["error"] = error_ext
