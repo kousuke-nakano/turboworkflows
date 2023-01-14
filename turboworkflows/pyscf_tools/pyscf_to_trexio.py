@@ -557,7 +557,7 @@ def pyscf_to_trexio(
         if complex_flag:
             trexio.write_mo_coefficient(trexio_file, mo_coefficient_real)  #
             trexio.write_mo_coefficient_im(trexio_file, mo_coefficient_imag)  #
-            logger.info(mo_coefficient_imag)
+            # logger.debug(mo_coefficient_imag)
         else:
             trexio.write_mo_coefficient(trexio_file, mo_coefficient)  #
 

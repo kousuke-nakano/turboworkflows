@@ -265,6 +265,7 @@ class Makefort10_workflow(Workflow):
         all_electron_jas_basis_set=True,
         pseudo_potential=None,
         det_cut_basis_option=False,
+        det_exp_to_discard=0.00,
         jas_cut_basis_option=False,
         jastrow_type=-6,
         complex=False,
@@ -286,6 +287,7 @@ class Makefort10_workflow(Workflow):
         self.all_electron_jas_basis_set = all_electron_jas_basis_set
         self.pseudo_potential = pseudo_potential
         self.det_cut_basis_option = det_cut_basis_option
+        self.det_exp_to_discard = det_exp_to_discard
         self.jas_cut_basis_option = jas_cut_basis_option
         self.jastrow_type = jastrow_type
         self.complex = complex
@@ -334,6 +336,7 @@ class Makefort10_workflow(Workflow):
                 all_electron_jas_basis_set=self.all_electron_jas_basis_set,
                 pseudo_potential=self.pseudo_potential,
                 det_cut_basis_option=self.det_cut_basis_option,
+                det_exp_to_discard=self.det_exp_to_discard,
                 jas_cut_basis_option=self.jas_cut_basis_option,
                 jastrow_type=self.jastrow_type,
                 complex=self.complex,
