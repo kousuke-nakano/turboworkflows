@@ -41,6 +41,7 @@ class VMCopt_workflow(Workflow):
         vmcopt_target_error_bar=1.0e-3,  # Ha
         vmcopt_trial_optsteps=50,
         vmcopt_trial_steps=50,
+        vmcopt_minimum_blocks=3,
         vmcopt_production_optsteps=2000,
         vmcopt_optwarmupsteps_ratio=0.8,
         vmcopt_bin_block=1,
@@ -76,6 +77,7 @@ class VMCopt_workflow(Workflow):
         self.vmcopt_target_error_bar = vmcopt_target_error_bar
         self.vmcopt_trial_optsteps = vmcopt_trial_optsteps
         self.vmcopt_trial_steps = vmcopt_trial_steps
+        self.vmcopt_minimum_blocks = vmcopt_minimum_blocks
         self.vmcopt_production_optsteps = vmcopt_production_optsteps
         self.vmcopt_optwarmupsteps_ratio = vmcopt_optwarmupsteps_ratio
         self.vmcopt_bin_block = vmcopt_bin_block
@@ -164,6 +166,14 @@ class VMCopt_workflow(Workflow):
                         logger.info(
                             f"Run test for estimating steps for achieving the target error bar = {self.vmcopt_target_error_bar}"
                         )
+                        if (
+                            self.vmcopt_trial_steps
+                            <= self.vmcopt_bin_block * self.vmcopt_warmupblocks
+                        ):
+                            logger.error(
+                                "vmcopt_trial_steps <= vmcopt_bin_block * vmcopt_warmupblocks"
+                            )
+                            raise ValueError
                         vmcoptsteps = self.vmcopt_trial_optsteps
                         steps = self.vmcopt_trial_steps
 
@@ -210,13 +220,16 @@ class VMCopt_workflow(Workflow):
                         )
                         if (
                             vmcopt_steps_estimated_proper
-                            <= self.vmcopt_warmupblocks * self.vmcopt_bin_block
+                            < (
+                                self.vmcopt_minimum_blocks
+                                + self.vmcopt_warmupblocks
+                            )
+                            * self.vmcopt_bin_block
                         ):
                             vmcopt_steps_estimated_proper = (
-                                self.vmcopt_warmupblocks
-                                * self.vmcopt_bin_block
-                                + 2
-                            )  # the minimum nweight is 2.
+                                self.vmcopt_minimum_blocks
+                                + self.vmcopt_warmupblocks
+                            ) * self.vmcopt_bin_block
                             logger.warning(
                                 f"vmcopt_steps_estimated_proper is set to {vmcopt_steps_estimated_proper}"
                             )

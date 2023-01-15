@@ -45,6 +45,7 @@ class LRDMC_workflow(Workflow):
         lrdmc_trial_steps=150,
         lrdmc_bin_block=10,
         lrdmc_warmupblocks=5,
+        lrdmc_safe_trial_steps=True,
         lrdmc_correcting_factor=10,
         lrdmc_trial_etry=0.0,
         lrdmc_alat=-0.20,
@@ -71,6 +72,7 @@ class LRDMC_workflow(Workflow):
         self.lrdmc_trial_steps = lrdmc_trial_steps
         self.lrdmc_bin_block = lrdmc_bin_block
         self.lrdmc_warmupblocks = lrdmc_warmupblocks
+        self.lrdmc_safe_trial_steps = lrdmc_safe_trial_steps
         self.lrdmc_num_walkers = lrdmc_num_walkers
         self.lrdmc_correcting_factor = lrdmc_correcting_factor
         self.lrdmc_nonlocalmoves = lrdmc_nonlocalmoves
@@ -150,24 +152,39 @@ class LRDMC_workflow(Workflow):
                         logger.info(
                             f"Run test for estimating steps for achieving the target error bar = {self.lrdmc_target_error_bar}"
                         )
-                        # estimated necesary steps per optimization
-                        # to achieve the target error bar.
+
                         if (
                             self.lrdmc_trial_steps
-                            < 40 * self.lrdmc_bin_block
-                            + self.lrdmc_bin_block * self.lrdmc_warmupblocks
+                            <= self.lrdmc_bin_block * self.lrdmc_warmupblocks
                         ):
-                            logger.warning(
-                                f"lrdmcsteps = {self.lrdmc_trial_steps} is too small! < 40 * bin_block + bin_block * warmupblocks = {40 * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
+                            logger.error(
+                                f"lrdmcsteps = {self.lrdmc_trial_steps} is smaller than < bin_block * warmupblocks."
                             )
-                            logger.warning(
-                                f"lrdmcsteps = {self.lrdmc_trial_steps} is set to 40 * bin_block + bin_block * warmupblocks = {40 * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
-                            )
-                            self.lrdmc_trial_steps = (
-                                40 * self.lrdmc_bin_block
+                            raise ValueError
+
+                        # estimated necesary steps per optimization
+                        # to achieve the target error bar.
+                        if self.lrdmc_safe_trial_steps:
+                            lrdmc_minimum_trial_blocks = 40
+                            if (
+                                self.lrdmc_trial_steps
+                                < lrdmc_minimum_trial_blocks
+                                * self.lrdmc_bin_block
                                 + self.lrdmc_bin_block
                                 * self.lrdmc_warmupblocks
-                            )
+                            ):
+                                logger.warning(
+                                    f"lrdmcsteps = {self.lrdmc_trial_steps} is too small! < {lrdmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {lrdmc_minimum_trial_blocks * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
+                                )
+                                logger.warning(
+                                    f"lrdmcsteps = {self.lrdmc_trial_steps} is set to {lrdmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {lrdmc_minimum_trial_blocks * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
+                                )
+                                self.lrdmc_trial_steps = (
+                                    lrdmc_minimum_trial_blocks
+                                    * self.lrdmc_bin_block
+                                    + self.lrdmc_bin_block
+                                    * self.lrdmc_warmupblocks
+                                )
                         lrdmc_steps = self.lrdmc_trial_steps
 
                     else:

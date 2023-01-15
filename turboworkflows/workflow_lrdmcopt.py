@@ -41,6 +41,7 @@ class LRDMCopt_workflow(Workflow):
         lrdmcopt_target_error_bar=1.0e-3,  # Ha
         lrdmcopt_trial_optsteps=50,
         lrdmcopt_trial_steps=50,
+        lrdmcopt_minimum_blocks=3,
         lrdmcopt_production_optsteps=2000,
         lrdmcopt_optwarmupsteps_ratio=0.8,
         lrdmcopt_bin_block=1,
@@ -79,6 +80,7 @@ class LRDMCopt_workflow(Workflow):
         self.lrdmcopt_target_error_bar = lrdmcopt_target_error_bar
         self.lrdmcopt_trial_optsteps = lrdmcopt_trial_optsteps
         self.lrdmcopt_trial_steps = lrdmcopt_trial_steps
+        self.lrdmcopt_minimum_blocks = lrdmcopt_minimum_blocks
         self.lrdmcopt_production_optsteps = lrdmcopt_production_optsteps
         self.lrdmcopt_optwarmupsteps_ratio = lrdmcopt_optwarmupsteps_ratio
         self.lrdmcopt_bin_block = lrdmcopt_bin_block
@@ -172,6 +174,15 @@ class LRDMCopt_workflow(Workflow):
                         logger.info(
                             f"Run test for estimating steps for achieving the target error bar = {self.lrdmcopt_target_error_bar}"
                         )
+                        if (
+                            self.lrdmcopt_trial_steps
+                            <= self.lrdmcopt_bin_block
+                            * self.lrdmcopt_warmupblocks
+                        ):
+                            logger.error(
+                                "lrdmcopt_trial_steps <= lrdmcopt_bin_block * lrdmcopt_warmupblocks"
+                            )
+                            raise ValueError
                         lrdmcoptsteps = self.lrdmcopt_trial_optsteps
                         steps = self.lrdmcopt_trial_steps
 
@@ -221,14 +232,16 @@ class LRDMCopt_workflow(Workflow):
                         )
                         if (
                             lrdmcopt_steps_estimated_proper
-                            <= self.lrdmcopt_warmupblocks
+                            < (
+                                self.lrdmcopt_warmupblocks
+                                + self.lrdmcopt_minimum_blocks
+                            )
                             * self.lrdmcopt_bin_block
                         ):
                             lrdmcopt_steps_estimated_proper = (
                                 self.lrdmcopt_warmupblocks
-                                * self.lrdmcopt_bin_block
-                                + 2
-                            )  # the minimum nweight is 2.
+                                + self.lrdmcopt_minimum_blocks
+                            ) * self.lrdmcopt_bin_block
                             logger.warning(
                                 f"lrdmcopt_steps_estimated_proper is set to {lrdmcopt_steps_estimated_proper}"
                             )
@@ -420,7 +433,10 @@ class LRDMCopt_workflow(Workflow):
                         os.path.join(self.pkl_dir, self.lrdmcopt_pkl), "wb"
                     ) as f:
                         pickle.dump(lrdmcopt_genius, f)
-                    with open(os.path.join(self.pkl_dir, self.lrdmcopt_latest_pkl), "wb") as f:
+                    with open(
+                        os.path.join(self.pkl_dir, self.lrdmcopt_latest_pkl),
+                        "wb",
+                    ) as f:
                         pickle.dump(lrdmcopt_genius, f)
 
                 logger.info(f"LRDMCopt run ends for icont={icont}")

@@ -41,6 +41,7 @@ class VMC_workflow(Workflow):
         vmc_pkl_name="vmc_genius",
         vmc_target_error_bar=2.0e-5,  # Ha
         vmc_trial_steps=150,
+        vmc_safe_trial_steps=True,
         vmc_bin_block=10,
         vmc_warmupblocks=5,
         vmc_num_walkers=-1,  # default -1 -> num of MPI process.
@@ -63,6 +64,7 @@ class VMC_workflow(Workflow):
         self.vmc_pkl_name = vmc_pkl_name
         self.vmc_target_error_bar = vmc_target_error_bar
         self.vmc_trial_steps = vmc_trial_steps
+        self.vmc_safe_trial_steps = vmc_safe_trial_steps
         self.vmc_bin_block = vmc_bin_block
         self.vmc_warmupblocks = vmc_warmupblocks
         self.vmc_num_walkers = vmc_num_walkers
@@ -139,22 +141,37 @@ class VMC_workflow(Workflow):
                         logger.info(
                             f"Run test for estimating steps for achieving the target error bar = {self.vmc_target_error_bar}"
                         )
-                        # estimated necesary steps per optimization to achieve the target error bar.
+
                         if (
                             self.vmc_trial_steps
-                            < 40 * self.vmc_bin_block
-                            + self.vmc_bin_block * self.vmc_warmupblocks
+                            <= self.vmc_bin_block * self.vmc_warmupblocks
                         ):
-                            logger.warning(
-                                f"vmcsteps = {self.vmc_trial_steps} is too small! < 40 * bin_block + bin_block * warmupblocks = {40 * self.vmc_bin_block + self.vmc_bin_block * self.vmc_warmupblocks}"
+                            logger.error(
+                                f"vmcsteps = {self.vmc_trial_steps} is smaller than < bin_block * warmupblocks."
                             )
-                            logger.warning(
-                                f"vmcsteps = {self.vmc_trial_steps} is set to 40 * bin_block + bin_block * warmupblocks = {40 * self.vmc_bin_block + self.vmc_bin_block * self.vmc_warmupblocks}"
-                            )
-                            self.vmc_trial_steps = (
-                                40 * self.vmc_bin_block
+                            raise ValueError
+
+                        # estimated necesary steps per optimization to achieve the target error bar.
+                        if self.vmc_safe_trial_steps:
+                            vmc_minimum_trial_blocks = 40
+                            if (
+                                self.vmc_trial_steps
+                                < vmc_minimum_trial_blocks * self.vmc_bin_block
                                 + self.vmc_bin_block * self.vmc_warmupblocks
-                            )
+                            ):
+                                logger.warning(
+                                    f"vmcsteps = {self.vmc_trial_steps} is too small! < {vmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {vmc_minimum_trial_blocks * self.vmc_bin_block + self.vmc_bin_block * self.vmc_warmupblocks}"
+                                )
+                                logger.warning(
+                                    f"vmcsteps = {self.vmc_trial_steps} is set to {vmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {vmc_minimum_trial_blocks * self.vmc_bin_block + self.vmc_bin_block * self.vmc_warmupblocks}"
+                                )
+                                self.vmc_trial_steps = (
+                                    vmc_minimum_trial_blocks
+                                    * self.vmc_bin_block
+                                    + self.vmc_bin_block
+                                    * self.vmc_warmupblocks
+                                )
+
                         vmc_steps = self.vmc_trial_steps
 
                     else:
