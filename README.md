@@ -23,14 +23,18 @@ One can manage any job of `TurboRVB` on python scripts, or on your terminal usin
 
 Installing from source
 
-    git clone git@git-scm.sissa.it:sorella/turbo_workflows.git
+    git clone https://github.com/kousuke-nakano/turboworkflows
     cd turboworkflows
     pip install -e . or pip install .
 
 # Examples
 Examples are in the `examples` directory.
 
-# Documentation
+# Documentation for users
+You can readily understand how to use `turboworkflows` by looking at the sample python scripts in the example directory. 
+You can also see our tutorials [https://github.com/kousuke-nakano/turbotutorials].
+
+# Documentation for developers
 There is a Read the Docs in the `docs` directory, but still in progress.
 You can generate a html file using `sphinx`. Go to the `docs` directory, 
 and type `make html`. The document is generated in `docs/_build/html`.
