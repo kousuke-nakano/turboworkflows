@@ -48,22 +48,16 @@ and type `make html`. The document is generated in `docs/_build/html`.
 
 Work on the development or on a new branch
 
-.. code-block:: console
-
     git merge <new branch> development # if you work on a new branch.
     git push origin development
 
 Check the next-version version
-
-.. code-block:: console
 
     # Confirm the version number via `setuptools-scm`
     python -m setuptools_scm
     e.g., 1.1.4.dev28+gceef293.d20221123 -> <next-version> = v1.1.4 or v1.1.4-alpha(for pre-release)
 
 Add and push with the new tag
-
-.. code-block:: console
 
     # Push with tag
     git tag <next-version>  # e.g., git tag v1.1.4  # Do not forget "v" before the version number!
