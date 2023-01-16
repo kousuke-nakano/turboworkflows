@@ -131,3 +131,6 @@ dmypy.json
 
 # MAC
 .DS_Store
+
+# setup tools
+_version.py
