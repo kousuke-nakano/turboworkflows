@@ -2,12 +2,7 @@
 
 <img src="logo/turboworkflows_logo.jpg" width="70%">
 
-|license| |release| |fork| |stars|
-
-.. |license| image:: https://img.shields.io/github/license/kousuke-nakano/turboworkflows
-.. |release| image:: https://img.shields.io/github/release/kousuke-nakano/turboworkflows/all.svg
-.. |fork| image:: https://img.shields.io/github/forks/kousuke-nakano/turboworkflows?style=social
-.. |stars| image:: https://img.shields.io/github/stars/kousuke-nakano/turboworkflows?style=social
+![license](https://img.shields.io/github/license/kousuke-nakano/turboworkflows) ![release](https://img.shields.io/github/release/kousuke-nakano/turboworkflows/all.svg) ![fork](https://img.shields.io/github/forks/kousuke-nakano/turboworkflows?style=social) ![stars](https://img.shields.io/github/stars/kousuke-nakano/turboworkflows?style=social)
 
 `TurboWorkflows` is a python package realizing high-throuput quantum Monte Carlo calculations with the SISSA ab-initio quantum Monte Carlo code, `TurboRVB`.
 
