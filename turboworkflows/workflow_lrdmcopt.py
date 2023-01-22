@@ -50,6 +50,7 @@ class LRDMCopt_workflow(Workflow):
         lrdmcopt_learning_rate=0.002,
         lrdmcopt_regularization=0.001,
         lrdmcopt_alat=-0.20,
+        lrdmcopt_time_branching=0.10,
         lrdmcopt_trial_etry=0.0,
         lrdmcopt_nonlocalmoves="dlatm",  # tmove, dla, dlatm
         lrdmcopt_onebody=False,
@@ -89,6 +90,7 @@ class LRDMCopt_workflow(Workflow):
         self.lrdmcopt_learning_rate = lrdmcopt_learning_rate
         self.lrdmcopt_regularization = lrdmcopt_regularization
         self.lrdmcopt_alat = lrdmcopt_alat
+        self.lrdmcopt_time_branching = lrdmcopt_time_branching
         self.lrdmcopt_trial_etry = lrdmcopt_trial_etry
         self.lrdmcopt_nonlocalmoves = lrdmcopt_nonlocalmoves
         self.lrdmcopt_onebody = lrdmcopt_onebody
@@ -271,6 +273,7 @@ class LRDMCopt_workflow(Workflow):
                         learning_rate=self.lrdmcopt_learning_rate,
                         regularization=self.lrdmcopt_regularization,
                         alat=self.lrdmcopt_alat,
+                        time_branching=self.lrdmcopt_time_branching,
                         etry=self.lrdmcopt_trial_etry,
                         nonlocalmoves=self.lrdmcopt_nonlocalmoves,
                         opt_onebody=self.lrdmcopt_onebody,
