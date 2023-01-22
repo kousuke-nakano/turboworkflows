@@ -52,6 +52,7 @@ class LRDMC_ext_workflow(Workflow):
         lrdmc_correcting_factor=10,
         lrdmc_trial_etry=0.0,
         lrdmc_alat_list=[-0.20, -0.30, -0.40],
+        lrdmc_time_branching=0.10,
         lrdmc_nonlocalmoves="dlatm",  # tmove, dla, dlatm
         lrdmc_num_walkers=-1,  # default -1 -> num of MPI process.
         lrdmc_twist_average=False,
@@ -82,6 +83,7 @@ class LRDMC_ext_workflow(Workflow):
         self.lrdmc_nonlocalmoves = lrdmc_nonlocalmoves
         self.lrdmc_trial_etry = lrdmc_trial_etry
         self.lrdmc_alat_list = lrdmc_alat_list
+        self.lrdmc_time_branching = lrdmc_time_branching
         self.lrdmc_twist_average = lrdmc_twist_average
         self.lrdmc_kpoints = lrdmc_kpoints
         self.lrdmc_force_calc_flag = lrdmc_force_calc_flag
@@ -169,6 +171,7 @@ class LRDMC_ext_workflow(Workflow):
                 lrdmc_nonlocalmoves=self.lrdmc_nonlocalmoves,
                 lrdmc_trial_etry=self.lrdmc_trial_etry,
                 lrdmc_alat=lrdmc_alat,
+                lrdmc_time_branching=self.lrdmc_time_branching,
                 lrdmc_twist_average=self.lrdmc_twist_average,
                 lrdmc_kpoints=self.lrdmc_kpoints,
                 lrdmc_force_calc_flag=self.lrdmc_force_calc_flag,
