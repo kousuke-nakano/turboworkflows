@@ -131,19 +131,20 @@ class LRDMC_ext_workflow(Workflow):
             # check file/dir consistencies
             for file in self.lrdmc_input_files:
                 if os.path.isfile(file):
-                    assert filecmp.cmp(
+                    if not filecmp.cmp(
                         os.path.join(self.lrdmc_dir, os.path.basename(file)),
                         os.path.join(alat_dir, os.path.basename(file)),
                         shallow=True,
-                    )
+                        ):
+                        logger.warning(f"{os.path.join(self.lrdmc_dir, os.path.basename(file))} is not consistent with {os.path.join(alat_dir, os.path.basename(file))}")
                 else:
                     dircmp = filecmp.dircmp(
                         os.path.join(self.lrdmc_dir, os.path.basename(file)),
                         os.path.join(alat_dir, os.path.basename(file)),
                         shallow=True,
                     )
-                    assert len(dircmp.left_only) == 0
-                    assert len(dircmp.right_only) == 0
+                    if not len(dircmp.left_only) == 0 or len(dircmp.right_only) == 0:
+                        logger.warning(f"{os.path.join(self.lrdmc_dir, os.path.basename(file))} is not consistent with {os.path.join(alat_dir, os.path.basename(file))}")
 
             os.chdir(alat_dir)
             # await asyncio.sleep(60)
