@@ -41,6 +41,11 @@ def pyscf_to_trexio(
     mol = scf.chkfile.load_mol(pyscf_checkfile)
     mf = scf.chkfile.load(pyscf_checkfile, "scf")
 
+    # symmetry-imposed calculation is not supported yet.
+    if mol.symmetry:
+        logger.error("symmetry-imposed calculation is not supported yet.")
+        raise NotImplementedError
+
     # PBC info
     try:
         mol.a
@@ -159,6 +164,7 @@ def pyscf_to_trexio(
         chemical_symbol_list = [
             mol.atom_pure_symbol(i) for i in range(mol.natm)
         ]
+        atom_symbol_list = [mol.atom_symbol(i) for i in range(mol.natm)]
         coords_np = mol.atom_coords(unit="Bohr")
 
         ##########################################
@@ -230,7 +236,11 @@ def pyscf_to_trexio(
         ##########################################
         # ao info
         ##########################################
-        ao_cartesian = 0  # spherical basis representation
+        # to be fixed!! for Victor case mol.cart is false, but the basis seems cartesian...
+        if mol.cart:
+            ao_cartesian = 99999
+        else:
+            ao_cartesian = 0  # spherical basis representation
         ao_shell = []
         for i, ang_mom in enumerate(shell_ang_mom):
             for _ in range(2 * ang_mom + 1):
@@ -592,7 +602,7 @@ def pyscf_to_trexio(
         # As a default, nwchem does not have a redundant non-local term
         # (i.e., coeff=0) for H and He.
 
-        if len(mol._ecp) > 0:
+        if len(mol._ecp) > 0:  # to be fixed!! for Victor case
 
             ecp_num = 0
             ecp_max_ang_mom_plus_1 = []
@@ -603,27 +613,20 @@ def pyscf_to_trexio(
             ecp_exponent = []
             ecp_power = []
 
-            for nuc_index, chemical_symbol in enumerate(chemical_symbol_list):
-                # print(f"Chemical symbol is {chemical_symbol}")
-                z_core, ecp_list = mol._ecp[chemical_symbol]
+            for nuc_index, (chemical_symbol, atom_symbol) in enumerate(
+                zip(chemical_symbol_list, atom_symbol_list)
+            ):
+
+                # atom_symbol is superior to atom_pure_symbol!!
+                try:
+                    z_core, ecp_list = mol._ecp[atom_symbol]
+                except KeyError:
+                    z_core, ecp_list = mol._ecp[chemical_symbol]
 
                 # ecp zcore
                 ecp_z_core.append(z_core)
 
-                # max_ang_mom+1
-                """ wrong!!
-                max_ang_mom_minus_1 = max([ecp[0] for ecp in ecp_list])
-                if max_ang_mom_minus_1 == -1:
-                    # special case!! H and He.
-                    # PySCF database does not define the ul-s part for them.
-                    max_ang_mom = 1
-                    max_ang_mom_plus_1 = 2
-                else:
-                    max_ang_mom = max_ang_mom_minus_1 + 1
-                    max_ang_mom_plus_1 = max_ang_mom_minus_1 + 2
-                ecp_max_ang_mom_plus_1.append(max_ang_mom_plus_1)
-                """
-
+                # max_ang_mom
                 max_ang_mom = max(
                     [ecp[0] for ecp in ecp_list]
                 )  # this is lmax, right?
@@ -685,7 +688,7 @@ def cli():
     from logging import getLogger, StreamHandler, Formatter
 
     log_level = "INFO"
-    logger = getLogger("pyscf-trexio")
+    logger = getLogger("Turbo-Genius")
     logger.setLevel(log_level)
     stream_handler = StreamHandler()
     stream_handler.setLevel(log_level)
