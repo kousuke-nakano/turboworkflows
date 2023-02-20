@@ -4,15 +4,15 @@
 # python packages
 import os
 import pickle
-import glob
 import asyncio
+import glob
 import pathlib
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
 
 # turbo-genius packages
-from turbogenius.prep_genius import DFT_genius
+from turbogenius.convertfort10_genius import Convertfort10_genius
 
 # jobmanager
 from turbofilemanager.job_manager import Job_submission
@@ -23,7 +23,8 @@ from turboworkflows.workflow_encapsulated import Workflow
 logger = getLogger("Turbo-Workflows").getChild(__name__)
 
 
-class DFT_workflow(Workflow):
+# convertfort10
+class Convertfort10_workflow(Workflow):
     def __init__(
         self,
         # job
@@ -34,23 +35,14 @@ class DFT_workflow(Workflow):
         version="stable",
         sleep_time=1800,  # sec.
         jobpkl_name="job_manager",
-        # prep
-        dft_rerun=False,
-        dft_pkl_name="prep",
-        dft_grid_size=[0.1, 0.1, 0.1],
-        dft_lbox=[15.0, 15.0, 15.0],
-        dft_smearing=0.0,
-        dft_maxtime=172800,
-        dft_memlarge=False,
-        dft_maxit=50,
-        dft_conv_thr=1.0e-5,
-        dft_h_field=0.0,
-        dft_magnetic_moment_list=[],
-        dft_xc="lda",  # lda or lsda
-        dft_twist_average=False,
-        dft_independent_kpoints=False,
-        dft_kpoints=[1, 1, 1, 0, 0, 0],
+        # convertfort10
+        convertfort10_rerun=False,
+        convertfort10_pkl_name="convertfort10_genius",
+        in_fort10: str = "fort.10_in",
+        out_fort10: str = "fort.10_out",
+        grid_size: float = 0.10,
     ):
+
         # job
         self.server_machine_name = server_machine_name
         self.cores = cores
@@ -59,22 +51,13 @@ class DFT_workflow(Workflow):
         self.version = version
         self.sleep_time = sleep_time
         self.jobpkl_name = jobpkl_name
-        # dft
-        self.dft_rerun = dft_rerun
-        self.dft_pkl_name = dft_pkl_name
-        self.dft_grid_size = dft_grid_size
-        self.dft_lbox = dft_lbox
-        self.dft_smearing = dft_smearing
-        self.dft_maxtime = dft_maxtime
-        self.dft_memlarge = dft_memlarge
-        self.dft_maxit = dft_maxit
-        self.dft_conv_thr = dft_conv_thr
-        self.dft_h_field = dft_h_field
-        self.dft_magnetic_moment_list = dft_magnetic_moment_list
-        self.dft_xc = dft_xc
-        self.dft_twist_average = dft_twist_average
-        self.dft_independent_kpoints = dft_independent_kpoints
-        self.dft_kpoints = dft_kpoints
+        # convertfort10
+        self.convertfort10_rerun = convertfort10_rerun
+        self.convertfort10_pkl_name = convertfort10_pkl_name
+        self.in_fort10 = in_fort10
+        self.out_fort10 = out_fort10
+        self.grid_size = grid_size
+
         # return values
         self.status = "init"
         self.output_files = []
@@ -89,59 +72,41 @@ class DFT_workflow(Workflow):
         self.jobpkl = f"{self.jobpkl_name}.pkl"
 
         # ******************
-        # dft
+        # convertfort10
         # ******************
         os.chdir(self.root_dir)
-        self.dft_dir = os.path.join(self.root_dir)
-        self.pkl_dir = os.path.join(self.dft_dir, "pkl")
-        logger.info(f"Project root dir = {self.dft_dir}")
-        self.dft_pkl = f"{self.dft_pkl_name}.pkl"
+        self.convertfort10_dir = os.path.join(self.root_dir)
+        self.pkl_dir = os.path.join(self.convertfort10_dir, "pkl")
+        logger.info(f"Project root dir = {self.convertfort10_dir}")
+        self.convertfort10_pkl = f"{self.convertfort10_pkl_name}.pkl"
 
-        if self.dft_rerun or not os.path.isfile(
-            os.path.join(self.pkl_dir, self.dft_pkl)
+        if self.convertfort10_rerun or not os.path.isfile(
+            os.path.join(self.pkl_dir, self.convertfort10_pkl)
         ):
-            logger.info("Start: DFT calculation")
+            logger.info("Start: convertfort10")
             os.makedirs(self.pkl_dir, exist_ok=True)
-            os.chdir(self.dft_dir)
+            os.chdir(self.convertfort10_dir)
+            self.input_file = "convertfort10.input"
+            self.output_file = "out_mol"
 
-            self.input_file = "prep.input"
-            self.output_file = "out_prep"
-
-            ####
-            # run part
-            ####
-            if self.dft_rerun or not os.path.isfile(
-                os.path.join(self.dft_dir, self.dft_pkl)
+            if self.convertfort10_rerun or not os.path.isfile(
+                os.path.join(self.convertfort10_dir, self.convertfort10_pkl)
             ):
-                logger.info(
-                    f"{self.dft_pkl} does not exist. or dft_rerun = .true."
+
+                convertfort10_genius = Convertfort10_genius(
+                    in_fort10=self.in_fort10,
+                    out_fort10=self.out_fort10,
+                    grid_size=self.grid_size,
                 )
 
-                # generate a DFT instance
-                dft_genius = DFT_genius(
-                    grid_size=self.dft_grid_size,
-                    lbox=self.dft_lbox,
-                    smearing=self.dft_smearing,
-                    maxtime=self.dft_maxtime,
-                    memlarge=self.dft_memlarge,
-                    maxit=self.dft_maxit,
-                    epsdft=self.dft_conv_thr,
-                    h_field=self.dft_h_field,
-                    magnetic_moment_list=self.dft_magnetic_moment_list,
-                    xc=self.dft_xc,
-                    twist_average=self.dft_twist_average,
-                    independent_kpoints=self.dft_independent_kpoints,
-                    kpoints=self.dft_kpoints,
-                )
-
-                dft_genius.generate_input(input_name=self.input_file)
+                convertfort10_genius.generate_input(input_name=self.input_file)
 
                 # binary set
                 if self.cores == self.openmp:
-                    binary = "prep-serial.x"
+                    binary = "convertfort10.x"
                     nompi = True
                 else:
-                    binary = "prep-mpi.x"
+                    binary = "convertfort10-mpi.x"
                     nompi = False
 
                 # Job submission by the job-manager package
@@ -170,30 +135,40 @@ class DFT_workflow(Workflow):
                     logger.info("Waiting for submission")
                     # time.sleep(self.sleep_time)
                     await asyncio.sleep(self.sleep_time)
-                    os.chdir(self.dft_dir)
+                    os.chdir(self.convertfort10_dir)
                     job_submission_flag, job_number = job.job_submit(
                         submission_script="submit.sh"
                     )
                 logger.info("Job submitted.")
 
-                with open(os.path.join(self.dft_dir, self.dft_pkl), "wb") as f:
-                    pickle.dump(dft_genius, f)
+                with open(
+                    os.path.join(
+                        self.convertfort10_dir, self.convertfort10_pkl
+                    ),
+                    "wb",
+                ) as f:
+                    pickle.dump(convertfort10_genius, f)
 
             else:
-                logger.info(f"{self.dft_pkl} exists.")
+                logger.info(f"{self.convertfort10_pkl} exists.")
                 with open(self.jobpkl, "rb") as f:
                     job = pickle.load(f)
-                with open(os.path.join(self.dft_dir, self.dft_pkl), "rb") as f:
-                    dft_genius = pickle.load(f)
+                with open(
+                    os.path.join(
+                        self.convertfort10_dir, self.convertfort10_pkl
+                    ),
+                    "rb",
+                ) as f:
+                    convertfort10_genius = pickle.load(f)
 
             ####
             # Fetch part
             ####
-            if self.dft_rerun or not os.path.isfile(
-                os.path.join(self.pkl_dir, self.dft_pkl)
+            if self.convertfort10_rerun or not os.path.isfile(
+                os.path.join(self.pkl_dir, self.convertfort10_pkl)
             ):
                 logger.info(
-                    f"{self.dft_pkl} does not exist in {self.pkl_dir}."
+                    f"{self.convertfort10_pkl} does not exist in {self.pkl_dir}."
                 )
                 logger.info("job is running or fetch has not been done yet.")
                 # job waiting
@@ -204,47 +179,41 @@ class DFT_workflow(Workflow):
                     )
                     # time.sleep(self.sleep_time)
                     await asyncio.sleep(self.sleep_time)
-                    os.chdir(self.dft_dir)
+                    os.chdir(self.convertfort10_dir)
                     job_running = job.jobcheck()
                 logger.info("Job finished.")
                 # job fecth
                 logger.info("Fetch files.")
-                fetch_files = [
-                    self.output_file,
-                    "occupationlevels.dat",
-                    "EDFT_vsk.dat",
-                ]
+                fetch_files = [self.output_file, "fort.10_new"]
                 exclude_files = []
-                if self.dft_twist_average:
-                    fetch_files += ["kp_info.dat", "turborvb.scratch"]
-                    exclude_files += ["kelcont*", "randseed*"]
-                else:
-                    fetch_files += ["fort.10_new"]
                 job.fetch_job(
                     from_objects=fetch_files, exclude_list=exclude_files
                 )
                 logger.info("Fetch finished.")
 
-                self.output_values["energy"] = None
-                self.output_values["error"] = None
+                with open(
+                    os.path.join(
+                        self.convertfort10_dir, self.convertfort10_pkl
+                    ),
+                    "wb",
+                ) as f:
+                    pickle.dump(convertfort10_genius, f)
+                with open(
+                    os.path.join(self.pkl_dir, self.convertfort10_pkl), "wb"
+                ) as f:
+                    pickle.dump(convertfort10_genius, f)
 
-                with open(os.path.join(self.dft_dir, self.dft_pkl), "wb") as f:
-                    pickle.dump(dft_genius, f)
-                with open(os.path.join(self.pkl_dir, self.dft_pkl), "wb") as f:
-                    pickle.dump(dft_genius, f)
-
-            os.chdir(self.root_dir)
+                os.chdir(self.root_dir)
 
         else:
-            logger.info("Skip: DFT calculation")
-            self.dft_pkl = f"{self.dft_pkl_name}.pkl"
-            with open(os.path.join(self.pkl_dir, self.dft_pkl), "rb") as f:
-                dft_genius = pickle.load(f)
-            energy, error = None, None
-            self.output_values["energy"] = energy
-            self.output_values["error"] = error
+            logger.info("Skip: convertfort10")
+            self.convertfort10_pkl = f"{self.convertfort10_pkl_name}.pkl"
+            with open(
+                os.path.join(self.pkl_dir, self.convertfort10_pkl), "rb"
+            ) as f:
+                convertfort10_genius = pickle.load(f)
 
-        logger.info("DFT workflow ends.")
+        logger.info("End: convertfort10 workflow ends.")
         os.chdir(self.root_dir)
 
         self.status = "success"
@@ -268,4 +237,5 @@ if __name__ == "__main__":
     )
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
+
     # moved to examples

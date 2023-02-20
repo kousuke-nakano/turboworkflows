@@ -35,10 +35,10 @@ class PySCF_workflow(Workflow):
         structure_file,
         trexio_filename="trexio.hdf5",
         # job
-        server_machine_name="fugaku",
-        cores=9216,
+        server_machine_name="localhost",
+        cores=1,
         openmp=1,
-        queue="small",
+        queue="NA",
         version="stable",
         sleep_time=1800,  # sec.
         jobpkl_name="job_manager",
