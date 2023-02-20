@@ -67,6 +67,7 @@ class Pyscf_wrapper:
         level_shift_factor=0.0,
         charge=0,
         spin=0,
+        spin_restricted=True,
         basis="ccecp-ccpvtz",
         ecp="ccecp",
         scf_method="HF",  # HF or DFT
@@ -142,13 +143,17 @@ class Pyscf_wrapper:
                         mf = pbcscf.hf.RHF(
                             cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0]
                         )
-                # ROHF calculation
+                # UHF or ROHF calculation
                 else:
-                    logger.info("HF kernel=ROHF")
                     if twist_average:
                         logger.info("twist_average=True")
                         kpt_grid_m = cell.make_kpts(kpt_grid)
-                        mf = pbcscf.krohf.KROHF(cell, kpt_grid_m)
+                        if spin_restricted:
+                            logger.info("HF kernel=ROHF")
+                            mf = pbcscf.krohf.KROHF(cell, kpt_grid_m)
+                        else:
+                            logger.info("HF kernel=UHF")
+                            raise NotImplementedError
                     else:
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
@@ -156,9 +161,18 @@ class Pyscf_wrapper:
                             f"abs kpt = \
                                 {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}"
                         )
-                        mf = pbcscf.rohf.ROHF(
-                            cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0]
-                        )
+                        if spin_restricted:
+                            logger.info("HF kernel=ROHF")
+                            mf = pbcscf.rohf.ROHF(
+                                cell,
+                                kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0],
+                            )
+                        else:
+                            logger.info("HF kernel=UHF")
+                            mf = pbcscf.uhf.UHF(
+                                cell,
+                                kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0],
+                            )
 
             elif scf_method == "DFT":
                 # DFT calculation
@@ -180,11 +194,15 @@ class Pyscf_wrapper:
                         )
                 # RODFT calculation
                 else:
-                    logger.info("DFT kernel=ROKS")
                     if twist_average:
                         logger.info("twist_average=True")
                         kpt_grid_m = cell.make_kpts(kpt_grid)
-                        mf = pbcdft.kroks.KROKS(cell, kpt_grid_m)
+                        if spin_restricted:
+                            logger.info("DFT kernel=ROKS")
+                            mf = pbcdft.kroks.KROKS(cell, kpt_grid_m)
+                        else:
+                            logger.info("DFT kernel=UKS")
+                            raise NotImplementedError
                     else:
                         logger.info("twist_average=False")
                         logger.info(f"kpt={kpt}")
@@ -192,9 +210,18 @@ class Pyscf_wrapper:
                             f"abs kpt = \
                                 {cell.get_abs_kpts(scaled_kpts=[kpt])[0]}"
                         )
-                        mf = pbcdft.roks.ROKS(
-                            cell, kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0]
-                        )
+                        if spin_restricted:
+                            logger.info("DFT kernel=ROKS")
+                            mf = pbcdft.roks.ROKS(
+                                cell,
+                                kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0],
+                            )
+                        else:
+                            logger.info("DFT kernel=UKS")
+                            mf = pbcdft.uks.UKS(
+                                cell,
+                                kpt=cell.get_abs_kpts(scaled_kpts=[kpt])[0],
+                            )
                 # xc
                 mf.xc = dft_xc
 
@@ -303,18 +330,28 @@ class Pyscf_wrapper:
                     logger.info("HF kernel=RHF")
                     mf = scf.RHF(mol)
                 else:
-                    # ROHF
-                    logger.info("HF kernel=ROHF")
-                    mf = scf.ROHF(mol)
+                    if spin_restricted:
+                        # ROHF
+                        logger.info("HF kernel=ROHF")
+                        mf = scf.ROHF(mol)
+                    else:
+                        # UHF
+                        logger.info("HF kernel=UHF")
+                        mf = scf.UHF(mol)
             elif scf_method == "DFT":
                 # DFT calculation
                 if mol.spin == 0:
                     logger.info("DFT kernel=RKS")
                     mf = scf.KS(mol).density_fit()
                 else:
-                    logger.info("DFT kernel=ROKS")
-                    # ROKS
-                    mf = scf.ROKS(mol)
+                    if spin_restricted:
+                        # ROKS
+                        logger.info("DFT kernel=ROKS")
+                        mf = scf.ROKS(mol)
+                    else:
+                        # UKS
+                        logger.info("DFT kernel=UKS")
+                        mf = scf.UKS(mol)
                 # xc
                 mf.xc = dft_xc
             else:
@@ -358,7 +395,6 @@ class Pyscf_wrapper:
             logger.info("HF/DFT calculation is done.")
 
             # MP2 part
-
             if MP2_flag:
                 # MP2 calculation
                 logger.info("MP2_flag is True.")
@@ -368,22 +404,45 @@ class Pyscf_wrapper:
                 # construct the one body density matrix
                 rdm1 = pt.make_rdm1()
 
-                # diagonalize to yield the NOs and NO occupation #s
-                no_occ, no = scipy.linalg.eigh(rdm1)
-                no_occ = no_occ[::-1]
-                no = no[:, ::-1]
+                if spin_restricted:
+                    # diagonalize to yield the NOs and NO occupation #s
+                    no_occ, no = scipy.linalg.eigh(rdm1)
+                    no_occ = no_occ[::-1]
+                    no = no[:, ::-1]
 
-                # atomic orbital representation of the NO
-                no_coeff = mf.mo_coeff.dot(no)
+                    # atomic orbital representation of the NO
+                    no_coeff = mf.mo_coeff.dot(no)
 
-                # Molecular orbital and occupations
-                # overwrite the HF/DFT ones!!!
-                logger.warning("The HF/DFT MOs and occ. are overwritten!!")
-                mf.mo_coeff = no_coeff  # natural coeff
-                mf.mo_occ = no_occ  # natural orbital
-                mf.mo_energy = [0.0] * len(
-                    mf.mo_energy
-                )  # orbital energy is not defined. So, they are set to 0.0
+                    # Molecular orbital and occupations
+                    # overwrite the HF/DFT ones!!!
+                    logger.warning("The HF/DFT MOs and occ. are overwritten!!")
+                    mf.mo_coeff = no_coeff  # natural coeff
+                    mf.mo_occ = no_occ  # natural orbital
+                    mf.mo_energy = [0.0] * len(
+                        mf.mo_energy
+                    )  # orbital energy is not defined. So, they are set to 0.0
+                else:
+                    up = 0
+                    dn = 1
+                    for s_index in [up, dn]:
+                        # diagonalize to yield the NOs and NO occupation #s
+                        no_occ, no = scipy.linalg.eigh(rdm1[s_index])
+                        no_occ = no_occ[::-1]
+                        no = no[:, ::-1]
+
+                        # atomic orbital representation of the NO
+                        no_coeff = mf.mo_coeff[s_index].dot(no)
+
+                        # Molecular orbital and occupations
+                        # overwrite the HF/DFT ones!!!
+                        logger.warning(
+                            "The HF/DFT MOs and occ. are overwritten!!"
+                        )
+                        mf.mo_coeff[s_index] = no_coeff  # natural coeff
+                        mf.mo_occ[s_index] = no_occ  # natural orbital
+                        mf.mo_energy[s_index] = [0.0] * len(
+                            mf.mo_energy[s_index]
+                        )  # orbital energy is not defined. So, they are set to 0.0
 
                 logger.debug("MOs-MP2")
                 logger.debug(mf.mo_coeff)  # HF/DFT coeff

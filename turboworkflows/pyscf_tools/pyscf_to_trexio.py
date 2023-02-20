@@ -15,7 +15,7 @@ from pyscf import scf
 from pyscf.pbc import scf as pbcscf
 
 # Logger
-from logging import getLogger, StreamHandler, Formatter
+from logging import getLogger
 
 logger = getLogger("Turbo-Genius").getChild(__name__)
 
@@ -41,10 +41,12 @@ def pyscf_to_trexio(
     mol = scf.chkfile.load_mol(pyscf_checkfile)
     mf = scf.chkfile.load(pyscf_checkfile, "scf")
 
+    """
     # symmetry-imposed calculation is not supported yet.
     if mol.symmetry:
         logger.error("symmetry-imposed calculation is not supported yet.")
         raise NotImplementedError
+    """
 
     # PBC info
     try:
@@ -256,184 +258,230 @@ def pyscf_to_trexio(
         mo_type = "MO"
 
         if twist_average:
-            mo_num = len(mf["mo_coeff"][k_index])
-            mo_occupation = mf["mo_occ"][k_index]
-            mo_energy = mf["mo_energy"][k_index]
-            mo_coeff = mf["mo_coeff"][k_index]
+            mo_occupation_read = mf["mo_occ"][k_index]
+            mo_energy_read = mf["mo_energy"][k_index]
+            mo_coeff_read = mf["mo_coeff"][k_index]
         else:
-            mo_num = len(mf["mo_coeff"])
-            mo_occupation = mf["mo_occ"]
-            mo_energy = mf["mo_energy"]
-            mo_coeff = mf["mo_coeff"]
+            mo_occupation_read = mf["mo_occ"]
+            mo_energy_read = mf["mo_energy"]
+            mo_coeff_read = mf["mo_coeff"]
 
-        # mo reordering because mo_coeff[:,mo_i]!!
-        mo_coeff = [mo_coeff[:, mo_i] for mo_i in range(mo_num)]
+        # check if the pySCF calculation is Restricted or Unrestricted
+        # Restricted -> RHF,RKS,ROHF,OROKS
+        # Unrestricted -> UHF,UKS
 
-        logger.debug(mo_num)
-        logger.debug(len(mo_coeff))
-        logger.debug(mo_occupation)
-        logger.debug(mo_energy)
-        # logger.info(mo_coeff)
+        if len(mo_energy_read) == 2:
+            if isinstance(mo_energy_read[0], float):
+                spin_restricted = True
+            else:
+                spin_restricted = False
+        else:
+            spin_restricted = True
 
-        # check if MOs are descending order with respect to "mo occ"
-        # this is usually true, but not always true for
-        # RO (restricted open-shell) calculations.
-        order_bool = all(
-            [
-                True if mo_occupation[i] >= mo_occupation[i + 1] else False
-                for i in range(len(mo_occupation) - 1)
-            ]
-        )
-        logger.info(
-            f"MO occupations are in the descending order ? -> {order_bool}"
-        )
-        if not order_bool:
-            logger.warning("MO occupations are not in the descending order!!")
-            logger.warning("RO (restricted open-shell) calculations?")
-            logger.warning("Reordering MOs...")
-            # reordering MOs.
-            # descending order (mo occ)
-            reo_moocc_index = np.argsort(mo_occupation)[::-1]
-            mo_occupation_o = [mo_occupation[l] for l in reo_moocc_index]
-            mo_energy_o = [mo_energy[l] for l in reo_moocc_index]
-            mo_coeff_o = [mo_coeff[l] for l in reo_moocc_index]
-            # descending order (mo energy)
-            mo_coeff = []
-            mo_occupation = []
-            mo_energy = []
-            set_mo_occupation = sorted(
-                list(set(mo_occupation_o)), reverse=True
-            )
-            for mo_occ in set_mo_occupation:
-                mo_re_index = [
-                    i for i, mo in enumerate(mo_occupation_o) if mo == mo_occ
+        # the followins are given to TREXIO file lager if spin_restricted == False,
+        mo_coefficient_all = []
+        mo_occupation_all = []
+        mo_energy_all = []
+        mo_spin_all = []
+
+        # mo read part starts both for alpha and beta spins
+        for ns, spin in enumerate([0, 1]):
+
+            if spin_restricted:
+                mo_occupation = mo_occupation_read
+                mo_energy = mo_energy_read
+                mo_coeff = mo_coeff_read
+                if spin == 1:  # 0 is alpha(up), 1 is beta(dn)
+                    logger.info("This is spin-restricted calculation.")
+                    logger.info("Skip the MO conversion step for beta MOs.")
+                    break
+            else:
+                logger.info(
+                    f"MO conversion step for {spin}-spin MOs. 0 is alpha(up), 1 is beta(dn)."
+                )
+                mo_occupation = mo_occupation_read[ns]
+                mo_energy = mo_energy_read[ns]
+                mo_coeff = mo_coeff_read[ns]
+
+            mo_num = len(mo_coeff)
+            mo_spin_all += [spin for _ in range(mo_num)]
+
+            # mo reordering because mo_coeff[:,mo_i]!!
+            mo_coeff = [mo_coeff[:, mo_i] for mo_i in range(mo_num)]
+
+            logger.debug(mo_num)
+            logger.debug(len(mo_coeff))
+            logger.debug(mo_occupation)
+            logger.debug(mo_energy)
+            # logger.info(mo_coeff)
+
+            # check if MOs are descending order with respect to "mo occ"
+            # this is usually true, but not always true for
+            # RO (restricted open-shell) calculations.
+            order_bool = all(
+                [
+                    True if mo_occupation[i] >= mo_occupation[i + 1] else False
+                    for i in range(len(mo_occupation) - 1)
                 ]
-                mo_occupation_t = [mo_occupation_o[l] for l in mo_re_index]
-                mo_energy_t = [mo_energy_o[l] for l in mo_re_index]
-                mo_coeff_t = [mo_coeff_o[l] for l in mo_re_index]
-                reo_ene_index = np.argsort(mo_energy_t)
-                mo_occupation += [mo_occupation_t[l] for l in reo_ene_index]
-                mo_energy += [mo_energy_t[l] for l in reo_ene_index]
-                mo_coeff += [mo_coeff_t[l] for l in reo_ene_index]
-
-        logger.debug(mo_num)
-        logger.debug(len(mo_coeff))
-        logger.debug(mo_occupation)
-        logger.debug(mo_energy)
-        # logger.debug(mo_coeff)
-
-        permutation_matrix = []  # for ao and mo swaps, used later
-
-        # molecular orbital reordering
-        # TREX-IO employs (m=-l,..., 0, ..., +l) for spherical basis
-        mo_coefficient = []
-
-        for mo_i in range(mo_num):
-            mo = mo_coeff[mo_i]
-            mo_coeff_buffer = []
-
-            perm_list = []
-            perm_n = 0
-            for ao_i, ao_c in enumerate(mo):
-
-                # initialization
-                if ao_i == 0:
-                    mo_coeff_for_reord = []
-                    current_ang_mom = -1
-
-                # read ang_mom (i.e., angular momentum of the shell)
-                bas_i = ao_shell[ao_i]
-                ang_mom = shell_ang_mom[bas_i]
-
-                previous_ang_mom = current_ang_mom
-                current_ang_mom = ang_mom
-
-                # set multiplicity
-                multiplicity = 2 * ang_mom + 1
-                # print(f"multiplicity = {multiplicity}")
-
-                # check if the buffer is null, when ang_mom changes
-                if previous_ang_mom != current_ang_mom:
-                    assert len(mo_coeff_for_reord) == 0
-
-                if current_ang_mom == 0:  # s shell
-                    # print("s shell/no permutation is needed.")
-                    # print("(pyscf notation): s(l=0)")
-                    # print("(trexio notation): s(l=0)")
-                    reorder_index = [0]
-
-                elif current_ang_mom == 1:  # p shell
-
-                    # print("p shell/permutation is needed.")
-                    # print("(pyscf notation): px(l=+1), py(l=-1), pz(l=0)")
-                    # print("(trexio notation): pz(l=0), px(l=+1), py(l=-1)")
-                    reorder_index = [2, 0, 1]
-
-                elif current_ang_mom >= 2:  # > d shell
-
-                    # print("> d shell/permutation is needed.")
-                    # print(
-                    #    "(pyscf) e.g., f3,-3(l=-3), f3,-2(l=-2), f3,-1(l=-1), \
-                    #        f3,0(l=0), f3,+1(l=+1), f3,+2(l=+2), f3,+3(l=+3)"
-                    # )
-                    # print(
-                    #    "(trexio) e.g, f3,0(l=0), f3,+1(l=+1), f3,-1(l=-1), \
-                    #        f3,+2(l=+2), f3,-2(l=-2), f3,+3(l=+3), f3,-3(l=-3)"
-                    # )
-                    l0_index = int((multiplicity - 1) / 2)
-                    reorder_index = [l0_index]
-                    for i in range(1, int((multiplicity - 1) / 2) + 1):
-                        reorder_index.append(l0_index + i)
-                        reorder_index.append(l0_index - i)
-
-                else:
-                    raise ValueError(
-                        "A wrong value was set to current_ang_mom."
-                    )
-
-                mo_coeff_for_reord.append(ao_c)
-
-                # write MOs!!
-                if len(mo_coeff_for_reord) == multiplicity:
-                    # print("--write MOs!!--")
-                    mo_coeff_buffer += [
-                        mo_coeff_for_reord[i] for i in reorder_index
+            )
+            logger.info(
+                f"MO occupations are in the descending order ? -> {order_bool}"
+            )
+            if not order_bool:
+                logger.warning(
+                    "MO occupations are not in the descending order!!"
+                )
+                logger.warning("RO (restricted open-shell) calculations?")
+                logger.warning("Reordering MOs...")
+                # reordering MOs.
+                # descending order (mo occ)
+                reo_moocc_index = np.argsort(mo_occupation)[::-1]
+                mo_occupation_o = [mo_occupation[l] for l in reo_moocc_index]
+                mo_energy_o = [mo_energy[l] for l in reo_moocc_index]
+                mo_coeff_o = [mo_coeff[l] for l in reo_moocc_index]
+                # descending order (mo energy)
+                mo_coeff = []
+                mo_occupation = []
+                mo_energy = []
+                set_mo_occupation = sorted(
+                    list(set(mo_occupation_o)), reverse=True
+                )
+                for mo_occ in set_mo_occupation:
+                    mo_re_index = [
+                        i
+                        for i, mo in enumerate(mo_occupation_o)
+                        if mo == mo_occ
                     ]
+                    mo_occupation_t = [mo_occupation_o[l] for l in mo_re_index]
+                    mo_energy_t = [mo_energy_o[l] for l in mo_re_index]
+                    mo_coeff_t = [mo_coeff_o[l] for l in mo_re_index]
+                    reo_ene_index = np.argsort(mo_energy_t)
+                    mo_occupation += [
+                        mo_occupation_t[l] for l in reo_ene_index
+                    ]
+                    mo_energy += [mo_energy_t[l] for l in reo_ene_index]
+                    mo_coeff += [mo_coeff_t[l] for l in reo_ene_index]
 
-                    # reset buffer
-                    mo_coeff_for_reord = []
+            logger.debug("--mo_num--")
+            logger.debug(mo_num)
+            logger.debug("--len(mo_coeff)--")
+            logger.debug(len(mo_coeff))
+            logger.debug("--mo_occupation--")
+            logger.debug(mo_occupation)
+            logger.debug("--mo_energy--")
+            logger.debug(mo_energy)
+            # logger.debug(mo_coeff)
 
-                    # print("--write perm_list")
-                    perm_list += list(np.array(reorder_index) + perm_n)
-                    perm_n = perm_n + len(reorder_index)
+            # saved mo_occ and mo_energy
+            mo_occupation_all += list(mo_occupation)
+            mo_energy_all += list(mo_energy)
 
-            mo_coefficient.append(mo_coeff_buffer)
-            permutation_matrix.append(perm_list)
+            # permutation_matrix = []  # for ao and mo swaps, used later
 
-        """
-        # Phases are attached!!!??
-        # this is also needed for a real WF (e.g., pi, pi, pi)
-        phase_factor = complex(
-            np.cos(np.sum(np.array(k_vec)) * 2 * np.pi),
-            -1 * np.sin(np.sum(np.array(k_vec)) * 2 * np.pi),
-        )
-        logger.info(f"phase factor = {phase_factor}")
-        mo_coefficient = [
-            [coeff * +1 * phase_factor for coeff in mo]
-            for mo in mo_coefficient
-        ]
-        """
+            # molecular coefficient reordering
+            # TREX-IO employs (m=-l,..., 0, ..., +l) for spherical basis
+            mo_coefficient = []
 
-        # here, we should think about complex cases
-        # logger.info(mo_coefficient[0])
+            for mo_i in range(mo_num):
+                mo = mo_coeff[mo_i]
+                mo_coeff_buffer = []
 
+                perm_list = []
+                perm_n = 0
+                for ao_i, ao_c in enumerate(mo):
+
+                    # initialization
+                    if ao_i == 0:
+                        mo_coeff_for_reord = []
+                        current_ang_mom = -1
+
+                    # read ang_mom (i.e., angular momentum of the shell)
+                    bas_i = ao_shell[ao_i]
+                    ang_mom = shell_ang_mom[bas_i]
+
+                    previous_ang_mom = current_ang_mom
+                    current_ang_mom = ang_mom
+
+                    # set multiplicity
+                    multiplicity = 2 * ang_mom + 1
+                    # print(f"multiplicity = {multiplicity}")
+
+                    # check if the buffer is null, when ang_mom changes
+                    if previous_ang_mom != current_ang_mom:
+                        assert len(mo_coeff_for_reord) == 0
+
+                    if current_ang_mom == 0:  # s shell
+                        # print("s shell/no permutation is needed.")
+                        # print("(pyscf notation): s(l=0)")
+                        # print("(trexio notation): s(l=0)")
+                        reorder_index = [0]
+
+                    elif current_ang_mom == 1:  # p shell
+
+                        # print("p shell/permutation is needed.")
+                        # print("(pyscf notation): px(l=+1), py(l=-1), pz(l=0)")
+                        # print("(trexio notation): pz(l=0), px(l=+1), py(l=-1)")
+                        reorder_index = [2, 0, 1]
+
+                    elif current_ang_mom >= 2:  # > d shell
+
+                        # print("> d shell/permutation is needed.")
+                        # print(
+                        #    "(pyscf) e.g., f3,-3(l=-3), f3,-2(l=-2), f3,-1(l=-1), \
+                        #        f3,0(l=0), f3,+1(l=+1), f3,+2(l=+2), f3,+3(l=+3)"
+                        # )
+                        # print(
+                        #    "(trexio) e.g, f3,0(l=0), f3,+1(l=+1), f3,-1(l=-1), \
+                        #        f3,+2(l=+2), f3,-2(l=-2), f3,+3(l=+3), f3,-3(l=-3)"
+                        # )
+                        l0_index = int((multiplicity - 1) / 2)
+                        reorder_index = [l0_index]
+                        for i in range(1, int((multiplicity - 1) / 2) + 1):
+                            reorder_index.append(l0_index + i)
+                            reorder_index.append(l0_index - i)
+
+                    else:
+                        raise ValueError(
+                            "A wrong value was set to current_ang_mom."
+                        )
+
+                    mo_coeff_for_reord.append(ao_c)
+
+                    # write MOs!!
+                    if len(mo_coeff_for_reord) == multiplicity:
+                        # print("--write MOs!!--")
+                        mo_coeff_buffer += [
+                            mo_coeff_for_reord[i] for i in reorder_index
+                        ]
+
+                        # reset buffer
+                        mo_coeff_for_reord = []
+
+                        # print("--write perm_list")
+                        perm_list += list(np.array(reorder_index) + perm_n)
+                        perm_n = perm_n + len(reorder_index)
+
+                mo_coefficient.append(mo_coeff_buffer)
+                # permutation_matrix.append(perm_list)
+
+            mo_coefficient_all += mo_coefficient
+
+        # MOs read part end both for alpha and beta spins[l]
+        logger.debug("len(mo_coefficient_all)")
+        logger.debug(len(mo_coefficient_all))
+        logger.debug("len(mo_occupation_all)")
+        logger.debug(len(mo_occupation_all))
+        logger.debug("len(mo_spin_all)")
+        logger.debug(len(mo_spin_all))
+
+        # Conversion from Python complex -> real, complex separately.
         # force WF complex
         if force_wf_complex:
             complex_flag = True
         # check if the MOs have imag.!
         else:
             imag_flags = []
-            for mo in mo_coefficient:
+            for mo in mo_coefficient_all:
                 imag_flags += list(
                     np.isreal(list(np.real_if_close(mo, tol=100)))
                 )
@@ -443,36 +491,12 @@ def pyscf_to_trexio(
             else:
                 complex_flag = True
 
-        """
-        # however, due to numerical error, we need more loose criteria
-        imag_flags = []
-        imag_thr = 1.0e-3
-        if complex_flag:
-            for mo in mo_coefficient:
-                imag_flags += list(
-                    [True if np.abs(a.imag) < imag_thr else False for a in mo]
-                )
-                if not all(
-                    list(
-                        [
-                            True if np.abs(a.imag) < imag_thr else False
-                            for a in mo
-                        ]
-                    )
-                ):
-                    logger.debug([np.abs(a.imag) for a in mo])
-            if all(imag_flags):
-                complex_flag = False
-            else:
-                complex_flag = True
-        """
-
         if complex_flag:
             logger.info("The WF is complex")
             mo_coefficient_real = []
             mo_coefficient_imag = []
 
-            for mo__ in mo_coefficient:
+            for mo__ in mo_coefficient_all:
                 mo_real_b = []
                 mo_imag_b = []
                 for coeff in mo__:
@@ -483,10 +507,13 @@ def pyscf_to_trexio(
 
         else:
             logger.info("The WF is real")
-            mo_coefficient = [list(np.array(mo).real) for mo in mo_coefficient]
+            mo_coefficient_real = [
+                list(np.array(mo).real) for mo in mo_coefficient_all
+            ]
 
         logger.debug("--MOs Done--")
 
+        """ to be deleted, no longer used.
         ##########################################
         # atomic orbital integrals
         ##########################################
@@ -499,15 +526,6 @@ def pyscf_to_trexio(
                 [mat_row_swap_T[i] for i in perm_list]
             )
             mat_inv = mat_row_swap_col_swap.T
-
-            """
-            for i in range(len(mat_org)):
-                for j in range(len(mat_org)):
-                    assert np.round(mat_inv[i][j], 10) == np.round(
-                        mat_inv[j][i], 10
-                    )
-                    # print("-------------------------")
-            """
 
             return mat_inv
 
@@ -534,6 +552,7 @@ def pyscf_to_trexio(
             intor_int1e_kin = row_column_swap(
                 mol.intor("int1e_kin"), perm_list
             )
+        """
 
         ##########################################
         # basis set info
@@ -561,22 +580,25 @@ def pyscf_to_trexio(
         # mo info
         ##########################################
         trexio.write_mo_type(trexio_file, mo_type)  #
-        trexio.write_mo_num(trexio_file, mo_num)  #
-        trexio.write_mo_occupation(trexio_file, mo_occupation)  #
 
         if complex_flag:
+            trexio.write_mo_num(trexio_file, len(mo_coefficient_real))  #
             trexio.write_mo_coefficient(trexio_file, mo_coefficient_real)  #
             trexio.write_mo_coefficient_im(trexio_file, mo_coefficient_imag)  #
-            # logger.debug(mo_coefficient_imag)
         else:
-            trexio.write_mo_coefficient(trexio_file, mo_coefficient)  #
+            trexio.write_mo_num(trexio_file, len(mo_coefficient_real))  #
+            trexio.write_mo_coefficient(trexio_file, mo_coefficient_real)  #
+
+        trexio.write_mo_occupation(trexio_file, mo_occupation_all)  #
+
+        trexio.write_mo_spin(trexio_file, mo_spin_all)  #
 
         ##########################################
         # ao integrals
         ##########################################
-        trexio.write_ao_1e_int_overlap(trexio_file, intor_int1e_ovlp)
-        trexio.write_ao_1e_int_kinetic(trexio_file, intor_int1e_kin)
-        trexio.write_ao_1e_int_potential_n_e(trexio_file, intor_int1e_nuc)
+        # trexio.write_ao_1e_int_overlap(trexio_file, intor_int1e_ovlp)
+        # trexio.write_ao_1e_int_kinetic(trexio_file, intor_int1e_kin)
+        # trexio.write_ao_1e_int_potential_n_e(trexio_file, intor_int1e_nuc)
 
         ##########################################
         # ECP
@@ -687,7 +709,7 @@ def cli():
     import argparse
     from logging import getLogger, StreamHandler, Formatter
 
-    log_level = "INFO"
+    log_level = "DEBUG"
     logger = getLogger("Turbo-Genius")
     logger.setLevel(log_level)
     stream_handler = StreamHandler()
@@ -732,33 +754,4 @@ def cli():
 
 
 if __name__ == "__main__":
-    logger = getLogger("Turbo-Genius")
-    logger.setLevel("INFO")
-    stream_handler = StreamHandler()
-    stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
-    stream_handler.setFormatter(handler_format)
-    logger.addHandler(stream_handler)
-
     cli()
-
-    """
-    # moved to examples
-    sys.path.append(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "../")
-    )
-    from utils_workflows.env import turbo_genius_root
-    from pyscf_wrapper import Pyscf_wrapper
-
-    pyscf_to_trexio_test_dir = os.path.join(
-        turbo_genius_root, "tests", "trexio_to_turborvb"
-    )
-
-    os.chdir(pyscf_to_trexio_test_dir)
-    pyscf_to_trexio(
-        pyscf_checkfile="diamond_q.chk",
-        trexio_filename="diamond_trexio_q.hdf5",
-    )
-    """
