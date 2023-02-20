@@ -51,6 +51,7 @@ class PySCF_workflow(Workflow):
         level_shift_factor=0.0,
         charge=0,
         spin=0,
+        spin_restricted=True,
         basis="ccecp-ccpvtz",  # defined below
         ecp="ccecp",  # defined below
         scf_method="DFT",  # HF or DFT
@@ -90,6 +91,7 @@ class PySCF_workflow(Workflow):
         self.level_shift_factor = level_shift_factor
         self.charge = charge
         self.spin = spin
+        self.spin_restricted = spin_restricted
         self.basis = basis  # defined below
         self.ecp = ecp  # defined below
         self.scf_method = scf_method  # HF or DFT
@@ -174,6 +176,7 @@ multigrid_fftdf={rg(self.multigrid_fftdf)}
 level_shift_factor={rg(self.level_shift_factor)}
 charge={rg(self.charge)}
 spin={rg(self.spin)}
+spin_restricted={rg(self.spin_restricted)}
 basis={rg(self.basis)}
 ecp={rg(self.ecp)}
 scf_method={rg(self.scf_method)}
@@ -202,6 +205,7 @@ pyscf_calc.run_pyscf(
                   level_shift_factor=level_shift_factor,
                   charge=charge,
                   spin=spin,
+                  spin_restricted=spin_restricted,
                   basis=basis,
                   ecp=ecp,
                   scf_method=scf_method,
