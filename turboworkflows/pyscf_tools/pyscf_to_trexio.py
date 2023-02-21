@@ -17,7 +17,7 @@ from pyscf.pbc import scf as pbcscf
 # Logger
 from logging import getLogger
 
-logger = getLogger("Turbo-Genius").getChild(__name__)
+logger = getLogger("Turbo-Workflows").getChild(__name__)
 
 
 def pyscf_to_trexio(
@@ -709,8 +709,8 @@ def cli():
     import argparse
     from logging import getLogger, StreamHandler, Formatter
 
-    log_level = "DEBUG"
-    logger = getLogger("Turbo-Genius")
+    log_level = "INFO"
+    logger = getLogger("Turbo-Workflows")
     logger.setLevel(log_level)
     stream_handler = StreamHandler()
     stream_handler.setLevel(log_level)
