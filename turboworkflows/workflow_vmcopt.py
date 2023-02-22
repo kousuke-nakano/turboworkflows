@@ -7,6 +7,7 @@ import pickle
 import asyncio
 import glob
 import pathlib
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -28,40 +29,42 @@ class VMCopt_workflow(Workflow):
     def __init__(
         self,
         # job
-        server_machine_name="localhost",
-        cores=1,
-        openmp=1,
-        queue="NA",
-        version="stable",
-        sleep_time=1800,  # sec.
-        jobpkl_name="job_manager",
+        server_machine_name: str = "localhost",
+        cores: int = 1,
+        openmp: int = 1,
+        queue: Optional[str] = None,
+        version: str = "stable",
+        sleep_time: int = 1800,  # sec.
+        jobpkl_name: str = "job_manager",
         # vmcopt
-        vmcopt_max_continuation=2,
-        vmcopt_pkl_name="vmcopt_genius",
-        vmcopt_target_error_bar=1.0e-3,  # Ha
-        vmcopt_trial_optsteps=50,
-        vmcopt_trial_steps=50,
-        vmcopt_minimum_blocks=3,
-        vmcopt_production_optsteps=2000,
-        vmcopt_optwarmupsteps_ratio=0.8,
-        vmcopt_bin_block=1,
-        vmcopt_warmupblocks=0,
-        vmcopt_optimizer="lr",
-        vmcopt_learning_rate=0.35,
-        vmcopt_regularization=0.001,
-        vmcopt_onebody=True,
-        vmcopt_twobody=True,
-        vmcopt_det_mat=False,
-        vmcopt_jas_mat=True,
-        vmcopt_det_basis_exp=False,
-        vmcopt_jas_basis_exp=False,
-        vmcopt_det_basis_coeff=False,
-        vmcopt_jas_basis_coeff=False,
-        vmcopt_num_walkers=-1,  # default -1 -> num of MPI process.
-        vmcopt_twist_average=False,
-        vmcopt_kpoints=[],
-        vmcopt_maxtime=172000,
+        vmcopt_max_continuation: int = 2,
+        vmcopt_pkl_name: str = "vmcopt_genius",
+        vmcopt_target_error_bar: float = 1.0e-3,  # Ha
+        vmcopt_trial_optsteps: float = 50,
+        vmcopt_trial_steps: float = 50,
+        vmcopt_minimum_blocks: int = 3,
+        vmcopt_production_optsteps: int = 2000,
+        vmcopt_optwarmupsteps_ratio: int = 0.8,
+        vmcopt_bin_block: int = 1,
+        vmcopt_warmupblocks: int = 0,
+        vmcopt_optimizer: str = "lr",
+        vmcopt_learning_rate: float = 0.35,
+        vmcopt_regularization: float = 0.001,
+        vmcopt_onebody: bool = True,
+        vmcopt_twobody: bool = True,
+        vmcopt_det_mat: bool = False,
+        vmcopt_jas_mat: bool = True,
+        vmcopt_det_basis_exp: bool = False,
+        vmcopt_jas_basis_exp: bool = False,
+        vmcopt_det_basis_coeff: bool = False,
+        vmcopt_jas_basis_coeff: bool = False,
+        vmcopt_num_walkers: int = -1,  # default -1 -> num of MPI process.
+        vmcopt_twist_average: bool = False,
+        vmcopt_kpoints: Optional[list] = None,
+        vmcopt_maxtime: int = 172000,
     ):
+        if vmcopt_kpoints is None:
+            vmcopt_kpoints = []
         # job
         self.server_machine_name = server_machine_name
         self.cores = cores

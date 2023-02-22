@@ -5,6 +5,7 @@
 import os
 import shutil
 import asyncio
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -28,15 +29,22 @@ class Workflow:
         return asyncio.run(self.async_launch())
 
 
-class eWorkflow:
+class Encapsulated_Workflow:
     def __init__(
         self,
-        label="workflow",
-        dirname="workflow",
-        input_files=[],
-        rename_input_files=[],
-        workflow=Workflow(),
+        label: Optional[str] = "workflow",
+        dirname: Optional[str] = "workflow",
+        input_files: Optional[list] = None,
+        rename_input_files: Optional[list] = None,
+        workflow: Optional[Workflow] = None,
     ):
+        if input_files is None:
+            input_files = []
+        if rename_input_files is None:
+            rename_input_files = []
+        if workflow is None:
+            workflow = Workflow()
+
         # directory and dependency setting
         self.label = label
         self.dirname = dirname

@@ -7,6 +7,7 @@ import pickle
 import asyncio
 import glob
 import pathlib
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -28,44 +29,46 @@ class LRDMCopt_workflow(Workflow):
     def __init__(
         self,
         # job
-        server_machine_name="localhost",
-        cores=1,
-        openmp=1,
-        queue="NA",
-        version="stable",
-        sleep_time=1800,  # sec.
-        jobpkl_name="job_manager",
+        server_machine_name: str = "localhost",
+        cores: int = 1,
+        openmp: int = 1,
+        queue: Optional[str] = None,
+        version: str = "stable",
+        sleep_time: int = 1800,  # sec.
+        jobpkl_name: str = "job_manager",
         # lrdmcopt
-        lrdmcopt_max_continuation=2,
-        lrdmcopt_pkl_name="lrdmcopt_genius",
-        lrdmcopt_target_error_bar=1.0e-3,  # Ha
-        lrdmcopt_trial_optsteps=50,
-        lrdmcopt_trial_steps=50,
-        lrdmcopt_minimum_blocks=3,
-        lrdmcopt_production_optsteps=2000,
-        lrdmcopt_optwarmupsteps_ratio=0.8,
-        lrdmcopt_bin_block=1,
-        lrdmcopt_warmupblocks=0,
-        lrdmcopt_optimizer="sr",
-        lrdmcopt_learning_rate=0.002,
-        lrdmcopt_regularization=0.001,
-        lrdmcopt_alat=-0.20,
-        lrdmcopt_time_branching=0.10,
-        lrdmcopt_trial_etry=0.0,
-        lrdmcopt_nonlocalmoves="dlatm",  # tmove, dla, dlatm
-        lrdmcopt_onebody=False,
-        lrdmcopt_twobody=False,
-        lrdmcopt_det_mat=True,
-        lrdmcopt_jas_mat=False,
-        lrdmcopt_det_basis_exp=False,
-        lrdmcopt_jas_basis_exp=False,
-        lrdmcopt_det_basis_coeff=False,
-        lrdmcopt_jas_basis_coeff=False,
-        lrdmcopt_num_walkers=-1,  # default -1 -> num of MPI process.
-        lrdmcopt_twist_average=False,
-        lrdmcopt_kpoints=[],
-        lrdmcopt_maxtime=172000,
+        lrdmcopt_max_continuation: int = 2,
+        lrdmcopt_pkl_name: str = "lrdmcopt_genius",
+        lrdmcopt_target_error_bar: float = 1.0e-3,  # Ha
+        lrdmcopt_trial_optsteps: int = 50,
+        lrdmcopt_trial_steps: int = 50,
+        lrdmcopt_minimum_blocks: int = 3,
+        lrdmcopt_production_optsteps: int = 2000,
+        lrdmcopt_optwarmupsteps_ratio: float = 0.8,
+        lrdmcopt_bin_block: int = 1,
+        lrdmcopt_warmupblocks: int = 0,
+        lrdmcopt_optimizer: str = "sr",
+        lrdmcopt_learning_rate: float = 0.002,
+        lrdmcopt_regularization: float = 0.001,
+        lrdmcopt_alat: float = -0.20,
+        lrdmcopt_time_branching: float = 0.10,
+        lrdmcopt_trial_etry: float = 0.0,
+        lrdmcopt_nonlocalmoves: str = "dlatm",  # tmove, dla, dlatm
+        lrdmcopt_onebody: bool = False,
+        lrdmcopt_twobody: bool = False,
+        lrdmcopt_det_mat: bool = True,
+        lrdmcopt_jas_mat: bool = False,
+        lrdmcopt_det_basis_exp: bool = False,
+        lrdmcopt_jas_basis_exp: bool = False,
+        lrdmcopt_det_basis_coeff: bool = False,
+        lrdmcopt_jas_basis_coeff: bool = False,
+        lrdmcopt_num_walkers: int = -1,  # default -1 -> num of MPI process.
+        lrdmcopt_twist_average: bool = False,
+        lrdmcopt_kpoints: Optional[list] = None,
+        lrdmcopt_maxtime: int = 172000,
     ):
+        if lrdmcopt_kpoints is None:
+            lrdmcopt_kpoints = []
         # job
         self.server_machine_name = server_machine_name
         self.cores = cores

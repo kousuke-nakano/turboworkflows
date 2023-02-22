@@ -10,6 +10,7 @@ import pickle
 import asyncio
 import glob
 import pathlib
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -28,15 +29,18 @@ logger = getLogger("Turbo-Workflows").getChild(__name__)
 class TREXIO_convert_to_turboWF(Workflow):
     def __init__(
         self,
-        trexio_filename="trexio.hdf5",
-        twist_average=False,
-        jastrow_basis_dict={},
-        max_occ_conv=0,
-        mo_num_conv=-1,
-        only_mol=True,
-        trexio_rerun=False,
-        trexio_pkl_name="trexio_genius",
+        trexio_filename: str = "trexio.hdf5",
+        twist_average: bool = False,
+        jastrow_basis_dict: Optional[dict] = None,
+        max_occ_conv: int = 0,
+        mo_num_conv: int = -1,
+        only_mol: float = True,
+        trexio_rerun: float = False,
+        trexio_pkl_name: str = "trexio_genius",
     ):
+        if jastrow_basis_dict is None:
+            jastrow_basis_dict = {}
+        # trexio variables
         self.trexio_filename = trexio_filename
         self.twist_average = twist_average
         self.jastrow_basis_dict = jastrow_basis_dict

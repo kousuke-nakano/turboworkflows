@@ -8,6 +8,7 @@ import pickle
 import asyncio
 import glob
 import pathlib
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -31,11 +32,11 @@ class Jastrowcopy_workflow(Workflow):
     def __init__(
         self,
         # copyjastrow
-        jastrowcopy_rerun=False,
-        jastrowcopy_pkl_name="jastrowcopy_genius",
-        jastrowcopy_fort10_to="fort.10",
-        jastrowcopy_fort10_from="fort.10_new",
-        jastrowcopy_twist_average=False,
+        jastrowcopy_rerun: bool = False,
+        jastrowcopy_pkl_name: str = "jastrowcopy_genius",
+        jastrowcopy_fort10_to: str = "fort.10",
+        jastrowcopy_fort10_from: str = "fort.10_new",
+        jastrowcopy_twist_average: bool = False,
     ):
         # copyjas
         self.jastrowcopy_rerun = jastrowcopy_rerun
@@ -108,18 +109,22 @@ class Jastrowcopy_workflow(Workflow):
 
 
 # init occ_workflow
-class init_occ_workflow(Workflow):
+class Init_occ_workflow(Workflow):
     def __init__(
         self,
-        init_occ_rerun=False,
-        init_occ_pkl_name="init_occ_genius",
-        mo_occ_fixed_list=[],
-        mo_occ_fixed_occupied=False,
-        mo_occ_thr=1.0e-3,
-        mo_num_conv=-1,
-        mo_occ=[],
-        mo_occ_delta=0.05,
+        init_occ_rerun: bool = False,
+        init_occ_pkl_name: str = "init_occ_genius",
+        mo_occ_fixed_list: Optional[list] = None,
+        mo_occ_fixed_occupied: bool = False,
+        mo_occ_thr: float = 1.0e-3,
+        mo_num_conv: int = -1,
+        mo_occ: Optional[list] = None,
+        mo_occ_delta: float = 0.05,
     ):
+        if mo_occ_fixed_list is None:
+            mo_occ_fixed_list = []
+        if mo_occ is None:
+            mo_occ = []
         self.init_occ_rerun = init_occ_rerun
         self.init_occ_pkl_name = init_occ_pkl_name
         self.mo_occ_fixed_list = mo_occ_fixed_list
@@ -267,28 +272,34 @@ class init_occ_workflow(Workflow):
 class Makefort10_workflow(Workflow):
     def __init__(
         self,
-        structure_file,
+        structure_file: str,
         # job
-        makefort10_rerun=False,
-        makefort10_pkl_name="makefort10",
+        makefort10_rerun: bool = False,
+        makefort10_pkl_name: str = "makefort10",
         # genius-related arguments
-        supercell=[1, 1, 1],
-        det_basis_set="cc-pVQZ",
-        jas_basis_set="cc-pVQZ",
-        det_contracted_flag=True,
-        jas_contracted_flag=True,
-        all_electron_jas_basis_set=True,
-        pseudo_potential=None,
-        det_cut_basis_option=False,
-        det_exp_to_discard=0.00,
-        jas_cut_basis_option=False,
-        jastrow_type=-6,
-        complex=False,
-        phase_up=[0.0, 0.0, 0.0],
-        phase_dn=[0.0, 0.0, 0.0],
-        same_phase_up_dn=False,
-        neldiff=0,
+        supercell: Optional[list] = None,
+        det_basis_set: str = "cc-pVQZ",
+        jas_basis_set: str = "cc-pVQZ",
+        det_contracted_flag: bool = True,
+        jas_contracted_flag: bool = True,
+        all_electron_jas_basis_set: bool = True,
+        pseudo_potential: bool = None,
+        det_cut_basis_option: bool = False,
+        det_exp_to_discard: float = 0.00,
+        jas_cut_basis_option: bool = False,
+        jastrow_type: int = -6,
+        complex: bool = False,
+        phase_up: Optional[list] = None,
+        phase_dn: Optional[list] = None,
+        same_phase_up_dn: bool = False,
+        neldiff: int = 0,
     ):
+        if supercell is None:
+            supercell = [1, 1, 1]
+        if phase_up is None:
+            phase_up = [0.0, 0.0, 0.0]
+        if phase_dn is None:
+            phase_dn = [0.0, 0.0, 0.0]
         # job
         self.makefort10_rerun = makefort10_rerun
         self.makefort10_pkl_name = makefort10_pkl_name
@@ -400,11 +411,11 @@ class Makefort10_workflow(Workflow):
 class Convertfort10mol_workflow(Workflow):
     def __init__(
         self,
-        convertfort10mol_rerun=False,
-        convertfort10mol_pkl_name="convertfort10mol_genius",
-        add_random_mo=True,
-        grid_size=0.10,
-        additional_mo=0,
+        convertfort10mol_rerun: bool = False,
+        convertfort10mol_pkl_name: str = "convertfort10mol_genius",
+        add_random_mo: bool = True,
+        grid_size: float = 0.10,
+        additional_mo: float = 0,
     ):
 
         # convertfort10mol

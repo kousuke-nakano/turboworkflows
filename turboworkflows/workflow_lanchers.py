@@ -7,6 +7,7 @@ import os
 import asyncio
 import pathlib
 from datetime import datetime
+from typing import Optional, Any
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter, FileHandler
@@ -15,7 +16,10 @@ from logging import getLogger, StreamHandler, Formatter, FileHandler
 from turboworkflows.utils_turboworkflows.turboworkflows_env import (
     turbo_workflows_root,
 )
-from turboworkflows.workflow_encapsulated import eWorkflow, Workflow
+from turboworkflows.workflow_encapsulated import (
+    Encapsulated_Workflow,
+    Workflow,
+)
 
 try:
     from turboworkflows._version import (
@@ -31,9 +35,9 @@ loggers = {}
 class Variable:
     def __init__(
         self,
-        label="none",
-        vtype="file",  # file, file-list, value
-        name="xxxx",  # filename or value's label
+        label: str = "label",
+        vtype: str = "file",  # file, file-list, value
+        name: Any = None,  # filename or value's label
     ):
         self.label = label
         self.vtype = vtype
@@ -43,14 +47,16 @@ class Variable:
 class Launcher:
     def __init__(
         self,
-        cworkflows_list=[],  # cWorkflow() list
-        turbo_workflows_log_level="INFO",
-        turbo_genius_log_level="INFO",
-        pyturbo_log_level="INFO",
-        file_manager_log_level="INFO",
-        log_name="turboworkflows.log",
-        dependency_graph_draw=False,
+        cworkflows_list: Optional[list] = None,
+        turbo_workflows_log_level: str = "INFO",
+        turbo_genius_log_level: str = "INFO",
+        pyturbo_log_level: str = "INFO",
+        file_manager_log_level: str = "INFO",
+        log_name: str = "turboworkflows.log",
+        dependency_graph_draw: bool = False,
     ):
+        if cworkflows_list is None:
+            cworkflows_list = []
 
         # set loggers!!
         global loggers
@@ -334,7 +340,7 @@ if __name__ == "__main__":
     cworkflows_list = []
     # """
     for i in range(4):
-        clrdmc_workflow = eWorkflow(
+        clrdmc_workflow = Encapsulated_Workflow(
             label=f"clrdmc-workflow-{i}",
             dirname=f"clrdmc-workflow-{i}",
             input_files=["fort.10", "pseudo.dat"],
@@ -366,7 +372,7 @@ if __name__ == "__main__":
             ),
         )
 
-        clrdmc_workflow_n = eWorkflow(
+        clrdmc_workflow_n = Encapsulated_Workflow(
             label=f"clrdmc-workflow-n-{i}",
             dirname=f"clrdmc-workflow-n-{i}",
             input_files=[
@@ -414,7 +420,7 @@ if __name__ == "__main__":
         clrdmc_workflow.output_values = {"energy": -27.5}
     # """
 
-    cvmc_workflow = eWorkflow(
+    cvmc_workflow = Encapsulated_Workflow(
         label="cvmc-workflow",
         dirname="cvmc-workflow",
         input_files=["fort.10", "pseudo.dat"],
@@ -442,7 +448,7 @@ if __name__ == "__main__":
         ),
     )
 
-    cvmc_workflow_d = eWorkflow(
+    cvmc_workflow_d = Encapsulated_Workflow(
         label="cvmc-workflow-d",
         dirname="cvmc-workflow-d",
         input_files=["fort.10", "pseudo.dat"],
@@ -470,7 +476,7 @@ if __name__ == "__main__":
         ),
     )
 
-    cvmc_workflow_d = eWorkflow(
+    cvmc_workflow_d = Encapsulated_Workflow(
         label="cvmc-workflow-d",
         dirname="cvmc-workflow-d",
         input_files=["fort.10", "pseudo.dat"],
@@ -498,7 +504,7 @@ if __name__ == "__main__":
         ),
     )
 
-    cvmc_workflow_ind = eWorkflow(
+    cvmc_workflow_ind = Encapsulated_Workflow(
         label="cvmc-workflow-ind",
         dirname="cvmc-workflow-ind",
         input_files=["fort.10", "pseudo.dat"],
@@ -530,7 +536,7 @@ if __name__ == "__main__":
 
     for i in range(2):
         cworkflows_list.append(
-            eWorkflow(
+            Encapsulated_Workflow(
                 label=f"clrdmc-workflow-{i}",
                 dirname=f"clrdmc-workflow-{i}",
                 input_files=[
@@ -574,7 +580,7 @@ if __name__ == "__main__":
 
     for i in range(2):
         cworkflows_list.append(
-            eWorkflow(
+            Encapsulated_Workflow(
                 label=f"clrdmc-workflow-cc-{i}",
                 dirname=f"clrdmc-workflow-cc-{i}",
                 input_files=[
@@ -621,7 +627,7 @@ if __name__ == "__main__":
         )
 
     cworkflows_list.append(
-        eWorkflow(
+        Encapsulated_Workflow(
             label="clrdmc-workflow-ccc",
             dirname="clrdmc-workflow-ccc",
             input_files=[
@@ -664,7 +670,7 @@ if __name__ == "__main__":
     )
 
     cworkflows_list.append(
-        eWorkflow(
+        Encapsulated_Workflow(
             label="clrdmc-workflow-ccc-a",
             dirname="clrdmc-workflow-ccc-a",
             input_files=[
@@ -709,7 +715,7 @@ if __name__ == "__main__":
     )
 
     cworkflows_list.append(
-        eWorkflow(
+        Encapsulated_Workflow(
             label="clrdmc-workflow-ind",
             dirname="clrdmc-workflow-ind",
             input_files=[

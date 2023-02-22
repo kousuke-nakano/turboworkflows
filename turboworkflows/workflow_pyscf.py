@@ -8,6 +8,7 @@ import pickle
 import asyncio
 import glob
 import pathlib
+from typing import Optional, Union
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -32,44 +33,48 @@ class PySCF_workflow(Workflow):
     def __init__(
         self,
         # structure file (mandatory)
-        structure_file,
-        trexio_filename="trexio.hdf5",
+        structure_file: str,
+        trexio_filename: str = "trexio.hdf5",
         # job
-        server_machine_name="localhost",
-        cores=1,
-        openmp=1,
-        queue="NA",
-        version="stable",
-        sleep_time=1800,  # sec.
-        jobpkl_name="job_manager",
+        server_machine_name: str = "localhost",
+        cores: int = 1,
+        openmp: int = 1,
+        queue: Optional[str] = None,
+        version: str = "stable",
+        sleep_time: int = 1800,  # sec.
+        jobpkl_name: str = "job_manager",
         # pyscf
-        pyscf_rerun=False,
-        pyscf_pkl_name="pyscf_genius",
-        init_guess="minao",
-        cell_precision=1.0e-8,
-        multigrid_fftdf=False,
-        level_shift_factor=0.0,
-        charge=0,
-        spin=0,
-        spin_restricted=True,
-        basis="ccecp-ccpvtz",  # defined below
-        ecp="ccecp",  # defined below
-        scf_method="DFT",  # HF or DFT
-        dft_xc="LDA_X,LDA_C_PZ",
-        mp2_flag=False,
-        ccsd_flag=False,
-        pyscf_output="out.pyscf",
-        pyscf_chkfile="pyscf.chk",
-        solver_newton=False,
-        twist_average=False,
-        exp_to_discard=0.10,
-        kpt=[0.0, 0.0, 0.0],  # scaled_kpts!! i.e., crystal coord.
-        kpt_grid=[1, 1, 1],
-        smearing_method="fermi",
-        smearing_sigma=0.00,  # Ha
+        pyscf_rerun: bool = False,
+        pyscf_pkl_name: str = "pyscf_genius",
+        init_guess: str = "minao",
+        cell_precision: float = 1.0e-8,
+        multigrid_fftdf: bool = False,
+        level_shift_factor: float = 0.0,
+        charge: int = 0,
+        spin: int = 0,
+        spin_restricted: bool = True,
+        basis: Union[str, dict] = "ccecp-ccpvtz",  # defined below
+        ecp: Union[str, dict] = "ccecp",  # defined below
+        scf_method: str = "DFT",  # HF or DFT
+        dft_xc: str = "LDA_X,LDA_C_PZ",
+        mp2_flag: bool = False,
+        ccsd_flag: bool = False,
+        pyscf_output: str = "out.pyscf",
+        pyscf_chkfile: str = "pyscf.chk",
+        solver_newton: bool = False,
+        twist_average: bool = False,
+        exp_to_discard: float = 0.10,
+        kpt: Optional[list] = None,  # scaled_kpts!! i.e., crystal coord.
+        kpt_grid: Optional[list] = None,
+        smearing_method: str = "fermi",
+        smearing_sigma: float = 0.00,  # Ha
         # conversion to trexio file
-        force_wf_complex=False,
+        force_wf_complex: bool = False,
     ):
+        if kpt is None:
+            kpt = [0.0, 0.0, 0.0]
+        if kpt_grid is None:
+            kpt_grid = [1, 1, 1]
 
         # structure
         self.structure_file = structure_file
@@ -169,7 +174,6 @@ pyscf_chkfile={rg(self.pyscf_chkfile)}
 structure_file={rg(self.structure_file)}
 
 # input variables
-omp_num_threads={rg(self.openmp)}
 init_guess={rg(self.init_guess)}
 cell_precision={rg(self.cell_precision)}
 multigrid_fftdf={rg(self.multigrid_fftdf)}
@@ -198,7 +202,6 @@ pyscf_calc=Pyscf_wrapper(
                         )
 
 pyscf_calc.run_pyscf(
-                  omp_num_threads=omp_num_threads,
                   init_guess=init_guess,
                   cell_precision=cell_precision,
                   multigrid_fftdf=multigrid_fftdf,

@@ -7,6 +7,7 @@ import pickle
 import glob
 import asyncio
 import pathlib
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -27,30 +28,38 @@ class DFT_workflow(Workflow):
     def __init__(
         self,
         # job
-        server_machine_name="localhost",
-        cores=1,
-        openmp=1,
-        queue="NA",
-        version="stable",
-        sleep_time=1800,  # sec.
-        jobpkl_name="job_manager",
+        server_machine_name: str = "localhost",
+        cores: int = 1,
+        openmp: int = 1,
+        queue: Optional[str] = None,
+        version: str = "stable",
+        sleep_time: int = 1800,  # sec.
+        jobpkl_name: str = "job_manager",
         # prep
-        dft_rerun=False,
-        dft_pkl_name="prep",
-        dft_grid_size=[0.1, 0.1, 0.1],
-        dft_lbox=[15.0, 15.0, 15.0],
-        dft_smearing=0.0,
-        dft_maxtime=172800,
-        dft_memlarge=False,
-        dft_maxit=50,
-        dft_conv_thr=1.0e-5,
-        dft_h_field=0.0,
-        dft_magnetic_moment_list=[],
-        dft_xc="lda",  # lda or lsda
-        dft_twist_average=False,
-        dft_independent_kpoints=False,
-        dft_kpoints=[1, 1, 1, 0, 0, 0],
+        dft_rerun: bool = False,
+        dft_pkl_name: str = "prep",
+        dft_grid_size: Optional[list] = None,
+        dft_lbox: Optional[list] = None,
+        dft_smearing: float = 0.0,
+        dft_maxtime: int = 172800,
+        dft_memlarge: float = False,
+        dft_maxit: int = 50,
+        dft_conv_thr: float = 1.0e-5,
+        dft_h_field: float = 0.0,
+        dft_magnetic_moment_list: Optional[list] = None,
+        dft_xc: str = "lda",  # lda or lsda
+        dft_twist_average: bool = False,
+        dft_independent_kpoints: bool = False,
+        dft_kpoints: Optional[list] = None,
     ):
+        if dft_grid_size is None:
+            dft_grid_size = [0.1, 0.1, 0.1]
+        if dft_lbox is None:
+            dft_lbox = [15.0, 15.0, 15.0]
+        if dft_magnetic_moment_list is None:
+            dft_magnetic_moment_list = []
+        if dft_kpoints is None:
+            dft_kpoints = [1, 1, 1, 0, 0, 0]
         # job
         self.server_machine_name = server_machine_name
         self.cores = cores

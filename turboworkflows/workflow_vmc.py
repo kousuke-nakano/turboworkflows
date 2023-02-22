@@ -7,6 +7,7 @@ import pickle
 import glob
 import asyncio
 import pathlib
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -28,28 +29,30 @@ class VMC_workflow(Workflow):
     def __init__(
         self,
         # job
-        server_machine_name="localhost",
-        cores=1,
-        openmp=1,
-        queue="NA",
-        version="stable",
-        sleep_time=1800,  # sec.
-        jobpkl_name="job_manager",
+        server_machine_name: str = "localhost",
+        cores: int = 1,
+        openmp: int = 1,
+        queue: Optional[str] = None,
+        version: str = "stable",
+        sleep_time: int = 1800,  # sec.
+        jobpkl_name: str = "job_manager",
         # vmc
-        vmc_rerun=False,
-        vmc_max_continuation=2,
-        vmc_pkl_name="vmc_genius",
-        vmc_target_error_bar=2.0e-5,  # Ha
-        vmc_trial_steps=150,
-        vmc_safe_trial_steps=True,
-        vmc_bin_block=10,
-        vmc_warmupblocks=5,
-        vmc_num_walkers=-1,  # default -1 -> num of MPI process.
-        vmc_twist_average=False,
-        vmc_kpoints=[],
-        vmc_force_calc_flag=False,
-        vmc_maxtime=172000,
+        vmc_rerun: bool = False,
+        vmc_max_continuation: int = 2,
+        vmc_pkl_name: str = "vmc_genius",
+        vmc_target_error_bar: float = 2.0e-5,  # Ha
+        vmc_trial_steps: int = 150,
+        vmc_safe_trial_steps: bool = True,
+        vmc_bin_block: int = 10,
+        vmc_warmupblocks: int = 5,
+        vmc_num_walkers: int = -1,  # default -1 -> num of MPI process.
+        vmc_twist_average: bool = False,
+        vmc_kpoints: Optional[list] = None,
+        vmc_force_calc_flag: bool = False,
+        vmc_maxtime: int = 172000,
     ):
+        if vmc_kpoints is None:
+            vmc_kpoints = []
         # job
         self.server_machine_name = server_machine_name
         self.cores = cores

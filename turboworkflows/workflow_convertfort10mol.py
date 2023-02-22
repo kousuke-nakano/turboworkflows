@@ -7,6 +7,7 @@ import pickle
 import asyncio
 import glob
 import pathlib
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -28,19 +29,19 @@ class Convertfort10mol_workflow(Workflow):
     def __init__(
         self,
         # job
-        server_machine_name="localhost",
-        cores=1,
-        openmp=1,
-        queue="NA",
-        version="stable",
-        sleep_time=1800,  # sec.
-        jobpkl_name="job_manager",
+        server_machine_name: str = "localhost",
+        cores: int = 1,
+        openmp: int = 1,
+        queue: Optional[str] = None,
+        version: str = "stable",
+        sleep_time: int = 1800,  # sec.
+        jobpkl_name: str = "job_manager",
         # convertfort10mol
-        convertfort10mol_rerun=False,
-        convertfort10mol_pkl_name="convertfort10mol_genius",
-        add_random_mo=True,
-        grid_size=0.10,
-        additional_mo=0,
+        convertfort10mol_rerun: bool = False,
+        convertfort10mol_pkl_name: str = "convertfort10mol_genius",
+        add_random_mo: bool = True,
+        grid_size: float = 0.10,
+        additional_mo: int = 0,
     ):
 
         # job

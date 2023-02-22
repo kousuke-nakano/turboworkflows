@@ -21,10 +21,10 @@ logger = getLogger("Turbo-Genius").getChild(__name__)
 
 
 def pyscf_to_trexio(
-    pyscf_checkfile="pyscf.chk",
-    trexio_filename="trexio.hdf5",
-    twist_average_in=False,
-    force_wf_complex=False,
+    pyscf_checkfile: str = "pyscf.chk",
+    trexio_filename: str = "trexio.hdf5",
+    twist_average_in: bool = False,
+    force_wf_complex: bool = False,
 ):
     # ## pySCF -> TREX-IO
     # - how to install trexio

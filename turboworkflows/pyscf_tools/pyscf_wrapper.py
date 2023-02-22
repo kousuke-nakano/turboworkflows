@@ -7,7 +7,7 @@
 # load python packages
 import numpy as np
 import scipy
-import numpy
+from typing import Optional, Union
 
 # load ASE modules
 from ase.io import read
@@ -29,8 +29,8 @@ logger = getLogger("Turbo-Genius").getChild(__name__)
 class Pyscf_wrapper:
     def __init__(
         self,
-        structure_file,
-        chkfile="pyscf.chk",
+        structure_file: str,
+        chkfile: str = "pyscf.chk",
     ):
 
         # read structural information from the file using ASE.
@@ -60,31 +60,35 @@ class Pyscf_wrapper:
 
     def run_pyscf(
         self,
-        omp_num_threads=1,
-        init_guess="minao",
-        cell_precision=1.0e-8,
-        multigrid_fftdf=False,
-        level_shift_factor=0.0,
-        charge=0,
-        spin=0,
-        spin_restricted=True,
-        basis="ccecp-ccpvtz",
-        ecp="ccecp",
-        scf_method="HF",  # HF or DFT
-        dft_xc="LDA_X,LDA_C_PZ",
-        solver_newton=False,
-        MP2_flag=False,
-        CCSD_flag=False,
-        pyscf_output="out_pyscf",
-        max_cycle=200,
-        symmetry=False,
-        twist_average=False,
-        exp_to_discard=0.10,
-        kpt=[0.0, 0.0, 0.0],  # scaled_kpts!! i.e., crystal coord.
-        kpt_grid=[1, 1, 1],
-        smearing_method="fermi",
-        smearing_sigma=0.00,  # Ha
+        init_guess: str = "minao",
+        cell_precision: float = 1.0e-8,
+        multigrid_fftdf: bool = False,
+        level_shift_factor: float = 0.0,
+        charge: int = 0,
+        spin: int = 0,
+        spin_restricted: bool = True,
+        basis: Union[str, dict] = "ccecp-ccpvtz",
+        ecp: Union[str, dict] = "ccecp",
+        scf_method: str = "HF",  # HF or DFT
+        dft_xc: str = "LDA_X,LDA_C_PZ",
+        solver_newton: bool = False,
+        MP2_flag: bool = False,
+        CCSD_flag: bool = False,
+        pyscf_output: str = "out_pyscf",
+        max_cycle: int = 200,
+        symmetry: bool = False,
+        twist_average: bool = False,
+        exp_to_discard: float = 0.10,
+        linear_dep_thr: float = 0.00,
+        kpt: Optional[list] = None,  # scaled_kpts!! i.e., crystal coord.
+        kpt_grid: Optional[list] = None,
+        smearing_method: str = "fermi",
+        smearing_sigma: float = 0.00,  # Ha
     ):
+        if kpt is None:
+            kpt = [0.0, 0.0, 0.0]
+        if kpt_grid is None:
+            kpt_grid = [1, 1, 1]
 
         if self.pbc_flag:
             cell = gto_pbc.M()
@@ -244,23 +248,36 @@ class Pyscf_wrapper:
                 mf = scf.addons.smearing_(
                     mf, sigma=smearing_sigma, method=smearing_method
                 )
+            # linear dep.
+            if linear_dep_thr > 0.0:
+                logger.info("remove_linear_dep_ is added.")
+                mf = scf.addons.remove_linear_dep_(
+                    mf, threshold=linear_dep_thr
+                )
             # newton solver
             if solver_newton:
                 logger.info("solver = newton")
                 mf = mf.newton()
             # level_shift
             if level_shift_factor > 0.0:
+                logger.info("level_shift_factor is added.")
                 scf.addons.dynamic_level_shift_(mf, factor=level_shift_factor)
             # multi DFT grid in the density fitting
             if multigrid_fftdf:
-                if twist_average:
-                    kpt_grid_m = cell.make_kpts(kpt_grid)
-                    mf.with_df = multigrid.MultiGridFFTDF(
-                        cell, kpts=kpt_grid_m
-                    )
+                logger.info("multigrid_fftdf is swithched on.")
+                if scf_method == "DFT":
+                    if twist_average:
+                        kpt_grid_m = cell.make_kpts(kpt_grid)
+                        mf.with_df = multigrid.MultiGridFFTDF(
+                            cell, kpts=kpt_grid_m
+                        )
+                    else:
+                        kpt_m = cell.get_abs_kpts(scaled_kpts=[kpt])[0]
+                        mf.with_df = multigrid.MultiGridFFTDF(cell, kpts=kpt_m)
                 else:
-                    kpt_m = cell.get_abs_kpts(scaled_kpts=[kpt])[0]
-                    mf.with_df = multigrid.MultiGridFFTDF(cell, kpts=kpt_m)
+                    logger.warning(
+                        f"multigrid.MultiGridFFTDF works only with DFT. It does not support {scf_method}."
+                    )
 
             # HF/DFT energy
             total_energy = mf.kernel()
@@ -373,12 +390,19 @@ class Pyscf_wrapper:
                 mf = scf.addons.smearing_(
                     mf, sigma=smearing_sigma, method=smearing_method
                 )
+            # linear dep.
+            if linear_dep_thr > 0.0:
+                logger.info("remove_linear_dep_ is added.")
+                mf = scf.addons.remove_linear_dep_(
+                    mf, threshold=linear_dep_thr
+                )
             # newton solver
             if solver_newton:
                 logger.info("solver = newton")
                 mf = mf.newton()
             # level_shift
             if level_shift_factor > 0.0:
+                logger.info("level_shift_factor is added.")
                 scf.addons.dynamic_level_shift_(mf, factor=level_shift_factor)
 
             # Molecular Orbitals and occupations

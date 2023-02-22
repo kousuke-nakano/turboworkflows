@@ -7,6 +7,7 @@ import pickle
 import asyncio
 import glob
 import pathlib
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -28,21 +29,20 @@ class Convertfort10_workflow(Workflow):
     def __init__(
         self,
         # job
-        server_machine_name="localhost",
-        cores=1,
-        openmp=1,
-        queue="NA",
-        version="stable",
-        sleep_time=1800,  # sec.
-        jobpkl_name="job_manager",
+        server_machine_name: str = "localhost",
+        cores: int = 1,
+        openmp: int = 1,
+        queue: Optional[str] = None,
+        version: str = "stable",
+        sleep_time: int = 1800,  # sec.
+        jobpkl_name: str = "job_manager",
         # convertfort10
-        convertfort10_rerun=False,
-        convertfort10_pkl_name="convertfort10_genius",
+        convertfort10_rerun: bool = False,
+        convertfort10_pkl_name: str = "convertfort10_genius",
         in_fort10: str = "fort.10_in",
         out_fort10: str = "fort.10_out",
         grid_size: float = 0.10,
     ):
-
         # job
         self.server_machine_name = server_machine_name
         self.cores = cores
@@ -57,7 +57,6 @@ class Convertfort10_workflow(Workflow):
         self.in_fort10 = in_fort10
         self.out_fort10 = out_fort10
         self.grid_size = grid_size
-
         # return values
         self.status = "init"
         self.output_files = []

@@ -10,6 +10,7 @@ import pathlib
 import filecmp
 import matplotlib.pyplot as plt
 import numpy as np
+from typing import Optional
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -33,34 +34,40 @@ class LRDMC_ext_workflow(Workflow):
     def __init__(
         self,
         # job
-        server_machine_name="localhost",
-        cores=1,
-        openmp=1,
-        queue="NA",
-        version="stable",
-        sleep_time=1800,  # sec.
-        jobpkl_name="job_manager",
+        server_machine_name: str = "localhost",
+        cores: int = 1,
+        openmp: int = 1,
+        queue: Optional[str] = None,
+        version: str = "stable",
+        sleep_time: int = 1800,  # sec.
+        jobpkl_name: str = "job_manager",
         # lrdmc
-        lrdmc_input_files=["fort.10", "pseudo.dat"],
-        lrdmc_rerun=False,
-        lrdmc_max_continuation=2,
-        lrdmc_pkl_name="lrdmc_genius",
-        lrdmc_target_error_bar=2.0e-5,  # Ha
-        lrdmc_trial_steps=150,
-        lrdmc_bin_block=10,
-        lrdmc_warmupblocks=5,
-        lrdmc_correcting_factor=10,
-        lrdmc_trial_etry=0.0,
-        lrdmc_alat_list=[-0.20, -0.30, -0.40],
-        lrdmc_time_branching=0.10,
-        lrdmc_nonlocalmoves="dlatm",  # tmove, dla, dlatm
-        lrdmc_num_walkers=-1,  # default -1 -> num of MPI process.
-        lrdmc_twist_average=False,
-        lrdmc_kpoints=[],
-        lrdmc_force_calc_flag=False,
-        lrdmc_maxtime=172000,
-        degree_poly=2,
+        lrdmc_input_files: Optional[list] = None,
+        lrdmc_rerun: bool = False,
+        lrdmc_max_continuation: int = 2,
+        lrdmc_pkl_name: str = "lrdmc_genius",
+        lrdmc_target_error_bar: float = 2.0e-5,  # Ha
+        lrdmc_trial_steps: int = 150,
+        lrdmc_bin_block: int = 10,
+        lrdmc_warmupblocks: int = 5,
+        lrdmc_correcting_factor: int = 10,
+        lrdmc_trial_etry: float = 0.0,
+        lrdmc_alat_list: Optional[list] = None,
+        lrdmc_time_branching: float = 0.10,
+        lrdmc_nonlocalmoves: str = "dlatm",  # tmove, dla, dlatm
+        lrdmc_num_walkers: int = -1,  # default -1 -> num of MPI process.
+        lrdmc_twist_average: float = False,
+        lrdmc_kpoints: Optional[list] = None,
+        lrdmc_force_calc_flag: bool = False,
+        lrdmc_maxtime: int = 172000,
+        degree_poly: int = 2,
     ):
+        if lrdmc_input_files is None:
+            lrdmc_input_files = ["fort.10", "pseudo.dat"]
+        if lrdmc_alat_list is None:
+            lrdmc_alat_list = [-0.20, -0.30, -0.40]
+        if lrdmc_kpoints is None:
+            lrdmc_kpoints = []
         # job
         self.server_machine_name = server_machine_name
         self.cores = cores
