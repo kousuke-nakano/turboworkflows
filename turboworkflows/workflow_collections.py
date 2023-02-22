@@ -200,14 +200,14 @@ class Init_occ_workflow(Workflow):
 
             # fixed all occupied orbitals
             if self.mo_occ_fixed_occupied:
-                for i_nel in range(io_fort10.f10_header.neldn):
+                for i_nel in range(io_fort10.f10header.neldn):
                     if i_nel not in self.mo_occ_fixed_list:
                         self.mo_occ_fixed_list.append(i_nel)
 
                 for nel_diff in range(
-                    io_fort10.f10_header.nelup - io_fort10.f10_header.neldn
+                    io_fort10.f10header.nelup - io_fort10.f10header.neldn
                 ):
-                    i_nel = len(mo_index) - nel_diff - 1
+                    i_nel = len(io_fort10.f10detmat_sym.constraint_num) - nel_diff - 1
                     if i_nel not in self.mo_occ_fixed_list:
                         self.mo_occ_fixed_list.append(i_nel)
 
@@ -237,7 +237,7 @@ class Init_occ_workflow(Workflow):
 
             io_fort10.f10detmat_sym.constraint_num = sym_const_num_list
             io_fort10.f10detmatrix.coeff_real = coeff_real
-            logger.info(io_fort10.f10detmatrix.coeff_real)
+            logger.info(f"Replaced coeff_real={io_fort10.f10detmatrix.coeff_real}")
 
             with open(
                 os.path.join(self.init_occ_dir, self.init_occ_pkl), "wb"

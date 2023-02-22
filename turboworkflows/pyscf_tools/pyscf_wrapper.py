@@ -23,7 +23,7 @@ from pyscf.pbc.dft import multigrid
 # Logger
 from logging import getLogger, StreamHandler, Formatter
 
-logger = getLogger("Turbo-Genius").getChild(__name__)
+logger = getLogger("Turbo-Workflows").getChild(__name__)
 
 
 class Pyscf_wrapper:
@@ -98,6 +98,9 @@ class Pyscf_wrapper:
             cell.output = pyscf_output
             cell.charge = charge
             cell.spin = spin
+            if cell.spin == 0 and not spin_restricted:
+                spin_restricted = True
+                logger.warning(f"spin_restricted is set True.")
             cell.symmetry = False
             a = cell.a
             cell.a = np.array(
@@ -309,6 +312,9 @@ class Pyscf_wrapper:
             mol.unit = "A"  # angstrom
             mol.charge = charge
             mol.spin = spin
+            if mol.spin == 0 and not spin_restricted:
+                spin_restricted = True
+                logger.warning(f"spin_restricted is set True.")
             mol.symmetry = symmetry
             # print(mol_string)
 
@@ -552,7 +558,7 @@ def cli():
     from logging import getLogger, StreamHandler, Formatter
 
     log_level = "INFO"
-    logger = getLogger("pyscf-trexio")
+    logger = getLogger("Turbo-Workflows")
     logger.setLevel(log_level)
     stream_handler = StreamHandler()
     stream_handler.setLevel(log_level)
@@ -666,7 +672,7 @@ def cli():
 
 
 if __name__ == "__main__":
-    logger = getLogger("Turbo-Genius")
+    logger = getLogger("Turbo-Workflows")
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
