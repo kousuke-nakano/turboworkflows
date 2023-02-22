@@ -46,7 +46,7 @@ class Pyscf_wrapper:
             logger.info("Molecule")
         self.chkfile = chkfile
 
-    def get_mo_index(self, mo_occ_thr=1.0e-3):
+    def get_mo_index(self, mo_occ_thr: float = 1.0e-3):
         mf = scf.chkfile.load(self.chkfile, "scf")
         mo_occ = mf["mo_occ"]
         mo_index = []
@@ -100,7 +100,7 @@ class Pyscf_wrapper:
             cell.spin = spin
             if cell.spin == 0 and not spin_restricted:
                 spin_restricted = True
-                logger.warning(f"spin_restricted is set True.")
+                logger.warning("spin_restricted is set True.")
             cell.symmetry = False
             a = cell.a
             cell.a = np.array(
@@ -314,7 +314,7 @@ class Pyscf_wrapper:
             mol.spin = spin
             if mol.spin == 0 and not spin_restricted:
                 spin_restricted = True
-                logger.warning(f"spin_restricted is set True.")
+                logger.warning("spin_restricted is set True.")
             mol.symmetry = symmetry
             # print(mol_string)
 
