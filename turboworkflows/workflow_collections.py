@@ -18,6 +18,7 @@ from turbogenius.makefort10_genius import Makefort10_genius
 from turbogenius.convertfort10mol_genius import Convertfort10mol_genius
 from turbogenius.tools_genius import copy_jastrow
 from turbogenius.pyturbo.io_fort10 import IO_fort10
+from turbogenius.wavefunction import Wavefunction
 
 # turboworkflows packages
 # sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -83,9 +84,7 @@ class Jastrowcopy_workflow(Workflow):
                 os.path.join(self.jastrowcopy_dir, self.jastrowcopy_pkl), "wb"
             ) as f:
                 pickle.dump("dummy", f)
-            with open(
-                os.path.join(self.pkl_dir, self.jastrowcopy_pkl), "wb"
-            ) as f:
+            with open(os.path.join(self.pkl_dir, self.jastrowcopy_pkl), "wb") as f:
                 pickle.dump("dummy", f)
 
             os.chdir(self.root_dir)
@@ -99,8 +98,7 @@ class Jastrowcopy_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -187,9 +185,7 @@ class Init_occ_workflow(Workflow):
                             self.mo_occ[i] >= self.mo_occ_thr
                             and self.mo_occ[i + 1] < self.mo_occ_thr
                         ):
-                            logger.info(
-                                f"mo_occ < {self.mo_occ_thr} is 1-{i + 1}"
-                            )
+                            logger.info(f"mo_occ < {self.mo_occ_thr} is 1-{i + 1}")
                             break
 
                 else:  # mo_num_conv != -1:
@@ -239,13 +235,9 @@ class Init_occ_workflow(Workflow):
             io_fort10.f10detmatrix.coeff_real = coeff_real
             logger.info(f"Replaced coeff_real={io_fort10.f10detmatrix.coeff_real}")
 
-            with open(
-                os.path.join(self.init_occ_dir, self.init_occ_pkl), "wb"
-            ) as f:
+            with open(os.path.join(self.init_occ_dir, self.init_occ_pkl), "wb") as f:
                 pickle.dump("dummy", f)
-            with open(
-                os.path.join(self.pkl_dir, self.init_occ_pkl), "wb"
-            ) as f:
+            with open(os.path.join(self.pkl_dir, self.init_occ_pkl), "wb") as f:
                 pickle.dump("dummy", f)
 
             os.chdir(self.root_dir)
@@ -259,8 +251,7 @@ class Init_occ_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -378,9 +369,7 @@ class Makefort10_workflow(Workflow):
                 os.path.join(self.makefort10_dir, self.makefort10_pkl), "wb"
             ) as f:
                 pickle.dump("dummy", f)
-            with open(
-                os.path.join(self.pkl_dir, self.makefort10_pkl), "wb"
-            ) as f:
+            with open(os.path.join(self.pkl_dir, self.makefort10_pkl), "wb") as f:
                 pickle.dump("dummy", f)
 
             os.chdir(self.root_dir)
@@ -398,8 +387,7 @@ class Makefort10_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -462,15 +450,11 @@ class Convertfort10mol_workflow(Workflow):
             convertfort10mol.run_all()
 
             with open(
-                os.path.join(
-                    self.convertfort10mol_dir, self.convertfort10mol_pkl
-                ),
+                os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl),
                 "wb",
             ) as f:
                 pickle.dump("dummy", f)
-            with open(
-                os.path.join(self.pkl_dir, self.convertfort10mol_pkl), "wb"
-            ) as f:
+            with open(os.path.join(self.pkl_dir, self.convertfort10mol_pkl), "wb") as f:
                 pickle.dump("dummy", f)
 
             os.chdir(self.root_dir)
@@ -484,8 +468,114 @@ class Convertfort10mol_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
+        ]
+        self.output_files = [
+            str(p.resolve().relative_to(self.root_dir)) for p in p_list
+        ]
+        return self.status, self.output_files, self.output_values
+
+
+# convertfort10mol
+class Conversion_wf_workflow(Workflow):
+    def __init__(
+        self,
+        conversion_wf_rerun: bool = False,
+        conversion_wf_pkl_name: str = "conversion_wf_genius",
+        to_wf: str = "agps",  # ['sd','agps', 'agpu', 'pf']
+        grid_size: float = 0.10,
+        additional_hyb: Optional[list] = None,
+        nosym: bool = False,
+        clean_flag: bool = True,
+        only_generate_template: bool = False,
+    ):
+        if additional_hyb is None:
+            additional_hyb = []
+        # conversion_wf
+        self.conversion_wf_rerun = conversion_wf_rerun
+        self.conversion_wf_pkl_name = conversion_wf_pkl_name
+        # variables
+        self.to_wf = to_wf
+        self.grid_size = grid_size
+        self.additional_hyb = additional_hyb
+        self.nosym = nosym
+        self.clean_flag = clean_flag
+        self.only_generate_template = only_generate_template
+        self.wavefunction = Wavefunction()
+
+        # return values
+        self.status = "init"
+        self.output_files = []
+        self.output_values = {}
+
+    async def async_launch(self):
+        ###############################################
+        # Start a workflow
+        ###############################################
+        self.root_dir = os.getcwd()
+        logger.info(f"Current dir = {self.root_dir}")
+
+        # ******************
+        # conversion_wf
+        # ******************
+        os.chdir(self.root_dir)
+        self.conversion_wf_dir = os.path.join(self.root_dir)
+        self.pkl_dir = os.path.join(self.conversion_wf_dir, "pkl")
+        logger.info(f"Project root dir = {self.conversion_wf_dir}")
+        self.conversion_wf_pkl = f"{self.conversion_wf_pkl_name}.pkl"
+
+        if self.conversion_wf_rerun or not os.path.isfile(
+            os.path.join(self.pkl_dir, self.conversion_wf_pkl)
+        ):
+            logger.info("Start: conversion_wf")
+            os.makedirs(self.pkl_dir, exist_ok=True)
+            os.chdir(self.conversion_wf_dir)
+
+            if self.to_wf == "sd":
+                logger.error("Conversion to sd is not implemented yet.")
+                raise NotImplementedError
+            elif self.to_wf == "pf":
+                logger.error("Conversion to pf is not implemented yet.")
+                raise NotImplementedError
+            elif self.to_wf in {"agps", "agpu"}:
+                # singlet or triplet
+                if self.to_wf == "agps":
+                    triplet = False
+                else:
+                    triplet = True
+                # WF conversion
+                self.wavefunction.to_agp(
+                    triplet=triplet,
+                    pfaffian_flag=False,
+                    grid_size=self.grid_size,
+                    additional_hyb=self.additional_hyb,
+                    nosym=self.nosym,
+                    clean_flag=self.clean_flag,
+                    only_generate_template=self.only_generate_template,
+                )
+            else:
+                raise NotImplementedError
+
+            with open(
+                os.path.join(self.conversion_wf_dir, self.conversion_wf_pkl),
+                "wb",
+            ) as f:
+                pickle.dump("dummy", f)
+            with open(os.path.join(self.pkl_dir, self.conversion_wf_pkl), "wb") as f:
+                pickle.dump("dummy", f)
+
+            os.chdir(self.root_dir)
+
+        else:
+            logger.info("Skip: conversion_wf")
+
+        logger.info("End: conversion_wf workflow ends.")
+        await asyncio.sleep(1)
+        os.chdir(self.root_dir)
+
+        self.status = "success"
+        p_list = [
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -498,8 +588,6 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
