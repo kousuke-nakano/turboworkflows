@@ -54,7 +54,7 @@ class LRDMC_ext_workflow(Workflow):
         lrdmc_trial_etry: float = 0.0,
         lrdmc_alat_list: Optional[list] = None,
         lrdmc_time_branching: float = 0.10,
-        lrdmc_nonlocalmoves: str = "dlatm",  # tmove, dla, dlatm
+        lrdmc_nonlocalmoves: str = "dla",  # tmove, dla, dlatm
         lrdmc_num_walkers: int = -1,  # default -1 -> num of MPI process.
         lrdmc_twist_average: float = False,
         lrdmc_kpoints: Optional[list] = None,
