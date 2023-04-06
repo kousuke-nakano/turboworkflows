@@ -187,6 +187,14 @@ class VMC_workflow(Workflow):
                         mcmc_steps = get_linenum_fort12(
                             os.path.join(self.vmc_dir, "fort.12")
                         )
+
+                        if self.vmc_twist_average:
+                            # read k_num since the actual num. of mcmc steps' = mcmc_steps / k_num
+                            with open(os.path.join(self.vmc_dir, "kp_info.dat"), "r") as f:
+                                line = f.readline()
+                                k_num = int(line)
+                                mcmc_steps = int(mcmc_steps / k_num)
+
                         energy, error = (
                             vmc_genius.energy,
                             vmc_genius.energy_error,
