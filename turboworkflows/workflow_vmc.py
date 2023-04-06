@@ -247,6 +247,16 @@ class VMC_workflow(Workflow):
                             f"The estimated steps to achieve the target error bar is {vmc_steps_estimated_proper:d} steps"
                         )
 
+                        logger.info(
+                            f"The steps already done is {mcmc_steps-self.vmc_bin_block*self.vmc_warmupblocks:d} steps"
+                        )
+
+                        vmc_steps_estimated_proper = max(vmc_steps_estimated_proper - (mcmc_steps - self.vmc_bin_block * self.vmc_warmupblocks), 1)
+
+                        logger.info(
+                            f"The additional steps is {vmc_steps_estimated_proper:d} steps"
+                        )
+
                         estimated_time_for_1_generation = (
                             vmc_genius.estimated_time_for_1_generation
                         )

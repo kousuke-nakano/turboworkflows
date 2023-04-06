@@ -261,6 +261,16 @@ class LRDMC_workflow(Workflow):
                             f"The estimated steps to achieve the target error bar is {lrdmc_steps_estimated_proper:d} steps"
                         )
 
+                        logger.info(
+                            f"The steps already done is {mcmc_steps-self.lrdmc_bin_block*self.lrdmc_warmupblocks:d} steps"
+                        )
+
+                        lrdmc_steps_estimated_proper = max(lrdmc_steps_estimated_proper - (mcmc_steps - self.lrdmc_bin_block * self.lrdmc_warmupblocks), 1)
+
+                        logger.info(
+                            f"The additional steps is {lrdmc_steps_estimated_proper:d} steps"
+                        )
+
                         estimated_time_for_1_generation = (
                             lrdmc_genius.estimated_time_for_1_generation
                         )
