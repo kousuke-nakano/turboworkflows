@@ -82,7 +82,7 @@ class Encapsulated_Workflow:
             else:
                 rename_flag = False
             logger.info(f"rename_flag = {rename_flag}")
-            logger.info(f"cd {os.getcwd()}")
+            logger.info(f"cwd = {os.getcwd()}")
             for i, file in enumerate(self.input_files):
                 if os.path.isfile(file):  # file
                     if rename_flag:

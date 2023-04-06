@@ -187,6 +187,14 @@ class VMC_workflow(Workflow):
                         mcmc_steps = get_linenum_fort12(
                             os.path.join(self.vmc_dir, "fort.12")
                         )
+
+                        if self.vmc_twist_average:
+                            # read k_num since the actual num. of mcmc steps' = mcmc_steps / k_num
+                            with open(os.path.join(self.vmc_dir, "kp_info.dat"), "r") as f:
+                                line = f.readline()
+                                k_num = int(line)
+                                mcmc_steps = int(mcmc_steps / k_num)
+
                         energy, error = (
                             vmc_genius.energy,
                             vmc_genius.energy_error,
@@ -237,6 +245,16 @@ class VMC_workflow(Workflow):
                         )
                         logger.info(
                             f"The estimated steps to achieve the target error bar is {vmc_steps_estimated_proper:d} steps"
+                        )
+
+                        logger.info(
+                            f"The steps already done is {mcmc_steps-self.vmc_bin_block*self.vmc_warmupblocks:d} steps"
+                        )
+
+                        vmc_steps_estimated_proper = max(vmc_steps_estimated_proper - (mcmc_steps - self.vmc_bin_block * self.vmc_warmupblocks), 1)
+
+                        logger.info(
+                            f"The additional steps is {vmc_steps_estimated_proper:d} steps"
                         )
 
                         estimated_time_for_1_generation = (

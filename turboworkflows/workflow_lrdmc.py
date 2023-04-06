@@ -51,7 +51,7 @@ class LRDMC_workflow(Workflow):
         lrdmc_trial_etry: float = 0.0,
         lrdmc_alat: float = -0.20,
         lrdmc_time_branching: float = 0.10,
-        lrdmc_nonlocalmoves: str = "dlatm",  # tmove, dla, dlatm
+        lrdmc_nonlocalmoves: str = "dla",  # tmove, dla, dlatm
         lrdmc_num_walkers: int = -1,  # default -1 -> num of MPI process.
         lrdmc_twist_average: bool = False,
         lrdmc_kpoints: Optional[list] = None,
@@ -202,6 +202,12 @@ class LRDMC_workflow(Workflow):
                         mcmc_steps = get_linenum_fort12(
                             os.path.join(self.lrdmc_dir, "fort.12")
                         )
+                        if self.lrdmc_twist_average:
+                            # read k_num since the actual num. of mcmc steps' = mcmc_steps / k_num
+                            with open(os.path.join(self.lrdmc_dir, "kp_info.dat"), "r") as f:
+                                line = f.readline()
+                                k_num = int(line)
+                                mcmc_steps = int(mcmc_steps / k_num)
                         energy, error = (
                             lrdmc_genius.energy,
                             lrdmc_genius.energy_error,
@@ -253,6 +259,16 @@ class LRDMC_workflow(Workflow):
                         )
                         logger.info(
                             f"The estimated steps to achieve the target error bar is {lrdmc_steps_estimated_proper:d} steps"
+                        )
+
+                        logger.info(
+                            f"The steps already done is {mcmc_steps-self.lrdmc_bin_block*self.lrdmc_warmupblocks:d} steps"
+                        )
+
+                        lrdmc_steps_estimated_proper = max(lrdmc_steps_estimated_proper - (mcmc_steps - self.lrdmc_bin_block * self.lrdmc_warmupblocks), 1)
+
+                        logger.info(
+                            f"The additional steps is {lrdmc_steps_estimated_proper:d} steps"
                         )
 
                         estimated_time_for_1_generation = (

@@ -257,6 +257,11 @@ def pyscf_to_trexio(
         else:
             spin_restricted = True
 
+        # spin unrestricted is supported only with trexio >= 1.3.0
+        if not spin_restricted and not trexio.__version__ >= '1.3.0':
+            logger.error("spin unrestricted is supported only with trexio >= 1.3.0")
+            raise NotImplementedError
+
         # the followins are given to TREXIO file lager if spin_restricted == False,
         mo_coefficient_all = []
         mo_occupation_all = []

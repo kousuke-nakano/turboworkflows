@@ -530,7 +530,9 @@ class Conversion_wf_workflow(Workflow):
             logger.info("Start: conversion_wf")
             os.makedirs(self.pkl_dir, exist_ok=True)
             os.chdir(self.conversion_wf_dir)
-
+            
+            # read WF
+            self.wavefunction.read_from_fort10(fort10="fort.10")
             if self.to_wf == "sd":
                 logger.error("Conversion to sd is not implemented yet.")
                 raise NotImplementedError

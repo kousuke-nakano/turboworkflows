@@ -53,7 +53,7 @@ class LRDMCopt_workflow(Workflow):
         lrdmcopt_alat: float = -0.20,
         lrdmcopt_time_branching: float = 0.10,
         lrdmcopt_trial_etry: float = 0.0,
-        lrdmcopt_nonlocalmoves: str = "dlatm",  # tmove, dla, dlatm
+        lrdmcopt_nonlocalmoves: str = "dla",  # tmove, dla, dlatm
         lrdmcopt_onebody: bool = False,
         lrdmcopt_twobody: bool = False,
         lrdmcopt_det_mat: bool = True,
