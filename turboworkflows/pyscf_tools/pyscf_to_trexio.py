@@ -1,14 +1,11 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # pySCF -> TREX-IO (Water molecule)
+# pySCF chkpoint file -> TREXIO hdf5 file
+# author: Kosuke Nakano
+# maintainer: Kosuke Nakano
+# email: "kousuke_1123@icloud.com"
 
 # load python packages
 import os
 import numpy as np
-
-# load ASE modules
-from ase.units import Bohr
 
 # load pyscf packages
 from pyscf import scf
@@ -40,13 +37,6 @@ def pyscf_to_trexio(
     # pyscf instances
     mol = scf.chkfile.load_mol(pyscf_checkfile)
     mf = scf.chkfile.load(pyscf_checkfile, "scf")
-
-    """
-    # symmetry-imposed calculation is not supported yet.
-    if mol.symmetry:
-        logger.error("symmetry-imposed calculation is not supported yet.")
-        raise NotImplementedError
-    """
 
     # PBC info
     try:
@@ -126,14 +116,13 @@ def pyscf_to_trexio(
             os.remove(filename)
 
         # trexio file
-        trexio_file = trexio.File(
-            filename, mode="w", back_end=trexio.TREXIO_HDF5
-        )
+        trexio_file = trexio.File(filename, mode="w", back_end=trexio.TREXIO_HDF5)
 
         ##########################################
         # PBC info
         ##########################################
         if pbc_flag:
+            Bohr = 0.5291772109
             a = np.array(mol.a[0]) / Bohr  # angstrom -> bohr
             b = np.array(mol.a[1]) / Bohr  # angstrom -> bohr
             c = np.array(mol.a[2]) / Bohr  # angstrom -> bohr
@@ -163,9 +152,7 @@ def pyscf_to_trexio(
             for i in range(mol.natm)
         ]
         """
-        chemical_symbol_list = [
-            mol.atom_pure_symbol(i) for i in range(mol.natm)
-        ]
+        chemical_symbol_list = [mol.atom_pure_symbol(i) for i in range(mol.natm)]
         atom_symbol_list = [mol.atom_symbol(i) for i in range(mol.natm)]
         coords_np = mol.atom_coords(unit="Bohr")
 
@@ -189,17 +176,13 @@ def pyscf_to_trexio(
         # for l >= d -> m=(-l ... 0 ... +l)
 
         basis_type = "G"  # thanks anthony!
-        basis_shell_num = int(
-            np.sum([mol.atom_nshells(i) for i in range(nucleus_num)])
-        )
+        basis_shell_num = int(np.sum([mol.atom_nshells(i) for i in range(nucleus_num)]))
         nucleus_index = []
         for i in range(nucleus_num):
             for _ in range(len(mol.atom_shell_ids(i))):
                 nucleus_index.append(i)
         shell_ang_mom = [mol.bas_angular(i) for i in range(basis_shell_num)]
-        basis_prim_num = int(
-            np.sum([mol.bas_nprim(i) for i in range(basis_shell_num)])
-        )
+        basis_prim_num = int(np.sum([mol.bas_nprim(i) for i in range(basis_shell_num)]))
 
         basis_exponent = []
         basis_coefficient = []
@@ -215,9 +198,7 @@ def pyscf_to_trexio(
                 basis_shell_index.append(i)
 
         # normalization factors
-        basis_shell_factor = [
-            1.0 for _ in range(basis_shell_num)
-        ]  # 1.0 in pySCF
+        basis_shell_factor = [1.0 for _ in range(basis_shell_num)]  # 1.0 in pySCF
 
         # gto_norm(l, expnt) => l is angmom, expnt is exponent
         # Note!! Here, the normalization factor of the spherical part
@@ -228,11 +209,9 @@ def pyscf_to_trexio(
         for prim_i in range(basis_prim_num):
             coeff = basis_coefficient[prim_i]
             expnt = basis_exponent[prim_i]
-            l = shell_ang_mom[basis_shell_index[prim_i]]
+            l_num = shell_ang_mom[basis_shell_index[prim_i]]
             basis_prim_factor.append(
-                mol.gto_norm(l, expnt)
-                / np.sqrt(4 * np.pi)
-                * np.sqrt(2 * l + 1)
+                mol.gto_norm(l_num, expnt) / np.sqrt(4 * np.pi) * np.sqrt(2 * l_num + 1)
             )
 
         ##########################################
@@ -324,43 +303,33 @@ def pyscf_to_trexio(
                     for i in range(len(mo_occupation) - 1)
                 ]
             )
-            logger.info(
-                f"MO occupations are in the descending order ? -> {order_bool}"
-            )
+            logger.info(f"MO occupations are in the descending order ? -> {order_bool}")
             if not order_bool:
-                logger.warning(
-                    "MO occupations are not in the descending order!!"
-                )
+                logger.warning("MO occupations are not in the descending order!!")
                 logger.warning("RO (restricted open-shell) calculations?")
                 logger.warning("Reordering MOs...")
                 # reordering MOs.
                 # descending order (mo occ)
                 reo_moocc_index = np.argsort(mo_occupation)[::-1]
-                mo_occupation_o = [mo_occupation[l] for l in reo_moocc_index]
-                mo_energy_o = [mo_energy[l] for l in reo_moocc_index]
-                mo_coeff_o = [mo_coeff[l] for l in reo_moocc_index]
+                mo_occupation_o = [mo_occupation[l_num] for l_num in reo_moocc_index]
+                mo_energy_o = [mo_energy[l_num] for l_num in reo_moocc_index]
+                mo_coeff_o = [mo_coeff[l_num] for l_num in reo_moocc_index]
                 # descending order (mo energy)
                 mo_coeff = []
                 mo_occupation = []
                 mo_energy = []
-                set_mo_occupation = sorted(
-                    list(set(mo_occupation_o)), reverse=True
-                )
+                set_mo_occupation = sorted(list(set(mo_occupation_o)), reverse=True)
                 for mo_occ in set_mo_occupation:
                     mo_re_index = [
-                        i
-                        for i, mo in enumerate(mo_occupation_o)
-                        if mo == mo_occ
+                        i for i, mo in enumerate(mo_occupation_o) if mo == mo_occ
                     ]
-                    mo_occupation_t = [mo_occupation_o[l] for l in mo_re_index]
-                    mo_energy_t = [mo_energy_o[l] for l in mo_re_index]
-                    mo_coeff_t = [mo_coeff_o[l] for l in mo_re_index]
+                    mo_occupation_t = [mo_occupation_o[l_num] for l_num in mo_re_index]
+                    mo_energy_t = [mo_energy_o[l_num] for l_num in mo_re_index]
+                    mo_coeff_t = [mo_coeff_o[l_num] for l_num in mo_re_index]
                     reo_ene_index = np.argsort(mo_energy_t)
-                    mo_occupation += [
-                        mo_occupation_t[l] for l in reo_ene_index
-                    ]
-                    mo_energy += [mo_energy_t[l] for l in reo_ene_index]
-                    mo_coeff += [mo_coeff_t[l] for l in reo_ene_index]
+                    mo_occupation += [mo_occupation_t[l_num] for l_num in reo_ene_index]
+                    mo_energy += [mo_energy_t[l_num] for l_num in reo_ene_index]
+                    mo_coeff += [mo_coeff_t[l_num] for l_num in reo_ene_index]
 
             logger.debug("--mo_num--")
             logger.debug(mo_num)
@@ -441,9 +410,7 @@ def pyscf_to_trexio(
                             reorder_index.append(l0_index - i)
 
                     else:
-                        raise ValueError(
-                            "A wrong value was set to current_ang_mom."
-                        )
+                        raise ValueError("A wrong value was set to current_ang_mom.")
 
                     mo_coeff_for_reord.append(ao_c)
 
@@ -482,9 +449,7 @@ def pyscf_to_trexio(
         else:
             imag_flags = []
             for mo in mo_coefficient_all:
-                imag_flags += list(
-                    np.isreal(list(np.real_if_close(mo, tol=100)))
-                )
+                imag_flags += list(np.isreal(list(np.real_if_close(mo, tol=100))))
             # print(imag_flags)
             if all(imag_flags):
                 complex_flag = False
@@ -507,52 +472,9 @@ def pyscf_to_trexio(
 
         else:
             logger.info("The WF is real")
-            mo_coefficient_real = [
-                list(np.array(mo).real) for mo in mo_coefficient_all
-            ]
+            mo_coefficient_real = [list(np.array(mo).real) for mo in mo_coefficient_all]
 
         logger.debug("--MOs Done--")
-
-        """ to be deleted, no longer used.
-        ##########################################
-        # atomic orbital integrals
-        ##########################################
-
-        def row_column_swap(inp_matrix, perm_list):
-            mat_org = inp_matrix
-            mat_row_swap = np.array([mat_org[i] for i in perm_list])
-            mat_row_swap_T = mat_row_swap.T
-            mat_row_swap_col_swap = np.array(
-                [mat_row_swap_T[i] for i in perm_list]
-            )
-            mat_inv = mat_row_swap_col_swap.T
-
-            return mat_inv
-
-        perm_list = permutation_matrix[0]
-        if pbc_flag:
-            # logger.warning("1b integral for pbc is at gamma!
-            # Generic k points will be implemented.")
-            intor_int1e_ovlp = row_column_swap(
-                mol.pbc_intor("int1e_ovlp"), perm_list
-            )
-            intor_int1e_nuc = row_column_swap(
-                mol.pbc_intor("int1e_nuc"), perm_list
-            )
-            intor_int1e_kin = row_column_swap(
-                mol.pbc_intor("int1e_kin"), perm_list
-            )
-        else:
-            intor_int1e_ovlp = row_column_swap(
-                mol.intor("int1e_ovlp"), perm_list
-            )
-            intor_int1e_nuc = row_column_swap(
-                mol.intor("int1e_nuc"), perm_list
-            )
-            intor_int1e_kin = row_column_swap(
-                mol.intor("int1e_kin"), perm_list
-            )
-        """
 
         ##########################################
         # basis set info
@@ -649,9 +571,7 @@ def pyscf_to_trexio(
                 ecp_z_core.append(z_core)
 
                 # max_ang_mom
-                max_ang_mom = max(
-                    [ecp[0] for ecp in ecp_list]
-                )  # this is lmax, right?
+                max_ang_mom = max([ecp[0] for ecp in ecp_list])  # this is lmax, right?
                 if max_ang_mom == -1:
                     # special case!! H and He.
                     # PySCF database does not define the ul-s part for them.
@@ -689,9 +609,7 @@ def pyscf_to_trexio(
 
             # write to the trex file
             trexio.write_ecp_num(trexio_file, ecp_num)
-            trexio.write_ecp_max_ang_mom_plus_1(
-                trexio_file, ecp_max_ang_mom_plus_1
-            )
+            trexio.write_ecp_max_ang_mom_plus_1(trexio_file, ecp_max_ang_mom_plus_1)
             trexio.write_ecp_z_core(trexio_file, ecp_z_core)
             trexio.write_ecp_nucleus_index(trexio_file, ecp_nucleus_index)
             trexio.write_ecp_ang_mom(trexio_file, ecp_ang_mom)
