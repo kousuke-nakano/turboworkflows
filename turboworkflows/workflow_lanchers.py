@@ -151,6 +151,8 @@ class Launcher:
         logger_w.info("")
 
         # attributes
+        self.launcher_root_dir = os.getcwd()
+        logger_w.info(f"launcher_root_dir={self.launcher_root_dir}")
         self.cworkflows_list = cworkflows_list
         self.cworkflows_dict = {
             cworkflows.label: cworkflows for cworkflows in cworkflows_list
@@ -159,7 +161,6 @@ class Launcher:
             dependency_graph_draw=dependency_graph_draw
         )
         self.topological_orders = self.__get_topological_orders()
-        self.launcher_root_dir = os.getcwd()
 
     def launch(self):
         os.chdir(self.launcher_root_dir)
@@ -194,11 +195,16 @@ class Launcher:
         vtype = v.vtype
         name = v.name
         if vtype == "file":
-            assert name in getattr(self.cworkflows_dict[label], "output_files")
+            if name not in getattr(self.cworkflows_dict[label], "output_files"):
+                logger.error(f"name={name}")
+                logger.error(f"output_files={getattr(self.cworkflows_dict[label], 'output_files')}")
+                logger.error(f"name not in output_files")
+                raise ValueError
             dirname = getattr(self.cworkflows_dict[label], "dirname")
             filepath = os.path.join(dirname, name)
             p = pathlib.Path(filepath)
-            return p.resolve().relative_to(p.cwd())
+            return p.resolve().relative_to(p.cwd()) # return absolute path
+            #return p.resolve().relative_to(self.launcher_root_dir)
         else:
             rvalue = getattr(self.cworkflows_dict[label], "output_values")
             return rvalue[name]
