@@ -50,6 +50,7 @@ class DFT_workflow(Workflow):
         dft_xc: str = "lda",  # lda or lsda
         dft_twist_average: bool = False,
         dft_independent_kpoints: bool = False,
+        dft_thr_lindep: float = 1.0e-13,
         dft_kpoints: Optional[list] = None,
     ):
         if dft_grid_size is None:
@@ -83,6 +84,7 @@ class DFT_workflow(Workflow):
         self.dft_xc = dft_xc
         self.dft_twist_average = dft_twist_average
         self.dft_independent_kpoints = dft_independent_kpoints
+        self.dft_thr_lindep = dft_thr_lindep
         self.dft_kpoints = dft_kpoints
         # return values
         self.status = "init"
@@ -122,9 +124,7 @@ class DFT_workflow(Workflow):
             if self.dft_rerun or not os.path.isfile(
                 os.path.join(self.dft_dir, self.dft_pkl)
             ):
-                logger.info(
-                    f"{self.dft_pkl} does not exist. or dft_rerun = .true."
-                )
+                logger.info(f"{self.dft_pkl} does not exist. or dft_rerun = .true.")
 
                 # generate a DFT instance
                 dft_genius = DFT_genius(
@@ -140,6 +140,7 @@ class DFT_workflow(Workflow):
                     xc=self.dft_xc,
                     twist_average=self.dft_twist_average,
                     independent_kpoints=self.dft_independent_kpoints,
+                    thr_lindep=self.dft_thr_lindep,
                     kpoints=self.dft_kpoints,
                 )
 
@@ -201,16 +202,12 @@ class DFT_workflow(Workflow):
             if self.dft_rerun or not os.path.isfile(
                 os.path.join(self.pkl_dir, self.dft_pkl)
             ):
-                logger.info(
-                    f"{self.dft_pkl} does not exist in {self.pkl_dir}."
-                )
+                logger.info(f"{self.dft_pkl} does not exist in {self.pkl_dir}.")
                 logger.info("job is running or fetch has not been done yet.")
                 # job waiting
                 job_running = job.jobcheck()
                 while job_running:
-                    logger.info(
-                        f"Waiting for the submitted job = {job.job_number}"
-                    )
+                    logger.info(f"Waiting for the submitted job = {job.job_number}")
                     # time.sleep(self.sleep_time)
                     await asyncio.sleep(self.sleep_time)
                     os.chdir(self.dft_dir)
@@ -229,9 +226,7 @@ class DFT_workflow(Workflow):
                     exclude_files += ["kelcont*", "randseed*"]
                 else:
                     fetch_files += ["fort.10_new"]
-                job.fetch_job(
-                    from_objects=fetch_files, exclude_list=exclude_files
-                )
+                job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
                 logger.info("Fetch finished.")
 
                 self.output_values["energy"] = None
@@ -258,8 +253,7 @@ class DFT_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -272,9 +266,7 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
     # moved to examples
