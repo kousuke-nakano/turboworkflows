@@ -20,7 +20,6 @@ logger = getLogger("Turbo-Workflows").getChild(__name__)
 def pyscf_to_trexio(
     pyscf_checkfile: str = "pyscf.chk",
     trexio_filename: str = "trexio.hdf5",
-    twist_average_in: bool = False,
     force_wf_complex: bool = False,
 ):
     # ## pySCF -> TREX-IO
@@ -75,8 +74,6 @@ def pyscf_to_trexio(
     else:
         twist_average = False
         k_list = [[0.0, 0.0, 0.0]]
-
-    assert twist_average_in == twist_average
 
     # if pbc_flag == true, check if ecp or pseudo
     if pbc_flag:
@@ -258,7 +255,7 @@ def pyscf_to_trexio(
             spin_restricted = True
 
         # spin unrestricted is supported only with trexio >= 1.3.0
-        if not spin_restricted and not trexio.__version__ >= '1.3.0':
+        if not spin_restricted and not trexio.__version__ >= "1.3.0":
             logger.error("spin unrestricted is supported only with trexio >= 1.3.0")
             raise NotImplementedError
 
@@ -270,7 +267,6 @@ def pyscf_to_trexio(
 
         # mo read part starts both for alpha and beta spins
         for ns, spin in enumerate([0, 1]):
-
             if spin_restricted:
                 mo_occupation = mo_occupation_read
                 mo_energy = mo_energy_read
@@ -287,7 +283,9 @@ def pyscf_to_trexio(
                 mo_energy = mo_energy_read[ns]
                 mo_coeff = mo_coeff_read[ns]
 
-            mo_num = len(mo_coeff)
+            mo_num = len(mo_coeff[0])
+            logger.info(f"mo_num={mo_num}")
+
             mo_spin_all += [spin for _ in range(mo_num)]
 
             # mo reordering because mo_coeff[:,mo_i]!!
@@ -363,7 +361,6 @@ def pyscf_to_trexio(
                 perm_list = []
                 perm_n = 0
                 for ao_i, ao_c in enumerate(mo):
-
                     # initialization
                     if ao_i == 0:
                         mo_coeff_for_reord = []
@@ -391,14 +388,12 @@ def pyscf_to_trexio(
                         reorder_index = [0]
 
                     elif current_ang_mom == 1:  # p shell
-
                         # print("p shell/permutation is needed.")
                         # print("(pyscf notation): px(l=+1), py(l=-1), pz(l=0)")
                         # print("(trexio notation): pz(l=0), px(l=+1), py(l=-1)")
                         reorder_index = [2, 0, 1]
 
                     elif current_ang_mom >= 2:  # > d shell
-
                         # print("> d shell/permutation is needed.")
                         # print(
                         #    "(pyscf) e.g., f3,-3(l=-3), f3,-2(l=-2), f3,-1(l=-1), \
@@ -552,7 +547,6 @@ def pyscf_to_trexio(
         # (i.e., coeff=0) for H and He.
 
         if len(mol._ecp) > 0:  # to be fixed!! for Victor case
-
             ecp_num = 0
             ecp_max_ang_mom_plus_1 = []
             ecp_z_core = []
@@ -565,7 +559,6 @@ def pyscf_to_trexio(
             for nuc_index, (chemical_symbol, atom_symbol) in enumerate(
                 zip(chemical_symbol_list, atom_symbol_list)
             ):
-
                 # atom_symbol is superior to atom_pure_symbol!!
                 try:
                     z_core, ecp_list = mol._ecp[atom_symbol]
