@@ -284,7 +284,8 @@ class Makefort10_workflow(Workflow):
         phase_dn: Optional[list] = None,
         same_phase_up_dn: bool = False,
         neldiff: int = 0,
-    ):
+        symmetry:bool = True,
+):
         if supercell is None:
             supercell = [1, 1, 1]
         if phase_up is None:
@@ -312,6 +313,7 @@ class Makefort10_workflow(Workflow):
         self.phase_dn = phase_dn
         self.same_phase_up_dn = same_phase_up_dn
         self.neldiff = neldiff
+        self.symmetry = symmetry
         # return values
         self.status = "init"
         self.output_files = []
@@ -361,6 +363,7 @@ class Makefort10_workflow(Workflow):
                 phase_dn=self.phase_dn,
                 same_phase_up_dn=self.same_phase_up_dn,
                 neldiff=self.neldiff,
+                symmetry=self.symmetry
             )
 
             makefort10.run_all()
