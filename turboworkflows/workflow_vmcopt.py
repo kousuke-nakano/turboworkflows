@@ -404,7 +404,7 @@ class VMCopt_workflow(Workflow):
                             output_names=[
                                 f"out_min_{i}" for i in range(icont + 1)
                             ],
-                            graph_plot=True,
+                            graph_plot=False,
                         )
 
                     with open(
