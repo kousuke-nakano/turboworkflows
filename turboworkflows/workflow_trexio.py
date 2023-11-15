@@ -34,7 +34,8 @@ class TREXIO_convert_to_turboWF(Workflow):
         jastrow_basis_dict: Optional[dict] = None,
         max_occ_conv: int = 0,
         mo_num_conv: int = -1,
-        only_mol: float = True,
+        only_mol: bool = True,
+        nosymmetry: bool = False,
         trexio_rerun: float = False,
         trexio_pkl_name: str = "trexio_genius",
     ):
@@ -47,6 +48,7 @@ class TREXIO_convert_to_turboWF(Workflow):
         self.max_occ_conv = max_occ_conv
         self.mo_num_conv = mo_num_conv
         self.only_mol = only_mol
+        self.nosymmetry = nosymmetry
         self.trexio_rerun = trexio_rerun
         self.trexio_pkl_name = trexio_pkl_name
         # return values
@@ -116,6 +118,7 @@ class TREXIO_convert_to_turboWF(Workflow):
                     max_occ_conv=self.max_occ_conv,
                     mo_num_conv=self.mo_num_conv,
                     only_mol=self.only_mol,
+                    nosymmetry=self.nosymmetry
                 )
 
                 if self.twist_average:
