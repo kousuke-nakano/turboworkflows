@@ -313,7 +313,7 @@ pyscf_calc.run_pyscf(
                     trexio_filename=os.path.join(
                         self.pyscf_dir, self.trexio_filename
                     ),
-                    twist_average_in=self.twist_average,
+                    #twist_average_in=self.twist_average,
                     force_wf_complex=self.force_wf_complex,
                 )
                 logger.info("End: pyscf -> trexio conversion.")
