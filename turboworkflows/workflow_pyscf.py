@@ -293,7 +293,7 @@ pyscf_calc.run_pyscf(
                 logger.info("Job finished.")
                 # job fecth
                 logger.info("Fetch files.")
-                fetch_files = [self.pyscf_output, self.pyscf_chkfile]
+                fetch_files = [self.pyscf_output, self.pyscf_chkfile, "int1e_ovlp.npy"]
                 job.fetch_job(from_objects=fetch_files)
                 logger.info("Fetch finished.")
 

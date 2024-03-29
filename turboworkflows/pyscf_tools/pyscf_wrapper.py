@@ -123,6 +123,10 @@ class Pyscf_wrapper:
             # electron num
             electron_up_num, electron_dn_num = cell.nelec
 
+            # write int1e_ovlp
+            ovlp = cell.intor("int1e_ovlp")
+            np.save("int1e_ovlp.npy", ovlp)
+
             # calc type setting
             logger.info(f"scf_method = {scf_method}")  # HF/DFT
 
@@ -327,6 +331,10 @@ class Pyscf_wrapper:
 
             # molecular build
             mol.build(cart=False)  # cart = False => use spherical basis!!
+            
+            # write int1e_ovlp
+            ovlp = mol.intor("int1e_ovlp")
+            np.save("int1e_ovlp.npy", ovlp)
 
             # electron num
             electron_up_num, electron_dn_num = mol.nelec
