@@ -17,7 +17,7 @@ from turbogenius.vmc_genius import VMC_genius
 from turbogenius.pyturbo.utils.utility import get_linenum_fort12
 
 # jobmanager
-from turbofilemanager.job_manager import Job_submission
+from .turbofilemanager.job_manager import Job_submission
 
 # turboworkflow packages
 from turboworkflows.workflow_encapsulated import Workflow
@@ -30,9 +30,8 @@ class VMC_workflow(Workflow):
         self,
         # job
         server_machine_name: str = "localhost",
-        cores: int = 1,
-        openmp: int = 1,
-        queue: Optional[str] = None,
+        queue_label: Optional[str] = None,
+        mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
         jobpkl_name: str = "job_manager",
@@ -55,9 +54,8 @@ class VMC_workflow(Workflow):
             vmc_kpoints = []
         # job
         self.server_machine_name = server_machine_name
-        self.cores = cores
-        self.openmp = openmp
-        self.queue = queue
+        self.mpi = mpi
+        self.queue_label = queue_label
         self.version = version
         self.sleep_time = sleep_time
         self.jobpkl_name = jobpkl_name
@@ -96,8 +94,7 @@ class VMC_workflow(Workflow):
         self.pkl_dir = os.path.join(self.vmc_dir, "pkl")
         logger.info(f"Project root dir = {self.vmc_dir}")
         vmc_pkl_list = [
-            f"{self.vmc_pkl_name}_{i}.pkl"
-            for i in range(self.vmc_max_continuation)
+            f"{self.vmc_pkl_name}_{i}.pkl" for i in range(self.vmc_max_continuation)
         ]
 
         #####
@@ -135,9 +132,7 @@ class VMC_workflow(Workflow):
                 if self.vmc_rerun or not os.path.isfile(
                     os.path.join(self.vmc_dir, self.vmc_pkl)
                 ):
-                    logger.info(
-                        f"{self.vmc_pkl} does not exist. or vmc_rerun = .true."
-                    )
+                    logger.info(f"{self.vmc_pkl} does not exist. or vmc_rerun = .true.")
 
                     if icont == 0:
                         self.vmc_continuation_flag = False
@@ -169,10 +164,8 @@ class VMC_workflow(Workflow):
                                     f"vmcsteps = {self.vmc_trial_steps} is set to {vmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {vmc_minimum_trial_blocks * self.vmc_bin_block + self.vmc_bin_block * self.vmc_warmupblocks}"
                                 )
                                 self.vmc_trial_steps = (
-                                    vmc_minimum_trial_blocks
-                                    * self.vmc_bin_block
-                                    + self.vmc_bin_block
-                                    * self.vmc_warmupblocks
+                                    vmc_minimum_trial_blocks * self.vmc_bin_block
+                                    + self.vmc_bin_block * self.vmc_warmupblocks
                                 )
 
                         vmc_steps = self.vmc_trial_steps
@@ -180,9 +173,7 @@ class VMC_workflow(Workflow):
                     else:
                         self.vmc_continuation_flag = True
                         pvmc_pkl = f"{self.vmc_pkl_name}_{icont-1}.pkl"
-                        with open(
-                            os.path.join(self.vmc_dir, pvmc_pkl), "rb"
-                        ) as f:
+                        with open(os.path.join(self.vmc_dir, pvmc_pkl), "rb") as f:
                             vmc_genius = pickle.load(f)
                         mcmc_steps = get_linenum_fort12(
                             os.path.join(self.vmc_dir, "fort.12")
@@ -190,7 +181,9 @@ class VMC_workflow(Workflow):
 
                         if self.vmc_twist_average:
                             # read k_num since the actual num. of mcmc steps' = mcmc_steps / k_num
-                            with open(os.path.join(self.vmc_dir, "kp_info.dat"), "r") as f:
+                            with open(
+                                os.path.join(self.vmc_dir, "kp_info.dat"), "r"
+                            ) as f:
                                 line = f.readline()
                                 k_num = int(line)
                                 mcmc_steps = int(mcmc_steps / k_num)
@@ -206,9 +199,7 @@ class VMC_workflow(Workflow):
                             logger.warning(
                                 f"The target error bar {self.vmc_target_error_bar} Ha has been already achieved!"
                             )
-                            logger.warning(
-                                "Exiting from the VMC continuation loop."
-                            )
+                            logger.warning("Exiting from the VMC continuation loop.")
 
                             self.output_values["energy"] = energy
                             self.output_values["error"] = error
@@ -219,9 +210,7 @@ class VMC_workflow(Workflow):
                             self.status = "success"
                             p_list = [
                                 pathlib.Path(ob)
-                                for ob in glob.glob(
-                                    os.path.join(self.root_dir, "*")
-                                )
+                                for ob in glob.glob(os.path.join(self.root_dir, "*"))
                             ]
                             self.output_files = [
                                 str(p.resolve().relative_to(self.root_dir))
@@ -234,10 +223,7 @@ class VMC_workflow(Workflow):
                             )
 
                         vmc_steps_estimated_proper = int(
-                            (
-                                mcmc_steps
-                                - self.vmc_bin_block * self.vmc_warmupblocks
-                            )
+                            (mcmc_steps - self.vmc_bin_block * self.vmc_warmupblocks)
                             * (error / self.vmc_target_error_bar) ** 2
                         )
                         logger.info(
@@ -251,7 +237,11 @@ class VMC_workflow(Workflow):
                             f"The steps already done is {mcmc_steps-self.vmc_bin_block*self.vmc_warmupblocks:d} steps"
                         )
 
-                        vmc_steps_estimated_proper = max(vmc_steps_estimated_proper - (mcmc_steps - self.vmc_bin_block * self.vmc_warmupblocks), 1)
+                        vmc_steps_estimated_proper = max(
+                            vmc_steps_estimated_proper
+                            - (mcmc_steps - self.vmc_bin_block * self.vmc_warmupblocks),
+                            1,
+                        )
 
                         logger.info(
                             f"The additional steps is {vmc_steps_estimated_proper:d} steps"
@@ -261,12 +251,9 @@ class VMC_workflow(Workflow):
                             vmc_genius.estimated_time_for_1_generation
                         )
                         estimated_time = (
-                            estimated_time_for_1_generation
-                            * vmc_steps_estimated_proper
+                            estimated_time_for_1_generation * vmc_steps_estimated_proper
                         )
-                        logger.info(
-                            f"Estimated time = {estimated_time:.0f} sec."
-                        )
+                        logger.info(f"Estimated time = {estimated_time:.0f} sec.")
 
                         vmc_steps = vmc_steps_estimated_proper
 
@@ -288,25 +275,20 @@ class VMC_workflow(Workflow):
                     )
 
                     # binary set
-                    if self.cores == self.openmp:
-                        binary = "turborvb-serial.x"
-                        nompi = True
-                    else:
+                    if self.mpi:
                         binary = "turborvb-mpi.x"
-                        nompi = False
+                    else:
+                        binary = "turborvb-serial.x"
 
                     # Job submission by the job-manager package
                     job = Job_submission(
-                        local_machine_name="localhost",
                         client_machine_name="localhost",
                         server_machine_name=self.server_machine_name,
                         package="turborvb",
-                        cores=self.cores,
-                        openmp=self.openmp,
-                        queue=self.queue,
+                        queue_label=self.queue_label,
                         version=self.version,
                         binary=binary,
-                        nompi=nompi,
+                        mpi=self.mpi,
                         jobname="turbogenius",
                         input_file=self.input_file,
                         output_file=self.output_file,
@@ -327,18 +309,14 @@ class VMC_workflow(Workflow):
                         )
                     logger.info("Job submitted.")
 
-                    with open(
-                        os.path.join(self.vmc_dir, self.vmc_pkl), "wb"
-                    ) as f:
+                    with open(os.path.join(self.vmc_dir, self.vmc_pkl), "wb") as f:
                         pickle.dump(vmc_genius, f)
 
                 else:
                     logger.info(f"{self.vmc_pkl} exists.")
                     with open(self.jobpkl, "rb") as f:
                         job = pickle.load(f)
-                    with open(
-                        os.path.join(self.vmc_dir, self.vmc_pkl), "rb"
-                    ) as f:
+                    with open(os.path.join(self.vmc_dir, self.vmc_pkl), "rb") as f:
                         vmc_genius = pickle.load(f)
 
                 ####
@@ -347,18 +325,12 @@ class VMC_workflow(Workflow):
                 if self.vmc_rerun or not os.path.isfile(
                     os.path.join(self.pkl_dir, self.vmc_pkl)
                 ):
-                    logger.info(
-                        f"{self.vmc_pkl} does not exist in {self.pkl_dir}."
-                    )
-                    logger.info(
-                        "job is running or fetch has not been done yet."
-                    )
+                    logger.info(f"{self.vmc_pkl} does not exist in {self.pkl_dir}.")
+                    logger.info("job is running or fetch has not been done yet.")
                     # job waiting
                     job_running = job.jobcheck()
                     while job_running:
-                        logger.info(
-                            f"Waiting for the submitted job = {job.job_number}"
-                        )
+                        logger.info(f"Waiting for the submitted job = {job.job_number}")
                         # time.sleep(self.sleep_time)
                         await asyncio.sleep(self.sleep_time)
                         os.chdir(self.vmc_dir)
@@ -376,9 +348,7 @@ class VMC_workflow(Workflow):
                     if self.vmc_twist_average:
                         fetch_files += ["kp_info.dat", "turborvb.scratch"]
                         exclude_files += ["kelcont*", "randseed*"]
-                    job.fetch_job(
-                        from_objects=fetch_files, exclude_list=exclude_files
-                    )
+                    job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
                     logger.info("Fetch finished.")
 
                     logger.info("Computing VMC forces")
@@ -390,9 +360,7 @@ class VMC_workflow(Workflow):
                     vmc_genius.store_result(
                         bin_block=self.vmc_bin_block,
                         warmupblocks=self.vmc_warmupblocks,
-                        output_names=[
-                            f"out_vmc_{i}" for i in range(icont + 1)
-                        ],
+                        output_names=[f"out_vmc_{i}" for i in range(icont + 1)],
                     )
                     energy, error = vmc_genius.energy, vmc_genius.energy_error
                     estimated_time_for_1_generation = (
@@ -406,13 +374,9 @@ class VMC_workflow(Workflow):
                     self.output_values["energy"] = energy
                     self.output_values["error"] = error
 
-                    with open(
-                        os.path.join(self.vmc_dir, self.vmc_pkl), "wb"
-                    ) as f:
+                    with open(os.path.join(self.vmc_dir, self.vmc_pkl), "wb") as f:
                         pickle.dump(vmc_genius, f)
-                    with open(
-                        os.path.join(self.pkl_dir, self.vmc_pkl), "wb"
-                    ) as f:
+                    with open(os.path.join(self.pkl_dir, self.vmc_pkl), "wb") as f:
                         pickle.dump(vmc_genius, f)
                     with open(
                         os.path.join(self.pkl_dir, self.vmc_latest_pkl), "wb"
@@ -426,9 +390,7 @@ class VMC_workflow(Workflow):
         else:
             logger.info("Skip: VMC calculation")
             self.vmc_latest_pkl = f"{self.vmc_pkl_name}_latest.pkl"
-            with open(
-                os.path.join(self.pkl_dir, self.vmc_latest_pkl), "rb"
-            ) as f:
+            with open(os.path.join(self.pkl_dir, self.vmc_latest_pkl), "rb") as f:
                 vmc_genius = pickle.load(f)
             energy, error = vmc_genius.energy, vmc_genius.energy_error
             logger.info(f"VMC energy = {energy:.5f} +- {error:3f} Ha")
@@ -440,8 +402,7 @@ class VMC_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -454,9 +415,7 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 

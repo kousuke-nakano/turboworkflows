@@ -13,16 +13,13 @@ from typing import Optional
 from logging import getLogger, StreamHandler, Formatter
 
 # turboworkflows packages
-from turboworkflows.workflow_encapsulated import Workflow
+from .turbofilemanager.job_manager import Job_submission
+from .workflow_encapsulated import Workflow
 
 # turbo-genius packages
 from turbogenius.lrdmc_genius import LRDMC_genius
-
-# pyturbo package
 from turbogenius.pyturbo.utils.utility import get_linenum_fort12
 
-# jobmanager
-from turbofilemanager.job_manager import Job_submission
 
 logger = getLogger("Turbo-Workflows").getChild(__name__)
 
@@ -109,8 +106,7 @@ class LRDMC_workflow(Workflow):
         self.pkl_dir = os.path.join(self.lrdmc_dir, "pkl")
         logger.info(f"Project root dir = {self.lrdmc_dir}")
         lrdmc_pkl_list = [
-            f"{self.lrdmc_pkl_name}_{i}.pkl"
-            for i in range(self.lrdmc_max_continuation)
+            f"{self.lrdmc_pkl_name}_{i}.pkl" for i in range(self.lrdmc_max_continuation)
         ]
 
         #####
@@ -173,10 +169,8 @@ class LRDMC_workflow(Workflow):
                             lrdmc_minimum_trial_blocks = 40
                             if (
                                 self.lrdmc_trial_steps
-                                < lrdmc_minimum_trial_blocks
-                                * self.lrdmc_bin_block
-                                + self.lrdmc_bin_block
-                                * self.lrdmc_warmupblocks
+                                < lrdmc_minimum_trial_blocks * self.lrdmc_bin_block
+                                + self.lrdmc_bin_block * self.lrdmc_warmupblocks
                             ):
                                 logger.warning(
                                     f"lrdmcsteps = {self.lrdmc_trial_steps} is too small! < {lrdmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {lrdmc_minimum_trial_blocks * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
@@ -185,26 +179,24 @@ class LRDMC_workflow(Workflow):
                                     f"lrdmcsteps = {self.lrdmc_trial_steps} is set to {lrdmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {lrdmc_minimum_trial_blocks * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
                                 )
                                 self.lrdmc_trial_steps = (
-                                    lrdmc_minimum_trial_blocks
-                                    * self.lrdmc_bin_block
-                                    + self.lrdmc_bin_block
-                                    * self.lrdmc_warmupblocks
+                                    lrdmc_minimum_trial_blocks * self.lrdmc_bin_block
+                                    + self.lrdmc_bin_block * self.lrdmc_warmupblocks
                                 )
                         lrdmc_steps = self.lrdmc_trial_steps
 
                     else:
                         self.lrdmc_continuation_flag = True
                         plrdmc_pkl = f"{self.lrdmc_pkl_name}_{icont-1}.pkl"
-                        with open(
-                            os.path.join(self.lrdmc_dir, plrdmc_pkl), "rb"
-                        ) as f:
+                        with open(os.path.join(self.lrdmc_dir, plrdmc_pkl), "rb") as f:
                             lrdmc_genius = pickle.load(f)
                         mcmc_steps = get_linenum_fort12(
                             os.path.join(self.lrdmc_dir, "fort.12")
                         )
                         if self.lrdmc_twist_average:
                             # read k_num since the actual num. of mcmc steps' = mcmc_steps / k_num
-                            with open(os.path.join(self.lrdmc_dir, "kp_info.dat"), "r") as f:
+                            with open(
+                                os.path.join(self.lrdmc_dir, "kp_info.dat"), "r"
+                            ) as f:
                                 line = f.readline()
                                 k_num = int(line)
                                 mcmc_steps = int(mcmc_steps / k_num)
@@ -219,9 +211,7 @@ class LRDMC_workflow(Workflow):
                             logger.warning(
                                 f"The target errorbar {self.lrdmc_target_error_bar} Ha has been already achieved!"
                             )
-                            logger.warning(
-                                "Exiting from the lrdmc continuation loop."
-                            )
+                            logger.warning("Exiting from the lrdmc continuation loop.")
 
                             self.output_values["energy"] = energy
                             self.output_values["error"] = error
@@ -232,9 +222,7 @@ class LRDMC_workflow(Workflow):
                             self.status = "success"
                             p_list = [
                                 pathlib.Path(ob)
-                                for ob in glob.glob(
-                                    os.path.join(self.root_dir, "*")
-                                )
+                                for ob in glob.glob(os.path.join(self.root_dir, "*"))
                             ]
                             self.output_files = [
                                 str(p.resolve().relative_to(self.root_dir))
@@ -249,8 +237,7 @@ class LRDMC_workflow(Workflow):
                         lrdmc_steps_estimated_proper = int(
                             (
                                 mcmc_steps
-                                - self.lrdmc_bin_block
-                                * self.lrdmc_warmupblocks
+                                - self.lrdmc_bin_block * self.lrdmc_warmupblocks
                             )
                             * (error / self.lrdmc_target_error_bar) ** 2
                         )
@@ -265,7 +252,14 @@ class LRDMC_workflow(Workflow):
                             f"The steps already done is {mcmc_steps-self.lrdmc_bin_block*self.lrdmc_warmupblocks:d} steps"
                         )
 
-                        lrdmc_steps_estimated_proper = max(lrdmc_steps_estimated_proper - (mcmc_steps - self.lrdmc_bin_block * self.lrdmc_warmupblocks), 1)
+                        lrdmc_steps_estimated_proper = max(
+                            lrdmc_steps_estimated_proper
+                            - (
+                                mcmc_steps
+                                - self.lrdmc_bin_block * self.lrdmc_warmupblocks
+                            ),
+                            1,
+                        )
 
                         logger.info(
                             f"The additional steps is {lrdmc_steps_estimated_proper:d} steps"
@@ -278,9 +272,7 @@ class LRDMC_workflow(Workflow):
                             estimated_time_for_1_generation
                             * lrdmc_steps_estimated_proper
                         )
-                        logger.info(
-                            f"Estimated time = {estimated_time:.0f} sec."
-                        )
+                        logger.info(f"Estimated time = {estimated_time:.0f} sec.")
 
                         lrdmc_steps = lrdmc_steps_estimated_proper
 
@@ -346,18 +338,14 @@ class LRDMC_workflow(Workflow):
                         )
                     logger.info("Job submitted.")
 
-                    with open(
-                        os.path.join(self.lrdmc_dir, self.lrdmc_pkl), "wb"
-                    ) as f:
+                    with open(os.path.join(self.lrdmc_dir, self.lrdmc_pkl), "wb") as f:
                         pickle.dump(lrdmc_genius, f)
 
                 else:
                     logger.info(f"{self.lrdmc_pkl} exists.")
                     with open(self.jobpkl, "rb") as f:
                         job = pickle.load(f)
-                    with open(
-                        os.path.join(self.lrdmc_dir, self.lrdmc_pkl), "rb"
-                    ) as f:
+                    with open(os.path.join(self.lrdmc_dir, self.lrdmc_pkl), "rb") as f:
                         lrdmc_genius = pickle.load(f)
 
                 ####
@@ -366,18 +354,12 @@ class LRDMC_workflow(Workflow):
                 if self.lrdmc_rerun or not os.path.isfile(
                     os.path.join(self.pkl_dir, self.lrdmc_pkl)
                 ):
-                    logger.info(
-                        f"{self.lrdmc_pkl} does not exist in {self.pkl_dir}."
-                    )
-                    logger.info(
-                        "job is running or fetch has not been done yet."
-                    )
+                    logger.info(f"{self.lrdmc_pkl} does not exist in {self.pkl_dir}.")
+                    logger.info("job is running or fetch has not been done yet.")
                     # job waiting
                     job_running = job.jobcheck()
                     while job_running:
-                        logger.info(
-                            f"Waiting for the submitted job = {job.job_number}"
-                        )
+                        logger.info(f"Waiting for the submitted job = {job.job_number}")
                         # time.sleep(self.sleep_time)
                         await asyncio.sleep(self.sleep_time)
                         os.chdir(self.lrdmc_dir)
@@ -395,9 +377,7 @@ class LRDMC_workflow(Workflow):
                     if self.lrdmc_twist_average:
                         fetch_files += ["kp_info.dat", "turborvb.scratch"]
                         exclude_files += ["kelcont*", "randseed*"]
-                    job.fetch_job(
-                        from_objects=fetch_files, exclude_list=exclude_files
-                    )
+                    job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
                     logger.info("Fetch finished.")
 
                     logger.info("Computing lrdmc energy")
@@ -419,22 +399,16 @@ class LRDMC_workflow(Workflow):
                     estimated_time_for_1_generation = (
                         lrdmc_genius.estimated_time_for_1_generation
                     )
-                    logger.info(
-                        f"LRDMC energy = {energy:.5f} +- {error:3f} Ha"
-                    )
+                    logger.info(f"LRDMC energy = {energy:.5f} +- {error:3f} Ha")
                     logger.info(
                         f"estimated_time_for_1_generation = {estimated_time_for_1_generation:.5f} sec"
                     )
                     self.output_values["energy"] = energy
                     self.output_values["error"] = error
 
-                    with open(
-                        os.path.join(self.lrdmc_dir, self.lrdmc_pkl), "wb"
-                    ) as f:
+                    with open(os.path.join(self.lrdmc_dir, self.lrdmc_pkl), "wb") as f:
                         pickle.dump(lrdmc_genius, f)
-                    with open(
-                        os.path.join(self.pkl_dir, self.lrdmc_pkl), "wb"
-                    ) as f:
+                    with open(os.path.join(self.pkl_dir, self.lrdmc_pkl), "wb") as f:
                         pickle.dump(lrdmc_genius, f)
                     with open(
                         os.path.join(self.pkl_dir, self.lrdmc_latest_pkl), "wb"
@@ -448,9 +422,7 @@ class LRDMC_workflow(Workflow):
         else:
             logger.info("Skip: LRDMC calculation")
             self.lrdmc_latest_pkl = f"{self.lrdmc_pkl_name}_latest.pkl"
-            with open(
-                os.path.join(self.pkl_dir, self.lrdmc_latest_pkl), "rb"
-            ) as f:
+            with open(os.path.join(self.pkl_dir, self.lrdmc_latest_pkl), "rb") as f:
                 lrdmc_genius = pickle.load(f)
             energy, error = lrdmc_genius.energy, lrdmc_genius.energy_error
             logger.info(f"LRDMC energy = {energy:.5f} +- {error:3f} Ha")
@@ -462,8 +434,7 @@ class LRDMC_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -476,9 +447,7 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 

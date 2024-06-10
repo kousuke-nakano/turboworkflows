@@ -12,14 +12,12 @@ from typing import Optional
 # Logger
 from logging import getLogger, StreamHandler, Formatter
 
+# turboworkflows packages
+from .turbofilemanager.job_manager import Job_submission
+from .workflow_encapsulated import Workflow
+
 # turbo-genius packages
 from turbogenius.prep_genius import DFT_genius
-
-# jobmanager
-from turbofilemanager.job_manager import Job_submission
-
-# turboworkflows packages
-from turboworkflows.workflow_encapsulated import Workflow
 
 logger = getLogger("Turbo-Workflows").getChild(__name__)
 

@@ -12,15 +12,13 @@ from typing import Optional
 # Logger
 from logging import getLogger, StreamHandler, Formatter
 
+# turboworkflow packages
+from .turbofilemanager.job_manager import Job_submission
+from .workflow_encapsulated import Workflow
+
 # turbo-genius packages
 from turbogenius.lrdmc_opt_genius import LRDMCopt_genius
 from turbogenius.pyturbo.lrdmcopt import LRDMCopt
-
-# jobmanager
-from turbofilemanager.job_manager import Job_submission
-
-# turboworkflow packages
-from turboworkflows.workflow_encapsulated import Workflow
 
 logger = getLogger("Turbo-Workflows").getChild(__name__)
 
@@ -158,9 +156,7 @@ class LRDMCopt_workflow(Workflow):
                     logger.info(f"LRDMCopt continuation run, icont={icont}")
 
                 self.lrdmcopt_pkl = f"{self.lrdmcopt_pkl_name}_{icont}.pkl"
-                self.lrdmcopt_latest_pkl = (
-                    f"{self.lrdmcopt_pkl_name}_latest.pkl"
-                )
+                self.lrdmcopt_latest_pkl = f"{self.lrdmcopt_pkl_name}_latest.pkl"
                 self.input_file = f"datasfn_opt_{icont}.input"
                 self.output_file = f"out_fn_opt_{icont}"
 
@@ -181,8 +177,7 @@ class LRDMCopt_workflow(Workflow):
                         )
                         if (
                             self.lrdmcopt_trial_steps
-                            <= self.lrdmcopt_bin_block
-                            * self.lrdmcopt_warmupblocks
+                            <= self.lrdmcopt_bin_block * self.lrdmcopt_warmupblocks
                         ):
                             logger.error(
                                 "lrdmcopt_trial_steps <= lrdmcopt_bin_block * lrdmcopt_warmupblocks"
@@ -194,9 +189,7 @@ class LRDMCopt_workflow(Workflow):
                     else:
                         self.lrdmcopt_continuation_flag = True
                         pinput_file = f"datasfn_opt_{icont-1}.input"
-                        plrdmcopt_pkl = (
-                            f"{self.lrdmcopt_pkl_name}_{icont-1}.pkl"
-                        )
+                        plrdmcopt_pkl = f"{self.lrdmcopt_pkl_name}_{icont-1}.pkl"
                         with open(
                             os.path.join(self.lrdmcopt_dir, plrdmcopt_pkl),
                             "rb",
@@ -215,17 +208,14 @@ class LRDMCopt_workflow(Workflow):
                             in_fort10="fort.10",
                             twist_average=self.lrdmcopt_twist_average,
                         )
-                        nweight = lrdmcopt_pyturbo.get_parameter(
-                            parameter="nweight"
-                        )
+                        nweight = lrdmcopt_pyturbo.get_parameter(parameter="nweight")
                         logger.info(
                             f"The error bar of the lrdmc energy at the final step is {error[-1]:.5f} Ha per mcmc step={(nweight - self.lrdmcopt_warmupblocks * self.lrdmcopt_bin_block)}"
                         )
                         lrdmcopt_steps_estimated_proper = int(
                             (
                                 nweight
-                                - self.lrdmcopt_warmupblocks
-                                * self.lrdmcopt_bin_block
+                                - self.lrdmcopt_warmupblocks * self.lrdmcopt_bin_block
                             )
                             * (error[-1] / self.lrdmcopt_target_error_bar) ** 2
                         )
@@ -258,9 +248,7 @@ class LRDMCopt_workflow(Workflow):
                             * lrdmcopt_steps_estimated_proper
                             * self.lrdmcopt_production_optsteps
                         )
-                        logger.info(
-                            f"Estimated time = {estimated_time:.0f} sec."
-                        )
+                        logger.info(f"Estimated time = {estimated_time:.0f} sec.")
 
                         lrdmcoptsteps = self.lrdmcopt_production_optsteps
                         steps = lrdmcopt_steps_estimated_proper
@@ -365,15 +353,11 @@ class LRDMCopt_workflow(Workflow):
                     logger.info(
                         f"{self.lrdmcopt_pkl} does not exist in {self.pkl_dir}."
                     )
-                    logger.info(
-                        "job is running or fetch has not been done yet."
-                    )
+                    logger.info("job is running or fetch has not been done yet.")
                     # job waiting
                     job_running = job.jobcheck()
                     while job_running:
-                        logger.info(
-                            f"Waiting for the submitted job = {job.job_number}"
-                        )
+                        logger.info(f"Waiting for the submitted job = {job.job_number}")
                         # time.sleep(self.sleep_time)
                         await asyncio.sleep(self.sleep_time)
                         os.chdir(self.lrdmcopt_dir)
@@ -393,18 +377,12 @@ class LRDMCopt_workflow(Workflow):
                     if self.lrdmcopt_twist_average:
                         fetch_files += ["kp_info.dat", "turborvb.scratch"]
                         exclude_files += ["kelcont*", "randseed*"]
-                    job.fetch_job(
-                        from_objects=fetch_files, exclude_list=exclude_files
-                    )
+                    job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
                     logger.info("Fetch finished.")
 
-                    lrdmcopt_genius.store_result(
-                        output_names=[self.output_file]
-                    )
+                    lrdmcopt_genius.store_result(output_names=[self.output_file])
                     lrdmcopt_genius.plot_energy_and_devmax(
-                        output_names=[
-                            f"out_fn_opt_{i}" for i in range(icont + 1)
-                        ],
+                        output_names=[f"out_fn_opt_{i}" for i in range(icont + 1)],
                         interactive=False,
                     )
                     if icont > 0:
@@ -412,8 +390,7 @@ class LRDMCopt_workflow(Workflow):
                             lines = f.readlines()
                         lrdmcopt_done_optsteps = len(lines)
                         optwarmupsteps = int(
-                            self.lrdmcopt_optwarmupsteps_ratio
-                            * lrdmcopt_done_optsteps
+                            self.lrdmcopt_optwarmupsteps_ratio * lrdmcopt_done_optsteps
                         )
                         logger.info(
                             f"optwarmupsteps is set to {optwarmupsteps} (the first {self.lrdmcopt_optwarmupsteps_ratio*100:.0f}% steps are disregarded.)"
@@ -424,9 +401,7 @@ class LRDMCopt_workflow(Workflow):
                         lrdmcopt_genius.average(
                             optwarmupsteps=optwarmupsteps,
                             input_name=self.input_file,
-                            output_names=[
-                                f"out_fn_opt_{i}" for i in range(icont + 1)
-                            ],
+                            output_names=[f"out_fn_opt_{i}" for i in range(icont + 1)],
                             graph_plot=True,
                         )
 
@@ -435,9 +410,7 @@ class LRDMCopt_workflow(Workflow):
                         "wb",
                     ) as f:
                         pickle.dump(lrdmcopt_genius, f)
-                    with open(
-                        os.path.join(self.pkl_dir, self.lrdmcopt_pkl), "wb"
-                    ) as f:
+                    with open(os.path.join(self.pkl_dir, self.lrdmcopt_pkl), "wb") as f:
                         pickle.dump(lrdmcopt_genius, f)
                     with open(
                         os.path.join(self.pkl_dir, self.lrdmcopt_latest_pkl),
@@ -452,9 +425,7 @@ class LRDMCopt_workflow(Workflow):
         else:
             logger.info("Skip: LRDMCopt calculation")
             self.lrdmcopt_latest_pkl = f"{self.lrdmcopt_pkl_name}_latest.pkl"
-            with open(
-                os.path.join(self.pkl_dir, self.lrdmcopt_latest_pkl), "rb"
-            ) as f:
+            with open(os.path.join(self.pkl_dir, self.lrdmcopt_latest_pkl), "rb") as f:
                 lrdmcopt_genius = pickle.load(f)
 
         logger.info("LRDMCopt workflow ends.")
@@ -462,8 +433,7 @@ class LRDMCopt_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -476,9 +446,7 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 

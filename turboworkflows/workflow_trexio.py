@@ -15,13 +15,13 @@ from typing import Optional
 # Logger
 from logging import getLogger, StreamHandler, Formatter
 
+# turboworkflow packages
+from turboworkflows.workflow_encapsulated import Workflow
+
 # turbo-genius packages
 from turbogenius.trexio_to_turborvb import trexio_to_turborvb_wf
 from turbogenius.trexio_wrapper import Trexio_wrapper_r
 from turbogenius.pyturbo.basis_set import Jas_Basis_sets
-
-# turboworkflow packages
-from turboworkflows.workflow_encapsulated import Workflow
 
 logger = getLogger("Turbo-Workflows").getChild(__name__)
 
@@ -80,9 +80,7 @@ class TREXIO_convert_to_turboWF(Workflow):
             os.chdir(self.trexio_dir)
 
             if self.twist_average:
-                with open(
-                    os.path.join(self.trexio_dir, "kp_info.dat"), "r"
-                ) as f:
+                with open(os.path.join(self.trexio_dir, "kp_info.dat"), "r") as f:
                     lines = f.readlines()
                 k_num = len(lines) - 1
             else:
@@ -90,9 +88,7 @@ class TREXIO_convert_to_turboWF(Workflow):
 
             for num in range(k_num):
                 if self.twist_average:
-                    filename = f"k{num}_" + os.path.basename(
-                        self.trexio_filename
-                    )
+                    filename = f"k{num}_" + os.path.basename(self.trexio_filename)
                 else:
                     filename = os.path.basename(self.trexio_filename)
                 if len(self.jastrow_basis_dict) != 0:
@@ -103,10 +99,8 @@ class TREXIO_convert_to_turboWF(Workflow):
                         self.jastrow_basis_dict[element]
                         for element in trexio_r.labels_r
                     ]
-                    jas_basis_sets = (
-                        Jas_Basis_sets.parse_basis_sets_from_texts(
-                            jastrow_basis_list, format="gamess"
-                        )
+                    jas_basis_sets = Jas_Basis_sets.parse_basis_sets_from_texts(
+                        jastrow_basis_list, format="gamess"
                     )
                 else:
                     jas_basis_sets = Jas_Basis_sets()
@@ -118,7 +112,7 @@ class TREXIO_convert_to_turboWF(Workflow):
                     max_occ_conv=self.max_occ_conv,
                     mo_num_conv=self.mo_num_conv,
                     only_mol=self.only_mol,
-                    nosymmetry=self.nosymmetry
+                    nosymmetry=self.nosymmetry,
                 )
 
                 if self.twist_average:
@@ -135,28 +129,20 @@ class TREXIO_convert_to_turboWF(Workflow):
 
             if self.twist_average:
                 shutil.copy(
-                    os.path.join(
-                        turborvb_scratch_dir, "fort.10_{:0>6}".format(0)
-                    ),
+                    os.path.join(turborvb_scratch_dir, "fort.10_{:0>6}".format(0)),
                     os.path.join(self.trexio_dir, "fort.10"),
                 )
 
             if self.twist_average:
-                with open(
-                    os.path.join(self.trexio_dir, "kp_info.dat"), "r"
-                ) as f:
+                with open(os.path.join(self.trexio_dir, "kp_info.dat"), "r") as f:
                     lines = f.readlines()
                     kpoints_up = []
                     kpoints_dn = []
                     for line in lines[1:]:
                         k_index, kx, ky, kz = line.split()
                         wk = 1.0
-                        kpoints_up.append(
-                            [float(kx), float(ky), float(kz), float(wk)]
-                        )
-                        kpoints_dn.append(
-                            [float(kx), float(ky), float(kz), float(wk)]
-                        )
+                        kpoints_up.append([float(kx), float(ky), float(kz), float(wk)])
+                        kpoints_dn.append([float(kx), float(ky), float(kz), float(wk)])
                     self.kpoints = [kpoints_up, kpoints_dn]
                     self.output_values["kpoints"] = self.kpoints
 
@@ -170,30 +156,22 @@ class TREXIO_convert_to_turboWF(Workflow):
                 )
                 self.output_values["mo_occ"] = trexio_r.mo_occupation
 
-            with open(
-                os.path.join(self.trexio_dir, self.trexio_pkl), "wb"
-            ) as f:
+            with open(os.path.join(self.trexio_dir, self.trexio_pkl), "wb") as f:
                 pickle.dump("dummy", f)
 
         else:
             logger.info(f"{self.trexio_pkl} exists.")
             logger.info("Skip: TREXIO calculation")
             if self.twist_average:
-                with open(
-                    os.path.join(self.trexio_dir, "kp_info.dat"), "r"
-                ) as f:
+                with open(os.path.join(self.trexio_dir, "kp_info.dat"), "r") as f:
                     lines = f.readlines()
                     kpoints_up = []
                     kpoints_dn = []
                     for line in lines[1:]:
                         k_index, kx, ky, kz = line.split()
                         wk = 1.0
-                        kpoints_up.append(
-                            [float(kx), float(ky), float(kz), float(wk)]
-                        )
-                        kpoints_dn.append(
-                            [float(kx), float(ky), float(kz), float(wk)]
-                        )
+                        kpoints_up.append([float(kx), float(ky), float(kz), float(wk)])
+                        kpoints_dn.append([float(kx), float(ky), float(kz), float(wk)])
                     self.kpoints = [kpoints_up, kpoints_dn]
                     self.output_values["kpoints"] = self.kpoints
             # mo occ
@@ -218,8 +196,7 @@ class TREXIO_convert_to_turboWF(Workflow):
         os.chdir(self.root_dir)
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -232,8 +209,6 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)

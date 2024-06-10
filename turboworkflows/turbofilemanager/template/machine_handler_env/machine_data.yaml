@@ -1,0 +1,35 @@
+henteko:
+  machine_type: remote
+  queuing : True
+  computation: True
+  ip: XXX.XX.XX.XX
+  ssh_port: 22
+  username: xxxx/xxxxx
+  file_manager_root: /home/xxxx/xxxx/xxxx
+  ssh_key: ~/.ssh/id_rsa
+  ssh_option: -Y -A
+  jobsubmit: /opt/pbs/bin/qsub
+  jobcheck: /opt/pbs/bin/qstat
+  jobdel: /opt/pbs/bin/qdel
+  jobnum_index: 0
+
+nanashi:
+  machine_type: remote
+  queuing : False
+  computation: False
+  ip: XXX.XX.XX.XX
+  ssh_port: 22
+  username: xxxxxx
+  file_manager_root: /mnt/xxxxx
+  ssh_key: ~/.ssh/id_rsa
+  ssh_option: -Y -A
+  
+localhost:
+  machine_type: local
+  queuing : False
+  computation: True
+  username: None
+  file_manager_root: /Users/xxxxxx/xxxxx/xxxxx
+  jobsubmit: bash
+  jobcheck: ps
+  jobnum_index: 1

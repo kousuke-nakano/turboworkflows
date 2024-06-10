@@ -1,0 +1,18 @@
+turborvb:
+  name: turborvb
+  binary_path: 
+    stable: 
+  binary_list: 
+    - turborvb-serial.x
+    - prep-serial.x
+    - makefort10.x
+    - convertfort10mol.x
+    - convertfort10.x
+    - readforward-serial.x
+
+python:
+  name: python
+  binary_path:
+    stable: 
+  binary_list:
+    - python

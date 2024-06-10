@@ -1,0 +1,7 @@
+turborvb:
+  name: turborvb
+  binary_path: 
+    stable: /home/application/TurboRVB/bin
+  binary_list: 
+    - turborvb-mpi.x
+

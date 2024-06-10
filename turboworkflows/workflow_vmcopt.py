@@ -12,15 +12,13 @@ from typing import Optional
 # Logger
 from logging import getLogger, StreamHandler, Formatter
 
+# turboworkflows packages
+from .turbofilemanager.job_manager import Job_submission
+from turboworkflows.workflow_encapsulated import Workflow
+
 # turbo-genius packages
 from turbogenius.vmc_opt_genius import VMCopt_genius
 from turbogenius.pyturbo.vmcopt import VMCopt
-
-# jobmanager
-from turbofilemanager.job_manager import Job_submission
-
-# turboworkflow packages
-from turboworkflows.workflow_encapsulated import Workflow
 
 logger = getLogger("Turbo-Workflows").getChild(__name__)
 
@@ -201,18 +199,12 @@ class VMCopt_workflow(Workflow):
                             in_fort10="fort.10",
                             twist_average=self.vmcopt_twist_average,
                         )
-                        nweight = vmcopt_pyturbo.get_parameter(
-                            parameter="nweight"
-                        )
+                        nweight = vmcopt_pyturbo.get_parameter(parameter="nweight")
                         logger.info(
                             f"The error bar of the vmc energy at the final step is {error[-1]:.5f} Ha per mcmc step={(nweight - self.vmcopt_warmupblocks * self.vmcopt_bin_block)}"
                         )
                         vmcopt_steps_estimated_proper = int(
-                            (
-                                nweight
-                                - self.vmcopt_warmupblocks
-                                * self.vmcopt_bin_block
-                            )
+                            (nweight - self.vmcopt_warmupblocks * self.vmcopt_bin_block)
                             * (error[-1] / self.vmcopt_target_error_bar) ** 2
                         )
                         logger.info(
@@ -223,15 +215,11 @@ class VMCopt_workflow(Workflow):
                         )
                         if (
                             vmcopt_steps_estimated_proper
-                            < (
-                                self.vmcopt_minimum_blocks
-                                + self.vmcopt_warmupblocks
-                            )
+                            < (self.vmcopt_minimum_blocks + self.vmcopt_warmupblocks)
                             * self.vmcopt_bin_block
                         ):
                             vmcopt_steps_estimated_proper = (
-                                self.vmcopt_minimum_blocks
-                                + self.vmcopt_warmupblocks
+                                self.vmcopt_minimum_blocks + self.vmcopt_warmupblocks
                             ) * self.vmcopt_bin_block
                             logger.warning(
                                 f"vmcopt_steps_estimated_proper is set to {vmcopt_steps_estimated_proper}"
@@ -244,9 +232,7 @@ class VMCopt_workflow(Workflow):
                             * vmcopt_steps_estimated_proper
                             * self.vmcopt_production_optsteps
                         )
-                        logger.info(
-                            f"Estimated time = {estimated_time:.0f} sec."
-                        )
+                        logger.info(f"Estimated time = {estimated_time:.0f} sec.")
 
                         vmcoptsteps = self.vmcopt_production_optsteps
                         steps = vmcopt_steps_estimated_proper
@@ -341,18 +327,12 @@ class VMCopt_workflow(Workflow):
                 if self.vmcopt_rerun or not os.path.isfile(
                     os.path.join(self.pkl_dir, self.vmcopt_pkl)
                 ):
-                    logger.info(
-                        f"{self.vmcopt_pkl} does not exist in {self.pkl_dir}."
-                    )
-                    logger.info(
-                        "job is running or fetch has not been done yet."
-                    )
+                    logger.info(f"{self.vmcopt_pkl} does not exist in {self.pkl_dir}.")
+                    logger.info("job is running or fetch has not been done yet.")
                     # job waiting
                     job_running = job.jobcheck()
                     while job_running:
-                        logger.info(
-                            f"Waiting for the submitted job = {job.job_number}"
-                        )
+                        logger.info(f"Waiting for the submitted job = {job.job_number}")
                         # time.sleep(self.sleep_time)
                         await asyncio.sleep(self.sleep_time)
                         os.chdir(self.vmcopt_dir)
@@ -372,16 +352,12 @@ class VMCopt_workflow(Workflow):
                     if self.vmcopt_twist_average:
                         fetch_files += ["kp_info.dat", "turborvb.scratch"]
                         exclude_files += ["kelcont*", "randseed*"]
-                    job.fetch_job(
-                        from_objects=fetch_files, exclude_list=exclude_files
-                    )
+                    job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
                     logger.info("Fetch finished.")
 
                     vmcopt_genius.store_result(output_names=[self.output_file])
                     vmcopt_genius.plot_energy_and_devmax(
-                        output_names=[
-                            f"out_min_{i}" for i in range(icont + 1)
-                        ],
+                        output_names=[f"out_min_{i}" for i in range(icont + 1)],
                         interactive=False,
                     )
                     if icont > 0:
@@ -389,8 +365,7 @@ class VMCopt_workflow(Workflow):
                             lines = f.readlines()
                         vmcopt_done_optsteps = len(lines)
                         optwarmupsteps = int(
-                            self.vmcopt_optwarmupsteps_ratio
-                            * vmcopt_done_optsteps
+                            self.vmcopt_optwarmupsteps_ratio * vmcopt_done_optsteps
                         )
                         logger.info(
                             f"optwarmupsteps is set to {optwarmupsteps} (the first {self.vmcopt_optwarmupsteps_ratio*100:.0f}% steps are disregarded.)"
@@ -401,9 +376,7 @@ class VMCopt_workflow(Workflow):
                         vmcopt_genius.average(
                             optwarmupsteps=optwarmupsteps,
                             input_name=self.input_file,
-                            output_names=[
-                                f"out_min_{i}" for i in range(icont + 1)
-                            ],
+                            output_names=[f"out_min_{i}" for i in range(icont + 1)],
                             graph_plot=False,
                         )
 
@@ -411,9 +384,7 @@ class VMCopt_workflow(Workflow):
                         os.path.join(self.vmcopt_dir, self.vmcopt_pkl), "wb"
                     ) as f:
                         pickle.dump(vmcopt_genius, f)
-                    with open(
-                        os.path.join(self.pkl_dir, self.vmcopt_pkl), "wb"
-                    ) as f:
+                    with open(os.path.join(self.pkl_dir, self.vmcopt_pkl), "wb") as f:
                         pickle.dump(vmcopt_genius, f)
                     with open(
                         os.path.join(self.pkl_dir, self.vmcopt_latest_pkl),
@@ -428,9 +399,7 @@ class VMCopt_workflow(Workflow):
         else:
             logger.info("Skip: VMCopt calculation")
             self.vmcopt_latest_pkl = f"{self.vmcopt_pkl_name}_latest.pkl"
-            with open(
-                os.path.join(self.pkl_dir, self.vmcopt_latest_pkl), "rb"
-            ) as f:
+            with open(os.path.join(self.pkl_dir, self.vmcopt_latest_pkl), "rb") as f:
                 vmcopt_genius = pickle.load(f)
 
         logger.info("VMCopt workflow ends.")
@@ -438,8 +407,7 @@ class VMCopt_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -452,9 +420,7 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 

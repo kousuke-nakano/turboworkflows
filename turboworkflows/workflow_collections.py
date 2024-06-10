@@ -13,16 +13,15 @@ from typing import Optional
 # Logger
 from logging import getLogger, StreamHandler, Formatter
 
+# turboworkflows packages
+from .workflow_encapsulated import Workflow
+
 # turbo-genius packages
 from turbogenius.makefort10_genius import Makefort10_genius
 from turbogenius.convertfort10mol_genius import Convertfort10mol_genius
 from turbogenius.tools_genius import copy_jastrow
 from turbogenius.pyturbo.io_fort10 import IO_fort10
 from turbogenius.wavefunction import Wavefunction
-
-# turboworkflows packages
-# sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from turboworkflows.workflow_encapsulated import Workflow
 
 
 logger = getLogger("Turbo-Workflows").getChild(__name__)
@@ -284,8 +283,8 @@ class Makefort10_workflow(Workflow):
         phase_dn: Optional[list] = None,
         same_phase_up_dn: bool = False,
         neldiff: int = 0,
-        symmetry:bool = True,
-):
+        symmetry: bool = True,
+    ):
         if supercell is None:
             supercell = [1, 1, 1]
         if phase_up is None:
@@ -363,7 +362,7 @@ class Makefort10_workflow(Workflow):
                 phase_dn=self.phase_dn,
                 same_phase_up_dn=self.same_phase_up_dn,
                 neldiff=self.neldiff,
-                symmetry=self.symmetry
+                symmetry=self.symmetry,
             )
 
             makefort10.run_all()

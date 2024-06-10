@@ -13,10 +13,10 @@ from typing import Optional, Any
 from logging import getLogger, StreamHandler, Formatter, FileHandler
 
 # turboworkflows packages
-from turboworkflows.utils_turboworkflows.turboworkflows_env import (
+from .utils_turboworkflows.turboworkflows_env import (
     turbo_workflows_root,
 )
-from turboworkflows.workflow_encapsulated import (
+from .workflow_encapsulated import (
     Encapsulated_Workflow,
     Workflow,
 )
@@ -142,9 +142,7 @@ class Launcher:
 
         # info.
         logger_w.info(f"TurboWorkflows {turboworkflows_version}")
-        logger_w.info(
-            f"Start {datetime.today().strftime('%Y-%m-%d %H:%M:%S')}"
-        )
+        logger_w.info(f"Start {datetime.today().strftime('%Y-%m-%d %H:%M:%S')}")
         logger_w.info("")
         logger_w.info(f"Kosuke Nakano, ({datetime.today().strftime('%Y')})")
         logger_w.info("E-mail: kousuke_1123@icloud.com")
@@ -174,10 +172,7 @@ class Launcher:
                 os.chdir(self.launcher_root_dir)
                 assert isinstance(label, list)
                 cworkflows_list = [self.cworkflows_dict[l] for l in label]
-                [
-                    self.solve_Variables(cworkflows)
-                    for cworkflows in cworkflows_list
-                ]
+                [self.solve_Variables(cworkflows) for cworkflows in cworkflows_list]
                 tsks = [
                     asyncio.create_task(cworkflows.async_launch())
                     for cworkflows in cworkflows_list
@@ -197,14 +192,16 @@ class Launcher:
         if vtype == "file":
             if name not in getattr(self.cworkflows_dict[label], "output_files"):
                 logger.error(f"name={name}")
-                logger.error(f"output_files={getattr(self.cworkflows_dict[label], 'output_files')}")
+                logger.error(
+                    f"output_files={getattr(self.cworkflows_dict[label], 'output_files')}"
+                )
                 logger.error(f"name not in output_files")
                 raise ValueError
             dirname = getattr(self.cworkflows_dict[label], "dirname")
             filepath = os.path.join(dirname, name)
             p = pathlib.Path(filepath)
-            return p.resolve().relative_to(p.cwd()) # return absolute path
-            #return p.resolve().relative_to(self.launcher_root_dir)
+            return p.resolve().relative_to(p.cwd())  # return absolute path
+            # return p.resolve().relative_to(self.launcher_root_dir)
         else:
             rvalue = getattr(self.cworkflows_dict[label], "output_values")
             return rvalue[name]
@@ -279,9 +276,7 @@ class Launcher:
                 else:
                     for predecessors in dag.predecessors(label):
                         predecessors_depth.append(
-                            get_predecessors_set(
-                                predecessors, current_depth + 1
-                            )
+                            get_predecessors_set(predecessors, current_depth + 1)
                         )
                 return np.max(predecessors_depth)  # returns the longest root!
 
@@ -292,9 +287,7 @@ class Launcher:
         logger.info(depth_dict)
         depth_set = set(depth_dict.values())
         for dep in depth_set:
-            group = [
-                label for label, depth in depth_dict.items() if depth == dep
-            ]
+            group = [label for label, depth in depth_dict.items() if depth == dep]
             topological_orders_list_depth.append(group)
 
         return topological_orders_list_depth
@@ -382,9 +375,7 @@ if __name__ == "__main__":
             label=f"clrdmc-workflow-n-{i}",
             dirname=f"clrdmc-workflow-n-{i}",
             input_files=[
-                Variable(
-                    label=f"clrdmc-workflow-{i}", vtype="file", name="fort.10"
-                ),
+                Variable(label=f"clrdmc-workflow-{i}", vtype="file", name="fort.10"),
                 Variable(
                     label=f"clrdmc-workflow-{i}",
                     vtype="file",
@@ -546,12 +537,8 @@ if __name__ == "__main__":
                 label=f"clrdmc-workflow-{i}",
                 dirname=f"clrdmc-workflow-{i}",
                 input_files=[
-                    Variable(
-                        label="cvmc-workflow", vtype="file", name="fort.10"
-                    ),
-                    Variable(
-                        label="cvmc-workflow", vtype="file", name="pseudo.dat"
-                    ),
+                    Variable(label="cvmc-workflow", vtype="file", name="fort.10"),
+                    Variable(label="cvmc-workflow", vtype="file", name="pseudo.dat"),
                 ],
                 workflow=LRDMC_workflow(
                     # job
@@ -637,12 +624,8 @@ if __name__ == "__main__":
             label="clrdmc-workflow-ccc",
             dirname="clrdmc-workflow-ccc",
             input_files=[
-                Variable(
-                    label="clrdmc-workflow-cc-0", vtype="file", name="fort.10"
-                ),
-                Variable(
-                    label="cvmc-workflow-d", vtype="file", name="pseudo.dat"
-                ),
+                Variable(label="clrdmc-workflow-cc-0", vtype="file", name="fort.10"),
+                Variable(label="cvmc-workflow-d", vtype="file", name="pseudo.dat"),
             ],
             workflow=LRDMC_workflow(
                 # job
@@ -680,9 +663,7 @@ if __name__ == "__main__":
             label="clrdmc-workflow-ccc-a",
             dirname="clrdmc-workflow-ccc-a",
             input_files=[
-                Variable(
-                    label="clrdmc-workflow-cc-0", vtype="file", name="fort.10"
-                ),
+                Variable(label="clrdmc-workflow-cc-0", vtype="file", name="fort.10"),
                 Variable(
                     label="clrdmc-workflow-cc-0",
                     vtype="file",
@@ -725,12 +706,8 @@ if __name__ == "__main__":
             label="clrdmc-workflow-ind",
             dirname="clrdmc-workflow-ind",
             input_files=[
-                Variable(
-                    label="cvmc-workflow-ind", vtype="file", name="fort.10"
-                ),
-                Variable(
-                    label="cvmc-workflow-ind", vtype="file", name="pseudo.dat"
-                ),
+                Variable(label="cvmc-workflow-ind", vtype="file", name="fort.10"),
+                Variable(label="cvmc-workflow-ind", vtype="file", name="pseudo.dat"),
             ],
             workflow=LRDMC_workflow(
                 # job

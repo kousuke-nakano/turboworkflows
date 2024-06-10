@@ -15,6 +15,10 @@ from typing import Optional
 # Logger
 from logging import getLogger, StreamHandler, Formatter
 
+# turboworkflow packages
+from .workflow_encapsulated import Workflow
+from .workflow_lrdmc import LRDMC_workflow
+
 # turbogenius package
 from turbogenius.pyturbo.lrdmc import LRDMC
 from turbogenius.pyturbo.utils.execute import run
@@ -22,10 +26,6 @@ from turbogenius.pyturbo.utils.utility import (
     pygrep_lineno,
     get_line_from_file,
 )
-
-# turboworkflow packages
-from turboworkflows.workflow_encapsulated import Workflow
-from turboworkflows.workflow_lrdmc import LRDMC_workflow
 
 logger = getLogger("Turbo-Workflows").getChild(__name__)
 
@@ -154,10 +154,7 @@ class LRDMC_ext_workflow(Workflow):
                         os.path.join(alat_dir, os.path.basename(file)),
                         shallow=True,
                     )
-                    if (
-                        not len(dircmp.left_only) == 0
-                        or len(dircmp.right_only) == 0
-                    ):
+                    if not len(dircmp.left_only) == 0 or len(dircmp.right_only) == 0:
                         logger.warning(
                             f"{os.path.join(self.lrdmc_dir, os.path.basename(file))} is not consistent with {os.path.join(alat_dir, os.path.basename(file))}"
                         )
@@ -220,13 +217,9 @@ class LRDMC_ext_workflow(Workflow):
         for alat in self.lrdmc_alat_list:
             dir_alat = os.path.join(self.lrdmc_dir, f"alat_{alat}")
             os.chdir(dir_alat)
-            energy, error = LRDMC.read_energy(
-                twist_average=self.lrdmc_twist_average
-            )
+            energy, error = LRDMC.read_energy(twist_average=self.lrdmc_twist_average)
             evsa_line = evsa_line + f"{np.abs(alat)} {energy} {error}\n"
-            evsa_gnu_line = (
-                evsa_gnu_line + f"{np.abs(alat)} {energy} {error}\n"
-            )
+            evsa_gnu_line = evsa_gnu_line + f"{np.abs(alat)} {energy} {error}\n"
             os.chdir(self.lrdmc_dir)
         os.chdir(self.lrdmc_dir)
         with open("evsa.in", "w") as f:
@@ -242,18 +235,10 @@ class LRDMC_ext_workflow(Workflow):
         coeff_error_list = []
         for poly in range(self.degree_poly + 1):
             coeff_list.append(
-                float(
-                    get_line_from_file(
-                        "evsa.out", coeff_index + 1 + poly
-                    ).split()[1]
-                )
+                float(get_line_from_file("evsa.out", coeff_index + 1 + poly).split()[1])
             )
             coeff_error_list.append(
-                float(
-                    get_line_from_file(
-                        "evsa.out", coeff_index + 1 + poly
-                    ).split()[2]
-                )
+                float(get_line_from_file("evsa.out", coeff_index + 1 + poly).split()[2])
             )
         coeff_list.reverse()  # because const -> x -> x2 -> ... in evsa.out
         coeff_error_list.reverse()
@@ -281,9 +266,7 @@ class LRDMC_ext_workflow(Workflow):
                     energy_error.append(float(line.split()[2]))
 
         alat_squared = np.array(alat) ** 2
-        alat_squared_extrapolated = np.linspace(
-            0, np.max(alat_squared) * 1.10, 500
-        )
+        alat_squared_extrapolated = np.linspace(0, np.max(alat_squared) * 1.10, 500)
         energy = np.array(energy)
         energy_error = np.array(energy_error)
 
@@ -295,9 +278,7 @@ class LRDMC_ext_workflow(Workflow):
         plt.rcParams["ytick.major.width"] = 1.0
         plt.rcParams["font.size"] = 12
         plt.rcParams["axes.linewidth"] = 1.5
-        plt.xlim(
-            [alat_squared_extrapolated.min(), alat_squared_extrapolated.max()]
-        )
+        plt.xlim([alat_squared_extrapolated.min(), alat_squared_extrapolated.max()])
         plt.annotate(
             "E(alat->0) = {:.5f} Ha +- {:.5f} Ha".format(
                 coeff_list[-1], coeff_error_list[-1]
@@ -319,9 +300,7 @@ class LRDMC_ext_workflow(Workflow):
             color="blue",
             linestyle="dashed",
         )
-        plt.xlabel(
-            "alat$^2$ (Bohr$^2$)", fontname="Times New Roman", fontsize=14
-        )
+        plt.xlabel("alat$^2$ (Bohr$^2$)", fontname="Times New Roman", fontsize=14)
         plt.ylabel("Energy (Ha)", fontname="Times New Roman", fontsize=14)
         plt.gca().get_yaxis().get_major_formatter().set_useOffset(
             False
@@ -331,9 +310,7 @@ class LRDMC_ext_workflow(Workflow):
         )  # No offset for x-axis
         plt.savefig("Energy_vs_alat.png", bbox_inches="tight", pad_inches=0.2)
         plt.close()
-        logger.info(
-            "The graph of the extrapolation is saved as Energy_vs_alat.png"
-        )
+        logger.info("The graph of the extrapolation is saved as Energy_vs_alat.png")
 
         # end
         logger.info("LRDMC-ext workflow ends.")
@@ -341,8 +318,7 @@ class LRDMC_ext_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -355,8 +331,6 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)

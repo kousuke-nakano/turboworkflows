@@ -1,0 +1,9 @@
+QUEUE   CORES  OMP  NODES  CPNS  MPI_PER_NODE  MAX_JOB_RUN  MAX_JOB_SUBMIT  MAX_TIME
+TINY     64    1    1       64    64           10           16               000:30:00
+DEFAULT  64    1    1       64    64           10           16               168:00:00
+SINGLE  128    1    1      128   128           10           16               168:00:00
+LONG    128    1    1      128   128           10           16               168:00:00
+SMALL   480    1    4      128   120           10           16               168:00:00
+SMALL   512    1    4      128   128           10           16               168:00:00
+LARGE  1536    1   12      128   128            3            3               168:00:00
+XLARGE 3072    1   24      128   128            2            3               120:00:00

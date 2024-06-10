@@ -12,14 +12,12 @@ from typing import Optional
 # Logger
 from logging import getLogger, StreamHandler, Formatter
 
-# turbo-genius packages
-from turbogenius.convertfort10mol_genius import Convertfort10mol_genius
-
-# jobmanager
-from turbofilemanager.job_manager import Job_submission
-
 # turboworkflows packages
-from turboworkflows.workflow_encapsulated import Workflow
+from .turbofilemanager.job_manager import Job_submission
+from .workflow_encapsulated import Workflow
+
+# turbogenius packages
+from turbogenius.convertfort10mol_genius import Convertfort10mol_genius
 
 logger = getLogger("Turbo-Workflows").getChild(__name__)
 
@@ -90,9 +88,7 @@ class Convertfort10mol_workflow(Workflow):
             self.output_file = "out_mol"
 
             if self.convertfort10mol_rerun or not os.path.isfile(
-                os.path.join(
-                    self.convertfort10mol_dir, self.convertfort10mol_pkl
-                )
+                os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl)
             ):
 
                 convertfort10mol_genius = Convertfort10mol_genius(
@@ -101,9 +97,7 @@ class Convertfort10mol_workflow(Workflow):
                     additional_mo=self.additional_mo,
                 )
 
-                convertfort10mol_genius.generate_input(
-                    input_name=self.input_file
-                )
+                convertfort10mol_genius.generate_input(input_name=self.input_file)
 
                 # binary set
                 if self.cores == self.openmp:
@@ -146,9 +140,7 @@ class Convertfort10mol_workflow(Workflow):
                 logger.info("Job submitted.")
 
                 with open(
-                    os.path.join(
-                        self.convertfort10mol_dir, self.convertfort10mol_pkl
-                    ),
+                    os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl),
                     "wb",
                 ) as f:
                     pickle.dump(convertfort10mol_genius, f)
@@ -158,9 +150,7 @@ class Convertfort10mol_workflow(Workflow):
                 with open(self.jobpkl, "rb") as f:
                     job = pickle.load(f)
                 with open(
-                    os.path.join(
-                        self.convertfort10mol_dir, self.convertfort10mol_pkl
-                    ),
+                    os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl),
                     "rb",
                 ) as f:
                     convertfort10mol_genius = pickle.load(f)
@@ -178,9 +168,7 @@ class Convertfort10mol_workflow(Workflow):
                 # job waiting
                 job_running = job.jobcheck()
                 while job_running:
-                    logger.info(
-                        f"Waiting for the submitted job = {job.job_number}"
-                    )
+                    logger.info(f"Waiting for the submitted job = {job.job_number}")
                     # time.sleep(self.sleep_time)
                     await asyncio.sleep(self.sleep_time)
                     os.chdir(self.convertfort10mol_dir)
@@ -190,15 +178,11 @@ class Convertfort10mol_workflow(Workflow):
                 logger.info("Fetch files.")
                 fetch_files = [self.output_file, "fort.10_new"]
                 exclude_files = []
-                job.fetch_job(
-                    from_objects=fetch_files, exclude_list=exclude_files
-                )
+                job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
                 logger.info("Fetch finished.")
 
                 with open(
-                    os.path.join(
-                        self.convertfort10mol_dir, self.convertfort10mol_pkl
-                    ),
+                    os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl),
                     "wb",
                 ) as f:
                     pickle.dump(convertfort10mol_genius, f)
@@ -212,9 +196,7 @@ class Convertfort10mol_workflow(Workflow):
         else:
             logger.info("Skip: convertfort10mol")
             self.convertfort10mol_pkl = f"{self.convertfort10mol_pkl_name}.pkl"
-            with open(
-                os.path.join(self.pkl_dir, self.convertfort10mol_pkl), "rb"
-            ) as f:
+            with open(os.path.join(self.pkl_dir, self.convertfort10mol_pkl), "rb") as f:
                 convertfort10mol_genius = pickle.load(f)
 
         logger.info("End: convertfort10mol workflow ends.")
@@ -222,8 +204,7 @@ class Convertfort10mol_workflow(Workflow):
 
         self.status = "success"
         p_list = [
-            pathlib.Path(ob)
-            for ob in glob.glob(os.path.join(self.root_dir, "*"))
+            pathlib.Path(ob) for ob in glob.glob(os.path.join(self.root_dir, "*"))
         ]
         self.output_files = [
             str(p.resolve().relative_to(self.root_dir)) for p in p_list
@@ -236,9 +217,7 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 

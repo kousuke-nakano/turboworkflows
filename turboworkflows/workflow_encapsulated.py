@@ -89,72 +89,41 @@ class Encapsulated_Workflow:
                         refile = self.rename_input_files[i]
                         shutil.copy(
                             os.path.join(file),
-                            os.path.join(
-                                self.project_dir, os.path.basename(refile)
-                            ),
+                            os.path.join(self.project_dir, os.path.basename(refile)),
                         )
                     else:
                         shutil.copy(
                             os.path.join(file),
-                            os.path.join(
-                                self.project_dir, os.path.basename(file)
-                            ),
+                            os.path.join(self.project_dir, os.path.basename(file)),
                         )
                 else:  # directories
                     if rename_flag:
                         refile = self.rename_input_files[i]
                         if os.path.isdir(
-                            os.path.join(
-                                self.project_dir, os.path.basename(refile)
-                            )
+                            os.path.join(self.project_dir, os.path.basename(refile))
                         ):
                             shutil.rmtree(
-                                os.path.join(
-                                    self.project_dir, os.path.basename(refile)
-                                )
+                                os.path.join(self.project_dir, os.path.basename(refile))
                             )
                         shutil.copytree(
                             os.path.join(file),
-                            os.path.join(
-                                self.project_dir, os.path.basename(refile)
-                            ),
+                            os.path.join(self.project_dir, os.path.basename(refile)),
                         )
                     else:
                         if os.path.isdir(
-                            os.path.join(
-                                self.project_dir, os.path.basename(file)
-                            )
+                            os.path.join(self.project_dir, os.path.basename(file))
                         ):
                             shutil.rmtree(
-                                os.path.join(
-                                    self.project_dir, os.path.basename(file)
-                                )
+                                os.path.join(self.project_dir, os.path.basename(file))
                             )
                         shutil.copytree(
                             os.path.join(file),
-                            os.path.join(
-                                self.project_dir, os.path.basename(file)
-                            ),
+                            os.path.join(self.project_dir, os.path.basename(file)),
                         )
 
     async def async_launch(self):
         os.chdir(self.root_dir)
         self.__preparation()
-        """avoid complication. This is obsolete.
-        if not os.path.isfile(self.run_file) and not os.path.isfile(
-            self.done_file
-        ):
-            logger.info(f"eWorkflow={self.label} has not been launched.")
-            logger.info(f"Copying input files.")
-            self.__preparation()
-        else:
-            logger.info(f"eWorkflow={self.label} has been launched.")
-            logger.info(f"Skip copying input files.")
-        if os.path.isfile(self.done_file):
-            os.remove(self.done_file)
-        with open(self.run_file, "w") as f:
-            f.write("")
-        """
         os.chdir(self.project_dir)
         (
             self.status,
@@ -188,9 +157,7 @@ if __name__ == "__main__":
     logger.setLevel("INFO")
     stream_handler = StreamHandler()
     stream_handler.setLevel("DEBUG")
-    handler_format = Formatter(
-        "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-    )
+    handler_format = Formatter("%(name)s - %(levelname)s - %(lineno)d - %(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
 

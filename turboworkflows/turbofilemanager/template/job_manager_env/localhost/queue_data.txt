@@ -1,0 +1,2 @@
+QUEUE   CORES  OMP  NODES  CPNS  MPI_PER_NODE  MAX_JOB_RUN  MAX_JOB_SUBMIT  MAX_TIME
+reserved  12    1    1       12    12           10           16               000:30:00
