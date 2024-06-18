@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, sys
+import os
 
 import pickle
 import shutil
@@ -168,7 +168,6 @@ class Job_submission:
         self.job_submit_date = None
         self.job_check_last_time = None
         self.job_fetch_date = None
-        self.job_status = "unknown"  # one can put any comment. e.g. success or failure
 
     def generate_script(self, submission_script="submit.sh"):
 
@@ -276,14 +275,11 @@ class Job_submission:
                         )
                         raise ValueError
                     else:
-                        client_dir = local_current_dir.replace(client_home, client_home)
+                        # client_dir = local_current_dir.replace(client_home, client_home)
                         server_dir = local_current_dir.replace(client_home, server_home)
-                        logger.debug(client_dir)
-                        logger.debug(server_dir)
 
                         # data transfer
                         self.data_transfer.put_objects(from_objects=from_objects)
-                        logger.debug("data trasfer is ok")
 
                 if self.server_machine.queuing:
                     logger.debug("queueing system")
@@ -293,9 +289,8 @@ class Job_submission:
                     ) = self.server_machine.run_command(
                         command=command, execute_dir=server_dir
                     )
-                    logger.debug("command done")
-                    logger.info(stdout.split())
-                    logger.info(stderr.split())
+                    logger.debug(stdout.split())
+                    logger.debug(stderr.split())
                     self.job_number = stdout.split()[self.server_machine.jobnum_index]
                     self.job_running = True
                     self.job_dir = server_dir
@@ -313,6 +308,7 @@ class Job_submission:
 
                 self.client_machine.ssh_close()
                 self.server_machine.ssh_close()
+                self.data_transfer.ssh_close()
                 with open(self.pkl_name, "wb") as f:
                     pickle.dump(self, f)
 
@@ -333,7 +329,6 @@ class Job_submission:
             jjj = 0
             while True:
                 job_list = self.server_machine.get_job_list_as_text()
-                logger.debug(job_list)
                 if not job_list == "":
                     break
                 if jjj > trial_num:
@@ -367,6 +362,7 @@ class Job_submission:
 
         self.client_machine.ssh_close()
         self.server_machine.ssh_close()
+        self.data_transfer.ssh_close()
         with open(self.pkl_name, "wb") as f:
             pickle.dump(self, f)
 
@@ -375,7 +371,6 @@ class Job_submission:
     def jobnum_check(self):
         if self.server_machine.queuing:
             job_list = self.server_machine.get_job_list_as_text()
-            logger.debug(job_list)
             logger.debug(
                 [
                     line
@@ -410,12 +405,13 @@ class Job_submission:
 
         self.client_machine.ssh_close()
         self.server_machine.ssh_close()
+        self.data_transfer.ssh_close()
         with open(self.pkl_name, "wb") as f:
             pickle.dump(self, f)
 
         return flag
 
-    def fetch_job(self, from_objects=[]):
+    def fetch_job(self, from_objects=[], exclude_patterns=[]):
         client_home = self.client_machine.file_manager_root
         server_home = self.server_machine.file_manager_root
         if self.safe_mode:
@@ -448,12 +444,15 @@ class Job_submission:
                 logger.info(server_dir)
 
                 # data transfer
-                self.data_transfer.get_objects(from_objects=from_objects)
+                self.data_transfer.get_objects(
+                    from_objects=from_objects, exclude_patterns=exclude_patterns
+                )
 
         self.job_fetch_date = datetime.today()
 
         self.client_machine.ssh_close()
         self.server_machine.ssh_close()
+        self.data_transfer.ssh_close()
         with open(self.pkl_name, "wb") as f:
             pickle.dump(self, f)
 
@@ -461,8 +460,10 @@ class Job_submission:
         # job delete
         self.server_machine.delete_job(jobid=self.job_number)
         self.job_running = False
-        self.job_status = "failed"
 
+        self.client_machine.ssh_close()
+        self.server_machine.ssh_close()
+        self.data_transfer.ssh_close()
         with open(self.pkl_name, "wb") as f:
             pickle.dump(self, f)
 

@@ -4,4 +4,6 @@ turborvb:
     stable: /home/application/TurboRVB/bin
   binary_list: 
     - turborvb-mpi.x
-
+  job_template:
+    mpi: submit_mpi.sh
+    nompi: submit_nompi.sh

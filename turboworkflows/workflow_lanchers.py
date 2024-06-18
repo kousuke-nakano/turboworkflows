@@ -51,7 +51,6 @@ class Launcher:
         turbo_workflows_log_level: str = "INFO",
         turbo_genius_log_level: str = "INFO",
         pyturbo_log_level: str = "INFO",
-        file_manager_log_level: str = "INFO",
         log_name: str = "turboworkflows.log",
         dependency_graph_draw: bool = False,
     ):
@@ -120,26 +119,6 @@ class Launcher:
         file_handler_p.setFormatter(handler_format_p)
         logger_p.addHandler(file_handler_p)
 
-        name = "file-manager"
-        handler_format_f = Formatter(
-            "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
-        )
-        if loggers.get(name):
-            logger_f = loggers.get(name)
-            logger_f.setLevel(file_manager_log_level)
-        else:
-            logger_f = getLogger(name)
-            logger_f.setLevel(file_manager_log_level)
-            stream_handler_f = StreamHandler()
-            stream_handler_f.setLevel(file_manager_log_level)
-            stream_handler_f.setFormatter(handler_format_f)
-            logger_f.addHandler(stream_handler_f)
-            loggers[name] = logger_f
-        file_handler_f = FileHandler(log_name, "a")
-        file_handler_f.setLevel(file_manager_log_level)
-        file_handler_f.setFormatter(handler_format_f)
-        logger_f.addHandler(file_handler_f)
-
         # info.
         logger_w.info(f"TurboWorkflows {turboworkflows_version}")
         logger_w.info(f"Start {datetime.today().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -195,7 +174,7 @@ class Launcher:
                 logger.error(
                     f"output_files={getattr(self.cworkflows_dict[label], 'output_files')}"
                 )
-                logger.error(f"name not in output_files")
+                logger.error(f"{name} not in output_files")
                 raise ValueError
             dirname = getattr(self.cworkflows_dict[label], "dirname")
             filepath = os.path.join(dirname, name)

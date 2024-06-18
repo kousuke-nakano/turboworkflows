@@ -8,10 +8,6 @@
 
 # Note:
 # The variables _xxx_ are replaced by job_manager.py.
-# Implemented arguments are:
-# QUEUE, JOBNAME, MAX_TIME, NODES, CORES_PER_NODE, MPI_PER_NODE
-# OMP_NUM_THREADS, NUM_CORES, INPUT, OUTPUT, BINARY_ROOT, BINARY
-# PREOPTION, POSTOPTION
 
 cd ${PBS_O_WORKDIR}
 

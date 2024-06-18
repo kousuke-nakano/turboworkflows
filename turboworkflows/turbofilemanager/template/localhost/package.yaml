@@ -9,6 +9,9 @@ turborvb:
     - convertfort10mol.x
     - convertfort10.x
     - readforward-serial.x
+  job_template:
+    mpi: submit_mpi.sh
+    nompi: submit_nompi.sh
 
 python:
   name: python
@@ -16,3 +19,6 @@ python:
     stable: 
   binary_list:
     - python
+  job_template:
+    mpi: submit_mpi.sh
+    nompi: submit_nompi.sh

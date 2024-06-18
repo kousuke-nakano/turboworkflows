@@ -35,15 +35,11 @@ class PySCF_workflow(Workflow):
         trexio_filename: str = "trexio.hdf5",
         # job
         server_machine_name: str = "localhost",
-        cores: int = 1,
-        openmp: int = 1,
-        queue: Optional[str] = None,
+        queue_label: Optional[str] = None,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
-        jobpkl_name: str = "job_manager",
         # pyscf
         pyscf_rerun: bool = False,
-        pyscf_pkl_name: str = "pyscf_genius",
         init_guess: str = "minao",
         cell_precision: float = 1.0e-8,
         multigrid_fftdf: bool = False,
@@ -79,15 +75,11 @@ class PySCF_workflow(Workflow):
         self.trexio_filename = trexio_filename
         # job
         self.server_machine_name = server_machine_name
-        self.cores = cores
-        self.openmp = openmp
-        self.queue = queue
+        self.queue_label = queue_label
         self.version = version
         self.sleep_time = sleep_time
-        self.jobpkl_name = jobpkl_name
         # pyscf
         self.pyscf_rerun = pyscf_rerun
-        self.pyscf_pkl_name = pyscf_pkl_name
         self.init_guess = init_guess
         self.cell_precision = cell_precision
         self.multigrid_fftdf = multigrid_fftdf
@@ -112,6 +104,9 @@ class PySCF_workflow(Workflow):
         self.smearing_sigma = smearing_sigma
         # conversion to trexio file
         self.force_wf_complex = force_wf_complex
+        # pkl names
+        self.job_pkl_name = "job_manager"
+        self.pyscf_pkl_name = "pyscf_genius"
         # return values
         self.status = "init"
         self.output_files = []
@@ -123,7 +118,7 @@ class PySCF_workflow(Workflow):
         ###############################################
         self.root_dir = os.getcwd()
         logger.info(f"Current dir = {self.root_dir}")
-        self.jobpkl = f"{self.jobpkl_name}.pkl"
+        self.job_pkl = f"{self.job_pkl_name}.pkl"
 
         # ******************
         # pyscf
@@ -157,7 +152,7 @@ class PySCF_workflow(Workflow):
                 shutil.copy(pyscf_python_wrapper, self.pyscf_dir)
 
                 def rg(arg):
-                    if type(arg) == str:
+                    if type(arg) is str:
                         return '"' + arg + '"'
                     else:
                         return arg
@@ -226,19 +221,16 @@ pyscf_calc.run_pyscf(
                     f.write(run_py)
 
                 job = Job_submission(
-                    local_machine_name="localhost",
                     client_machine_name="localhost",
                     server_machine_name=self.server_machine_name,
                     package="python",
-                    cores=self.cores,
-                    openmp=self.openmp,
-                    queue=self.queue,
+                    queue_label=self.queue_label,
                     version=self.version,
+                    mpi=False,
                     jobname="pyscf",
                     input_file="run.py",
-                    nompi=True,
                     input_redirect=False,
-                    pkl_name=self.jobpkl,
+                    pkl_name=self.job_pkl,
                 )
                 job.generate_script(submission_script="submit.sh")
 
@@ -261,7 +253,7 @@ pyscf_calc.run_pyscf(
 
             else:
                 logger.info(f"{self.pyscf_pkl} exists.")
-                with open(self.jobpkl, "rb") as f:
+                with open(self.job_pkl, "rb") as f:
                     job = pickle.load(f)
 
             ####

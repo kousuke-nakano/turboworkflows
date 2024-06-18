@@ -29,16 +29,13 @@ class LRDMC_workflow(Workflow):
         self,
         # job
         server_machine_name: str = "localhost",
-        cores: int = 1,
-        openmp: int = 1,
-        queue: Optional[str] = None,
+        queue_label: Optional[str] = None,
+        mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
-        jobpkl_name: str = "job_manager",
         # lrdmc
         lrdmc_rerun: bool = False,
         lrdmc_max_continuation: int = 2,
-        lrdmc_pkl_name: str = "lrdmc_genius",
         lrdmc_target_error_bar: float = 2.0e-5,  # Ha
         lrdmc_trial_steps: int = 150,
         lrdmc_bin_block: int = 10,
@@ -59,16 +56,13 @@ class LRDMC_workflow(Workflow):
             lrdmc_kpoints = []
         # job
         self.server_machine_name = server_machine_name
-        self.cores = cores
-        self.openmp = openmp
-        self.queue = queue
+        self.mpi = mpi
+        self.queue_label = queue_label
         self.version = version
         self.sleep_time = sleep_time
-        self.jobpkl_name = jobpkl_name
         # lrdmc
         self.lrdmc_rerun = lrdmc_rerun
         self.lrdmc_max_continuation = lrdmc_max_continuation
-        self.lrdmc_pkl_name = lrdmc_pkl_name
         self.lrdmc_target_error_bar = lrdmc_target_error_bar
         self.lrdmc_trial_steps = lrdmc_trial_steps
         self.lrdmc_bin_block = lrdmc_bin_block
@@ -84,7 +78,9 @@ class LRDMC_workflow(Workflow):
         self.lrdmc_kpoints = lrdmc_kpoints
         self.lrdmc_force_calc_flag = lrdmc_force_calc_flag
         self.lrdmc_maxtime = lrdmc_maxtime
-
+        # pkl names
+        self.job_pkl_name = "job_manager"
+        self.lrdmc_pkl_name = "lrdmc_genius"
         # return values
         self.status = "init"
         self.output_files = []
@@ -96,7 +92,6 @@ class LRDMC_workflow(Workflow):
         ###############################################
         self.root_dir = os.getcwd()
         logger.info(f"Current dir = {self.root_dir}")
-        self.jobpkl = f"{self.jobpkl_name}.pkl"
 
         # ******************
         # lrdmc
@@ -134,6 +129,7 @@ class LRDMC_workflow(Workflow):
                     logger.info(f"LRDMC continuation run, icont={icont}")
 
                 self.lrdmc_pkl = f"{self.lrdmc_pkl_name}_{icont}.pkl"
+                self.job_pkl = f"{self.job_pkl_name}_{icont}.pkl"
                 self.lrdmc_latest_pkl = f"{self.lrdmc_pkl_name}_latest.pkl"
                 self.input_file = f"datasfn_{icont}.input"
                 self.output_file = f"out_fn_{icont}"
@@ -173,10 +169,14 @@ class LRDMC_workflow(Workflow):
                                 + self.lrdmc_bin_block * self.lrdmc_warmupblocks
                             ):
                                 logger.warning(
-                                    f"lrdmcsteps = {self.lrdmc_trial_steps} is too small! < {lrdmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {lrdmc_minimum_trial_blocks * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
+                                    f"lrdmcsteps = {self.lrdmc_trial_steps} is too small! "
+                                    f"< {lrdmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks "
+                                    f"= {lrdmc_minimum_trial_blocks * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
                                 )
                                 logger.warning(
-                                    f"lrdmcsteps = {self.lrdmc_trial_steps} is set to {lrdmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {lrdmc_minimum_trial_blocks * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
+                                    f"lrdmcsteps = {self.lrdmc_trial_steps} is set to "
+                                    f"{lrdmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks "
+                                    f"= {lrdmc_minimum_trial_blocks * self.lrdmc_bin_block + self.lrdmc_bin_block * self.lrdmc_warmupblocks}"
                                 )
                                 self.lrdmc_trial_steps = (
                                     lrdmc_minimum_trial_blocks * self.lrdmc_bin_block
@@ -299,29 +299,24 @@ class LRDMC_workflow(Workflow):
                     )
 
                     # binary set
-                    if self.cores == self.openmp:
-                        binary = "turborvb-serial.x"
-                        nompi = True
-                    else:
+                    if self.mpi:
                         binary = "turborvb-mpi.x"
-                        nompi = False
+                    else:
+                        binary = "turborvb-serial.x"
 
                     # Job submission by the job-manager package
                     job = Job_submission(
-                        local_machine_name="localhost",
                         client_machine_name="localhost",
                         server_machine_name=self.server_machine_name,
                         package="turborvb",
-                        cores=self.cores,
-                        openmp=self.openmp,
-                        queue=self.queue,
+                        queue_label=self.queue_label,
                         version=self.version,
                         binary=binary,
-                        nompi=nompi,
+                        mpi=self.mpi,
                         jobname="turbogenius",
                         input_file=self.input_file,
                         output_file=self.output_file,
-                        pkl_name=self.jobpkl,
+                        pkl_name=self.job_pkl,
                     )
                     job.generate_script(submission_script="submit.sh")
                     # job submission
@@ -343,7 +338,7 @@ class LRDMC_workflow(Workflow):
 
                 else:
                     logger.info(f"{self.lrdmc_pkl} exists.")
-                    with open(self.jobpkl, "rb") as f:
+                    with open(self.job_pkl, "rb") as f:
                         job = pickle.load(f)
                     with open(os.path.join(self.lrdmc_dir, self.lrdmc_pkl), "rb") as f:
                         lrdmc_genius = pickle.load(f)
@@ -373,11 +368,13 @@ class LRDMC_workflow(Workflow):
                         "fort.12",
                         "parminimized.d",
                     ]
-                    exclude_files = []
+                    exclude_patterns = []
                     if self.lrdmc_twist_average:
                         fetch_files += ["kp_info.dat", "turborvb.scratch"]
-                        exclude_files += ["kelcont*", "randseed*"]
-                    job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
+                        exclude_patterns += ["kelcont*", "randseed*"]
+                    job.fetch_job(
+                        from_objects=fetch_files, exclude_patterns=exclude_patterns
+                    )
                     logger.info("Fetch finished.")
 
                     logger.info("Computing lrdmc energy")

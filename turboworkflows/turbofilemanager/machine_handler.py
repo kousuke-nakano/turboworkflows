@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 # import python modules
-import os, sys
+import os
 import time
 
+import re
 import stat
 import paramiko
-import random
 import yaml
 import shutil
 import pathlib
@@ -23,16 +23,6 @@ from .file_manager_env import (
 )
 
 logger = getLogger("Turbo-Workflows").getChild(__name__)
-
-"""
-# this should be refactored because it does not work with 'cd' command.
-def timeout_command(command):
-    #loop_num_timeout=5
-    #time_timeout="10m"
-    #mod_command = f"n=1; n_loop={loop_num_timeout}; while [ $n -le $n_loop ]; do timeout {time_timeout} {command}; if [ $? -eq 0 ]; then break; fi; n=`expr $n + 1`; done"
-    mod_command = command
-    return mod_command
-"""
 
 
 class Machine:
@@ -71,66 +61,69 @@ class Machine:
             raise KeyError
 
         self.__name = machine
-        logger.info(self.machine_type)
+        logger.debug(self.machine_type)
 
         self.ssh_status = False
 
     def ssh_open(self):
         if self.machine_type == "remote":
             if not self.ssh_status:
-                rw = random.randint(1, 5)
-                logger.info(f"wait {rw} secs.")
-                time.sleep(rw)
-
-                logger.info(
-                    "the chosen machine type is remote. ssh connection is open via paramiko module."
-                )
+                # rw = random.randint(1, 5)
+                # logger.info(f"wait {rw} secs.")
+                # time.sleep(rw)
+                time.sleep(0.1)
+                logger.info("A ssh connection is open via paramiko module.")
+                ssh_config = paramiko.SSHConfig()
                 try:
                     config_file = os.path.join(os.getenv("HOME"), ".ssh/config")
-                except:
-                    logger.info(
-                        f"TurboWorkflows needs the ssh config file ({os.path.join(os.getenv('HOME'), '.ssh/config')})"
+                    ssh_config.parse(open(config_file, "r"))
+                except FileNotFoundError:
+                    logger.error(
+                        f"TurboWorkflows needs the ssh config file ({config_file})"
                     )
-                    raise FileNotFoundError
-                ssh_config = paramiko.SSHConfig()
-                ssh_config.parse(open(config_file, "r"))
                 lkup = ssh_config.lookup(self.__name)
 
                 hostname = lkup["hostname"]
                 username = lkup["user"]
                 key_filename = lkup["identityfile"]
-                proxy_command = lkup["proxycommand"]
 
-                logger.info(f"pramiko ssh hostname = {hostname}")
-                logger.info(f"pramiko ssh username = {username}")
-                logger.info(f"pramiko ssh key_filename = {key_filename}")
-                logger.info(f"pramiko ssh proxy-command = {proxy_command}")
+                logger.debug(f"paramiko ssh hostname = {hostname}")
+                logger.debug(f"paramiko ssh username = {username}")
+                logger.debug(f"paramiko ssh key_filename = {key_filename}")
+
+                try:
+                    proxy_command = lkup["proxycommand"]
+                    logger.info(f"paramiko ssh proxy-command = {proxy_command}")
+                    proxy_flag = True
+                except KeyError:
+                    proxy_flag = False
 
                 self.username = username
                 self.ssh = paramiko.SSHClient()
                 self.ssh.load_system_host_keys()
-                self.ssh.connect(
-                    hostname=hostname,
-                    username=username,
-                    key_filename=key_filename,
-                    sock=paramiko.ProxyCommand(proxy_command),
-                )
+                if proxy_flag:
+                    self.ssh.connect(
+                        hostname=hostname,
+                        username=username,
+                        key_filename=key_filename,
+                        sock=paramiko.ProxyCommand(proxy_command),
+                    )
+                else:
+                    self.ssh.connect(
+                        hostname=hostname, username=username, key_filename=key_filename
+                    )
                 self.sftp = self.ssh.open_sftp()
                 self.ssh_status = True
 
             else:
-                logger.info(
-                    "the chosen machine type is remote. ssh connection is already open via paramiko module."
-                )
-                logger.info(f"self.ssh_status = {self.ssh_status}")
+                logger.info("The ssh connection is already open via paramiko module.")
+                logger.debug(f"self.ssh_status = {self.ssh_status}")
 
     def ssh_close(self):
         if self.machine_type == "remote":
-            logger.info(f"self.ssh_status = {self.ssh_status}")
+            logger.debug(f"self.ssh_status = {self.ssh_status}")
             if self.ssh_status:
-                logger.info(
-                    "the chosen machine type is remote. ssh connection is close via paramiko module."
-                )
+                logger.info("The ssh connection is close via paramiko module.")
                 self.ssh.close()
                 self.sftp.close()
                 del self.ssh
@@ -242,7 +235,7 @@ class Machine:
                 command_r = f"cd {execute_dir}; {command}"
 
             # command_r=timeout_command(command=command_r)
-            logger.info(f"command = {command_r} in run_command")
+            logger.debug(f"command = {command_r} in run_command")
 
             if self.machine_type == "local":
                 for ii in range(3):
@@ -258,25 +251,32 @@ class Machine:
                         logger.warning(
                             f"subprocess is successful (ii={ii}). break the loop"
                         )
-                        stdout, stderr = proc.stdout, proc.stderr
+                        exit_status, stdout, stderr = (
+                            proc.returncode,
+                            proc.stdout,
+                            proc.stderr,
+                        )
+                        logger.info(f"exit_status={exit_status}")
                         break
                     except subprocess.TimeoutExpired:
                         logger.warning(
                             f"subprocess is timeout (ii={ii}). iterate the loop."
                         )
-                    except:
-                        raise ValueError
-                    logger.info("wait 60 secs.")
+                        exit_status = 99
+                    logger.warning("wait 60 secs.")
                     time.sleep(60)
 
-                if not stderr:
+                if exit_status == 0:
                     # success run_command
                     logger.debug(f"stdout = {stdout}")
+                    logger.debug(f"stderr = {stderr}")
+                    logger.debug(f"exit_status = {exit_status}")
                     break
                 else:
                     # failure run_command
                     logger.debug(f"stdout = {stdout}")
                     logger.debug(f"stderr = {stderr}")
+                    logger.debug(f"exit_status = {exit_status}")
                     logger.warning(f"command={command_r} did not work.")
                     logger.warning(
                         f"The command will be retried after {self.ssh_retry_time}s sleep."
@@ -290,17 +290,28 @@ class Machine:
                     logger.error("Something wrong in run_command!!")
                     raise ValueError
 
-            else:
+            else:  # remote
                 self.ssh_open()
                 logger.info(f"command_r={command_r}")
                 _, pstdout, pstderr = self.ssh.exec_command(command=command_r)
+                exit_status = pstdout.channel.recv_exit_status()
+                logger.debug(f"exit_status = {exit_status}")
                 stdout, stderr = str(pstdout.read()), str(pstderr.read())
-                break
+
+                if exit_status == 0:
+                    logger.debug(f"command_r={command_r} was successful.")
+                    logger.debug(f"stdout={stdout}")
+                    logger.debug(f"stderr={stderr}")
+                    break
+                else:
+                    logger.error(f"command_r={command_r} failed.")
+                    logger.error(f"stdout={stdout}")
+                    logger.error(f"stderr={stderr}")
+                    raise ValueError
 
         return stdout, stderr
 
     def is_file(self, file_name):
-        logger.debug(f"check if file={file_name} exists.")
         if not pathlib.Path(file_name).is_absolute():
             logger.error(f"file_name={file_name} is not an absolute path.")
 
@@ -311,10 +322,13 @@ class Machine:
                 return False
         else:
             self.ssh_open()
-            fileattr = self.sftp.lstat(file_name)
-            if stat.S_IFREG(fileattr.st_mode):
-                return True
-            else:
+            try:
+                fileattr = self.sftp.lstat(file_name)
+                if stat.S_ISREG(fileattr.st_mode):
+                    return True
+                else:
+                    return False
+            except IOError:
                 return False
 
     def is_dir(self, dir_name):
@@ -323,7 +337,7 @@ class Machine:
             logger.error(f"dir_name={dir_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            if os.path.isfile(dir_name):
+            if os.path.isdir(dir_name):
                 return True
             else:
                 return False
@@ -347,120 +361,161 @@ class Machine:
                 return False
         else:
             self.ssh_open()
-            fileattr = self.sftp.lstat(object_name)
-            if stat.S_ISDIR(fileattr.st_mode) or stat.S_IFREG(fileattr.st_mode):
-                return True
-            else:
+            try:
+                fileattr = self.sftp.lstat(object_name)
+                if stat.S_ISDIR(fileattr.st_mode):
+                    return True
+                elif stat.S_ISREG(fileattr.st_mode):
+                    return True
+                else:
+                    return False
+            except FileNotFoundError:
                 return False
 
     def is_alive(self):
-        logger.info("wait 1 sec.")
-        time.sleep(1)
+        # logger.info("wait 1 sec.")
+        # time.sleep(1)
         return True
 
 
 class Machines_handler:
 
-    def __init__(self, client_machine_name, server_machine_name, safe_mode=False):
+    def __init__(self, client_machine_name, server_machine_name):
 
         self.client_machine = Machine(client_machine_name)
         self.server_machine = Machine(server_machine_name)
-        self.safe_mode = safe_mode
+
+    def ssh_close(self):
+        self.client_machine.ssh_close()
+        self.server_machine.ssh_close()
 
     # data transfer class
-    def put(self, from_file, to_file):
+    def put(self, from_file, to_file, exclude_patterns=[]):
         self.object_transfer(
             from_machine=self.client_machine,
             from_object=from_file,
             to_machine=self.server_machine,
             to_object=to_file,
+            exclude_patterns=exclude_patterns,
             dir_transfer=False,
         )
 
-    def put_dir(self, from_dir, to_dir):
+    def put_dir(self, from_dir, to_dir, exclude_patterns=[]):
         self.object_transfer(
             from_machine=self.client_machine,
             from_object=from_dir,
             to_machine=self.server_machine,
             to_object=to_dir,
+            exclude_patterns=exclude_patterns,
             dir_transfer=True,
         )
 
-    def get(self, from_file, to_file):
+    def get(self, from_file, to_file, exclude_patterns=[]):
         self.object_transfer(
             from_machine=self.server_machine,
             from_object=from_file,
             to_machine=self.client_machine,
             to_object=to_file,
+            exclude_patterns=exclude_patterns,
             dir_transfer=False,
         )
 
-    def get_dir(self, from_dir, to_dir):
+    def get_dir(self, from_dir, to_dir, exclude_patterns=[]):
         self.object_transfer(
             from_machine=self.server_machine,
             from_object=from_dir,
             to_machine=self.client_machine,
             to_object=to_dir,
+            exclude_patterns=exclude_patterns,
             dir_transfer=True,
         )
 
-    def get_sftp_file(self, source, target):
+    def get_sftp_file(self, source, target, exclude_patterns=[]):
         """Download the contents of the source file to the target path."""
-        self.server_machine.ssh_open()
-        sftp = self.server_machine.sftp
-        sftp.get(os.path.join(source), "%s/%s" % (target))
+        if not any([re.match(p, os.path.basename(source)) for p in exclude_patterns]):
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            self.server_machine.ssh_open()
+            sftp = self.server_machine.sftp
+            sftp.get(source, target)
 
-    def put_sftp_file(self, source, target):
+    def put_sftp_file(self, source, target, exclude_patterns=[]):
         """Uploads the contents of the source file to the target path."""
-        self.server_machine.ssh_open()
-        sftp = self.server_machine.sftp
-        sftp.put(os.path.join(source), "%s/%s" % (target))
+        if not any([re.match(p, os.path.basename(source)) for p in exclude_patterns]):
+            # self.server_machine.ssh.exec_command(f"mkdir -p {os.path.dirname(target)}")
+            self.server_machine.run_command(f"mkdir -p {os.path.dirname(target)}")
+            self.server_machine.ssh_open()
+            sftp = self.server_machine.sftp
+            sftp.put(source, target)
 
-    def get_sftp_dir(self, source, target):
+    def get_sftp_dir(self, source, target, exclude_patterns=[]):
         """Download the contents of the source directory to the target path. The
         target directory needs to exists. All subdirectories in source are
         created under target.
         """
+        os.makedirs(target, exist_ok=True)
         self.server_machine.ssh_open()
         sftp = self.server_machine.sftp
 
         for item in sftp.listdir_attr(source):
+            if any([re.match(p, os.path.basename(item)) for p in exclude_patterns]):
+                continue
             fileattr = sftp.lstat(os.path.join(source, item))
             if stat.S_IFREG(fileattr.st_mode):
-                sftp.get(os.path.join(source, item), "%s/%s" % (target, item))
+                sftp.get(os.path.join(source, item), os.path.join(target, item))
             else:
                 os.makedirs("%s/%s" % (target, item), exists_ok=True)
-                self.get_sftp_dir(os.path.join(source, item), "%s/%s" % (target, item))
+                self.get_sftp_dir(
+                    os.path.join(source, item), os.path.join(target, item)
+                )
 
-    def put_sftp_dir(self, source, target):
+    def put_sftp_dir(self, source, target, exclude_patterns=[]):
         """Uploads the contents of the source directory to the target path. The
         target directory needs to exists. All subdirectories in source are
         created under target.
         """
+        self.server_machine.run_command(f"mkdir -p {target}")
         self.server_machine.ssh_open()
         sftp = self.server_machine.sftp
         for item in os.listdir(source):
+            if any([re.match(p, os.path.basename(item)) for p in exclude_patterns]):
+                continue
+            logger.info(f"item={item}")
             if os.path.isfile(os.path.join(source, item)):
-                sftp.put(os.path.join(source, item), "%s/%s" % (target, item))
+                sftp.put(os.path.join(source, item), os.path.join(target, item))
             else:
-                self.sftp_mkdir("%s/%s" % (target, item), ignore_existing=True)
-                self.put_sftp_dir(os.path.join(source, item), "%s/%s" % (target, item))
+                # self.sftp_mkdir("%s/%s" % (target, item), ignore_existing=True)
+                # self.server_machine.ssh.exec_command(
+                #    f"mkdir -p {os.path.join(target, item)}"
+                # )
+                self.put_sftp_dir(
+                    os.path.join(source, item),
+                    os.path.join(target, item),
+                    exclude_patterns=exclude_patterns,
+                )
 
+    '''
     def sftp_mkdir(self, path, mode=511, ignore_existing=False):
         self.server_machine.ssh_open()
         sftp = self.server_machine.sftp
         """Augments mkdir by adding an option to not fail if the folder exists"""
         try:
-            super(sftp, self).mkdir(path, mode)
+            sftp.mkdir(path, mode)
         except IOError:
             if ignore_existing:
                 pass
             else:
                 raise
+    '''
 
     # core object transfer method
     def object_transfer(
-        self, from_machine, from_object, to_machine, to_object, dir_transfer=False
+        self,
+        from_machine,
+        from_object,
+        to_machine,
+        to_object,
+        exclude_patterns=[],
+        dir_transfer=False,
     ):
         # time.sleep(3)
         # check
@@ -470,13 +525,6 @@ class Machines_handler:
         if not pathlib.Path(to_object).is_absolute():
             logger.error(f"to_object = {to_object} is not an absolute path")
             raise ValueError
-
-        # isfile(from_file, from_machine) and mkdir(to_file, to_machine)
-        if self.safe_mode:
-            if dir_transfer:
-                assert from_machine.is_dir(dir_name=from_object)
-            else:
-                assert from_machine.is_file(file_name=from_object)
 
         logger.info(f"makedir {os.path.dirname(to_object)} on {to_machine.name}")
         to_dir = os.path.dirname(to_object)
@@ -497,27 +545,35 @@ class Machines_handler:
             logger.info(f"From:: {from_object}")
             logger.info(f"To:: {to_object}")
 
-            # rsync
+            # file transfer
             if (
                 from_machine.machine_type == "local"
                 and to_machine.machine_type == "remote"
             ):  # local -> remote
                 logger.info(
-                    f"Transfer data from local machine ({from_machine.name}) to remote machine ({to_machine.name}) using rsync."
+                    f"Transfer data from local machine ({from_machine.name}) to remote machine ({to_machine.name}) using paramiko."
                 )
                 if dir_transfer:  # dir
-                    self.put_sftp_dir(from_object, to_object)
+                    self.put_sftp_dir(
+                        from_object, to_object, exclude_patterns=exclude_patterns
+                    )
                 else:  # file
-                    self.put_sftp_file(from_object, to_object)
+                    self.put_sftp_file(
+                        from_object, to_object, exclude_patterns=exclude_patterns
+                    )
 
             else:  # remote -> local
                 logger.info(
-                    f"Transfer data from remote machine ({from_machine.name}) to local machine ({to_machine.name}) using rsync."
+                    f"Transfer data from remote machine ({from_machine.name}) to local machine ({to_machine.name}) using paramiko."
                 )
                 if dir_transfer:  # dir
-                    self.get_sftp_dir(from_object, to_object)
+                    self.get_sftp_dir(
+                        from_object, to_object, exclude_patterns=exclude_patterns
+                    )
                 else:  # file
-                    self.get_sftp_file(from_object, to_object)
+                    self.get_sftp_file(
+                        from_object, to_object, exclude_patterns=exclude_patterns
+                    )
 
         else:
             raise NotImplementedError

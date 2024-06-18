@@ -28,15 +28,12 @@ class VMCopt_workflow(Workflow):
         self,
         # job
         server_machine_name: str = "localhost",
-        cores: int = 1,
-        openmp: int = 1,
-        queue: Optional[str] = None,
+        queue_label: Optional[str] = None,
+        mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
-        jobpkl_name: str = "job_manager",
         # vmcopt
         vmcopt_max_continuation: int = 2,
-        vmcopt_pkl_name: str = "vmcopt_genius",
         vmcopt_target_error_bar: float = 1.0e-3,  # Ha
         vmcopt_trial_optsteps: float = 50,
         vmcopt_trial_steps: float = 50,
@@ -65,16 +62,13 @@ class VMCopt_workflow(Workflow):
             vmcopt_kpoints = []
         # job
         self.server_machine_name = server_machine_name
-        self.cores = cores
-        self.openmp = openmp
-        self.queue = queue
+        self.mpi = mpi
+        self.queue_label = queue_label
         self.version = version
         self.sleep_time = sleep_time
-        self.jobpkl_name = jobpkl_name
         # vmcopt
         self.vmcopt_rerun = False
         self.vmcopt_max_continuation = vmcopt_max_continuation
-        self.vmcopt_pkl_name = vmcopt_pkl_name
         self.vmcopt_target_error_bar = vmcopt_target_error_bar
         self.vmcopt_trial_optsteps = vmcopt_trial_optsteps
         self.vmcopt_trial_steps = vmcopt_trial_steps
@@ -98,6 +92,9 @@ class VMCopt_workflow(Workflow):
         self.vmcopt_twist_average = vmcopt_twist_average
         self.vmcopt_kpoints = vmcopt_kpoints
         self.vmcopt_maxtime = vmcopt_maxtime
+        # pkl names
+        self.job_pkl_name = "job_manager"
+        self.vmcopt_pkl_name = "vmcopt_genius"
         # return values
         self.status = "init"
         self.output_files = []
@@ -109,7 +106,6 @@ class VMCopt_workflow(Workflow):
         ###############################################
         self.root_dir = os.getcwd()
         logger.info(f"Current dir = {self.root_dir}")
-        self.jobpkl = f"{self.jobpkl_name}.pkl"
 
         # ******************
         # VMCopt
@@ -148,6 +144,7 @@ class VMCopt_workflow(Workflow):
                     logger.info(f"VMCopt continuation run, icont={icont}")
 
                 self.vmcopt_pkl = f"{self.vmcopt_pkl_name}_{icont}.pkl"
+                self.job_pkl = f"{self.job_pkl_name}_{icont}.pkl"
                 self.vmcopt_latest_pkl = f"{self.vmcopt_pkl_name}_latest.pkl"
                 self.input_file = f"datasmin_{icont}.input"
                 self.output_file = f"out_min_{icont}"
@@ -268,29 +265,24 @@ class VMCopt_workflow(Workflow):
                     )
 
                     # binary set
-                    if self.cores == self.openmp:
-                        binary = "turborvb-serial.x"
-                        nompi = True
-                    else:
+                    if self.mpi:
                         binary = "turborvb-mpi.x"
-                        nompi = False
+                    else:
+                        binary = "turborvb-serial.x"
 
                     # Job submission by the job-manager package
                     job = Job_submission(
-                        local_machine_name="localhost",
                         client_machine_name="localhost",
                         server_machine_name=self.server_machine_name,
                         package="turborvb",
-                        cores=self.cores,
-                        openmp=self.openmp,
-                        queue=self.queue,
+                        queue_label=self.queue_label,
                         version=self.version,
                         binary=binary,
-                        nompi=nompi,
+                        mpi=self.mpi,
                         jobname="turbogenius",
                         input_file=self.input_file,
                         output_file=self.output_file,
-                        pkl_name=self.jobpkl,
+                        pkl_name=self.job_pkl,
                     )
                     job.generate_script(submission_script="submit.sh")
                     # job submission
@@ -314,7 +306,7 @@ class VMCopt_workflow(Workflow):
 
                 else:
                     logger.info(f"{self.vmcopt_pkl} exists.")
-                    with open(self.jobpkl, "rb") as f:
+                    with open(self.job_pkl, "rb") as f:
                         job = pickle.load(f)
                     with open(
                         os.path.join(self.vmcopt_dir, self.vmcopt_pkl), "rb"
@@ -348,11 +340,13 @@ class VMCopt_workflow(Workflow):
                         "parminimized.d",
                         "forces.dat",
                     ]
-                    exclude_files = []
+                    exclude_patterns = []
                     if self.vmcopt_twist_average:
                         fetch_files += ["kp_info.dat", "turborvb.scratch"]
-                        exclude_files += ["kelcont*", "randseed*"]
-                    job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
+                        exclude_patterns += ["kelcont*", "randseed*"]
+                    job.fetch_job(
+                        from_objects=fetch_files, exclude_patterns=exclude_patterns
+                    )
                     logger.info("Fetch finished.")
 
                     vmcopt_genius.store_result(output_names=[self.output_file])

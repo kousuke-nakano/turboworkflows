@@ -1,0 +1,9 @@
+[default]
+    mpi=false
+    num_cores=1
+    omp_num_threads=1
+    nodes=1
+    cpns=1
+    mpi_per_node=1
+    max_job_run=1
+    max_job_submit=1

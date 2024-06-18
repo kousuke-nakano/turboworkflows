@@ -27,15 +27,12 @@ class DFT_workflow(Workflow):
         self,
         # job
         server_machine_name: str = "localhost",
-        cores: int = 1,
-        openmp: int = 1,
-        queue: Optional[str] = None,
+        queue_label: Optional[str] = None,
+        mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
-        jobpkl_name: str = "job_manager",
         # prep
         dft_rerun: bool = False,
-        dft_pkl_name: str = "prep",
         dft_grid_size: Optional[list] = None,
         dft_lbox: Optional[list] = None,
         dft_smearing: float = 0.0,
@@ -61,15 +58,12 @@ class DFT_workflow(Workflow):
             dft_kpoints = [1, 1, 1, 0, 0, 0]
         # job
         self.server_machine_name = server_machine_name
-        self.cores = cores
-        self.openmp = openmp
-        self.queue = queue
+        self.mpi = mpi
+        self.queue_label = queue_label
         self.version = version
         self.sleep_time = sleep_time
-        self.jobpkl_name = jobpkl_name
         # dft
         self.dft_rerun = dft_rerun
-        self.dft_pkl_name = dft_pkl_name
         self.dft_grid_size = dft_grid_size
         self.dft_lbox = dft_lbox
         self.dft_smearing = dft_smearing
@@ -84,6 +78,9 @@ class DFT_workflow(Workflow):
         self.dft_independent_kpoints = dft_independent_kpoints
         self.dft_thr_lindep = dft_thr_lindep
         self.dft_kpoints = dft_kpoints
+        # pkl names
+        self.job_pkl_name = "job_manager"
+        self.dft_pkl_name = "prep_genius"
         # return values
         self.status = "init"
         self.output_files = []
@@ -95,7 +92,7 @@ class DFT_workflow(Workflow):
         ###############################################
         self.root_dir = os.getcwd()
         logger.info(f"Current dir = {self.root_dir}")
-        self.jobpkl = f"{self.jobpkl_name}.pkl"
+        self.job_pkl = f"{self.job_pkl_name}.pkl"
 
         # ******************
         # dft
@@ -145,29 +142,24 @@ class DFT_workflow(Workflow):
                 dft_genius.generate_input(input_name=self.input_file)
 
                 # binary set
-                if self.cores == self.openmp:
-                    binary = "prep-serial.x"
-                    nompi = True
-                else:
+                if self.mpi:
                     binary = "prep-mpi.x"
-                    nompi = False
+                else:
+                    binary = "prep-serial.x"
 
                 # Job submission by the job-manager package
                 job = Job_submission(
-                    local_machine_name="localhost",
                     client_machine_name="localhost",
                     server_machine_name=self.server_machine_name,
                     package="turborvb",
-                    cores=self.cores,
-                    openmp=self.openmp,
-                    queue=self.queue,
+                    queue_label=self.queue_label,
                     version=self.version,
                     binary=binary,
-                    nompi=nompi,
+                    mpi=self.mpi,
                     jobname="turbogenius",
                     input_file=self.input_file,
                     output_file=self.output_file,
-                    pkl_name=self.jobpkl,
+                    pkl_name=self.job_pkl,
                 )
                 job.generate_script(submission_script="submit.sh")
                 # job submission
@@ -189,7 +181,7 @@ class DFT_workflow(Workflow):
 
             else:
                 logger.info(f"{self.dft_pkl} exists.")
-                with open(self.jobpkl, "rb") as f:
+                with open(self.job_pkl, "rb") as f:
                     job = pickle.load(f)
                 with open(os.path.join(self.dft_dir, self.dft_pkl), "rb") as f:
                     dft_genius = pickle.load(f)
@@ -218,13 +210,15 @@ class DFT_workflow(Workflow):
                     "occupationlevels.dat",
                     "EDFT_vsk.dat",
                 ]
-                exclude_files = []
+                exclude_patterns = []
                 if self.dft_twist_average:
                     fetch_files += ["kp_info.dat", "turborvb.scratch"]
-                    exclude_files += ["kelcont*", "randseed*"]
+                    exclude_patterns += ["kelcont*", "randseed*"]
                 else:
                     fetch_files += ["fort.10_new"]
-                job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
+                job.fetch_job(
+                    from_objects=fetch_files, exclude_patterns=exclude_patterns
+                )
                 logger.info("Fetch finished.")
 
                 self.output_values["energy"] = None

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import time
 
 # define logger
 from logging import getLogger, StreamHandler, Formatter
@@ -13,13 +12,7 @@ logger = getLogger("Turbo-Workflows").getChild(__name__)
 
 
 class Data_transfer:
-    def __init__(
-        self,
-        client_machine_name,
-        server_machine_name,
-        safe_mode=False,
-        # bwlimit=1000
-    ):
+    def __init__(self, client_machine_name, server_machine_name, safe_mode=False):
 
         self.client_machine = Machine(client_machine_name)
         self.server_machine = Machine(server_machine_name)
@@ -29,7 +22,12 @@ class Data_transfer:
         )
         self.safe_mode = safe_mode
 
-    def put_objects(self, from_objects=[]):
+    def ssh_close(self):
+        self.client_machine.ssh_close()
+        self.server_machine.ssh_close()
+        self.machine_handler.ssh_close()
+
+    def put_objects(self, from_objects=[], exclude_patterns=[]):
 
         client_home = self.client_machine.file_manager_root
         server_home = self.server_machine.file_manager_root
@@ -45,7 +43,7 @@ class Data_transfer:
         if len(from_objects) == 0:
             logger.info("from_objects is not specified")
             logger.info(
-                f"All files and dirs in local dir. will be rsynced to the corresponding remote dir."
+                "All files and dirs in local dir. will be rsynced to the corresponding remote dir."
             )
 
             local_current_dir = os.path.abspath(os.getcwd())
@@ -63,7 +61,11 @@ class Data_transfer:
             client_dir = local_current_dir.replace(client_home, client_home)
             server_dir = local_current_dir.replace(client_home, server_home)
 
-            self.machine_handler.put_dir(from_dir=client_dir, to_dir=server_dir)
+            self.machine_handler.put_dir(
+                from_dir=client_dir,
+                to_dir=server_dir,
+                exclude_patterns=exclude_patterns,
+            )
 
         else:
             logger.info("from_objects is specified")
@@ -82,11 +84,19 @@ class Data_transfer:
                 from_object = object_abs.replace(client_home, client_home)
                 to_object = object_abs.replace(client_home, server_home)
                 if self.client_machine.is_file(file_name=from_object):
-                    self.machine_handler.put(from_file=from_object, to_file=to_object)
+                    self.machine_handler.put(
+                        from_file=from_object,
+                        to_file=to_object,
+                        exclude_patterns=exclude_patterns,
+                    )
                 else:  # isdir(from_object)
-                    self.machine_handler.put_dir(from_dir=from_object, to_dir=to_object)
+                    self.machine_handler.put_dir(
+                        from_dir=from_object,
+                        to_dir=to_object,
+                        exclude_patterns=exclude_patterns,
+                    )
 
-    def get_objects(self, from_objects=[]):
+    def get_objects(self, from_objects=[], exclude_patterns=[]):
 
         client_home = self.client_machine.file_manager_root
         server_home = self.server_machine.file_manager_root
@@ -120,9 +130,13 @@ class Data_transfer:
                 if len(from_objects) == 0:
                     logger.info("from objects is not specified")
                     logger.info(
-                        f"All files and dirs in remote dir. will be rsynced to the corresponding local dir."
+                        "All files and dirs in remote dir. will be rsynced to the corresponding local dir."
                     )
-                    self.machine_handler.get_dir(from_dir=server_dir, to_dir=client_dir)
+                    self.machine_handler.get_dir(
+                        from_dir=server_dir,
+                        to_dir=client_dir,
+                        exclude_patterns=exclude_patterns,
+                    )
 
                 else:
                     logger.info("remote_objects_list is specified")
@@ -140,11 +154,15 @@ class Data_transfer:
                         to_object = from_object.replace(server_home, client_home)
                         if self.server_machine.is_file(file_name=from_object):
                             self.machine_handler.get(
-                                from_file=from_object, to_file=to_object
+                                from_file=from_object,
+                                to_file=to_object,
+                                exclude_patterns=exclude_patterns,
                             )
                         else:  # mysftp.is_dir(remote_dir=from_object):
                             self.machine_handler.get_dir(
-                                from_dir=from_object, to_dir=to_object
+                                from_dir=from_object,
+                                to_dir=to_object,
+                                exclude_patterns=exclude_patterns,
                             )
 
 

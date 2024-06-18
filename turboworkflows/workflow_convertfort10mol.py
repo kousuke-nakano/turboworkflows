@@ -28,34 +28,30 @@ class Convertfort10mol_workflow(Workflow):
         self,
         # job
         server_machine_name: str = "localhost",
-        cores: int = 1,
-        openmp: int = 1,
-        queue: Optional[str] = None,
+        queue_label: Optional[str] = None,
+        mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
-        jobpkl_name: str = "job_manager",
         # convertfort10mol
         convertfort10mol_rerun: bool = False,
-        convertfort10mol_pkl_name: str = "convertfort10mol_genius",
         add_random_mo: bool = True,
         grid_size: float = 0.10,
         additional_mo: int = 0,
     ):
-
         # job
         self.server_machine_name = server_machine_name
-        self.cores = cores
-        self.openmp = openmp
-        self.queue = queue
+        self.mpi = mpi
+        self.queue_label = queue_label
         self.version = version
         self.sleep_time = sleep_time
-        self.jobpkl_name = jobpkl_name
         # convertfort10mol
         self.convertfort10mol_rerun = convertfort10mol_rerun
-        self.convertfort10mol_pkl_name = convertfort10mol_pkl_name
         self.add_random_mo = add_random_mo
         self.grid_size = grid_size
         self.additional_mo = additional_mo
+        # pkl names
+        self.job_pkl_name = "job_manager"
+        self.convertfort10mol_pkl_name = "convertfort10mol_genius"
         # return values
         self.status = "init"
         self.output_files = []
@@ -67,7 +63,7 @@ class Convertfort10mol_workflow(Workflow):
         ###############################################
         self.root_dir = os.getcwd()
         logger.info(f"Current dir = {self.root_dir}")
-        self.jobpkl = f"{self.jobpkl_name}.pkl"
+        self.job_pkl = f"{self.job_pkl_name}.pkl"
 
         # ******************
         # convertfort10mol
@@ -100,29 +96,24 @@ class Convertfort10mol_workflow(Workflow):
                 convertfort10mol_genius.generate_input(input_name=self.input_file)
 
                 # binary set
-                if self.cores == self.openmp:
-                    binary = "convertfort10mol.x"
-                    nompi = True
-                else:
+                if self.mpi:
                     binary = "convertfort10mol-mpi.x"
-                    nompi = False
+                else:
+                    binary = "convertfort10mol.x"
 
                 # Job submission by the job-manager package
                 job = Job_submission(
-                    local_machine_name="localhost",
                     client_machine_name="localhost",
                     server_machine_name=self.server_machine_name,
                     package="turborvb",
-                    cores=self.cores,
-                    openmp=self.openmp,
-                    queue=self.queue,
+                    queue_label=self.queue_label,
                     version=self.version,
                     binary=binary,
-                    nompi=nompi,
+                    mpi=self.mpi,
                     jobname="turbogenius",
                     input_file=self.input_file,
                     output_file=self.output_file,
-                    pkl_name=self.jobpkl,
+                    pkl_name=self.job_pkl,
                 )
                 job.generate_script(submission_script="submit.sh")
                 # job submission
@@ -147,7 +138,7 @@ class Convertfort10mol_workflow(Workflow):
 
             else:
                 logger.info(f"{self.convertfort10mol_pkl} exists.")
-                with open(self.jobpkl, "rb") as f:
+                with open(self.job_pkl, "rb") as f:
                     job = pickle.load(f)
                 with open(
                     os.path.join(self.convertfort10mol_dir, self.convertfort10mol_pkl),
@@ -177,8 +168,10 @@ class Convertfort10mol_workflow(Workflow):
                 # job fecth
                 logger.info("Fetch files.")
                 fetch_files = [self.output_file, "fort.10_new"]
-                exclude_files = []
-                job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
+                exclude_patterns = []
+                job.fetch_job(
+                    from_objects=fetch_files, exclude_patterns=exclude_patterns
+                )
                 logger.info("Fetch finished.")
 
                 with open(

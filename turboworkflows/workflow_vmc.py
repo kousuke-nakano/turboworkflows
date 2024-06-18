@@ -34,11 +34,9 @@ class VMC_workflow(Workflow):
         mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
-        jobpkl_name: str = "job_manager",
         # vmc
         vmc_rerun: bool = False,
         vmc_max_continuation: int = 2,
-        vmc_pkl_name: str = "vmc_genius",
         vmc_target_error_bar: float = 2.0e-5,  # Ha
         vmc_trial_steps: int = 150,
         vmc_safe_trial_steps: bool = True,
@@ -58,11 +56,9 @@ class VMC_workflow(Workflow):
         self.queue_label = queue_label
         self.version = version
         self.sleep_time = sleep_time
-        self.jobpkl_name = jobpkl_name
         # vmc
         self.vmc_rerun = vmc_rerun
         self.vmc_max_continuation = vmc_max_continuation
-        self.vmc_pkl_name = vmc_pkl_name
         self.vmc_target_error_bar = vmc_target_error_bar
         self.vmc_trial_steps = vmc_trial_steps
         self.vmc_safe_trial_steps = vmc_safe_trial_steps
@@ -73,6 +69,9 @@ class VMC_workflow(Workflow):
         self.vmc_kpoints = vmc_kpoints
         self.vmc_force_calc_flag = vmc_force_calc_flag
         self.vmc_maxtime = vmc_maxtime
+        # pkl names
+        self.job_pkl_name = "job_manager"
+        self.vmc_pkl_name = "vmc_genius"
         # return values
         self.status = "init"
         self.output_files = []
@@ -84,7 +83,6 @@ class VMC_workflow(Workflow):
         ###############################################
         self.root_dir = os.getcwd()
         logger.info(f"Current dir = {self.root_dir}")
-        self.jobpkl = f"{self.jobpkl_name}.pkl"
 
         # ******************
         # VMC
@@ -122,6 +120,7 @@ class VMC_workflow(Workflow):
                     logger.info(f"VMC continuation run, icont={icont}")
 
                 self.vmc_pkl = f"{self.vmc_pkl_name}_{icont}.pkl"
+                self.job_pkl = f"{self.job_pkl_name}_{icont}.pkl"
                 self.vmc_latest_pkl = f"{self.vmc_pkl_name}_latest.pkl"
                 self.input_file = f"datasvmc_{icont}.input"
                 self.output_file = f"out_vmc_{icont}"
@@ -158,10 +157,14 @@ class VMC_workflow(Workflow):
                                 + self.vmc_bin_block * self.vmc_warmupblocks
                             ):
                                 logger.warning(
-                                    f"vmcsteps = {self.vmc_trial_steps} is too small! < {vmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {vmc_minimum_trial_blocks * self.vmc_bin_block + self.vmc_bin_block * self.vmc_warmupblocks}"
+                                    f"vmcsteps = {self.vmc_trial_steps} is too small! "
+                                    f"< {vmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks "
+                                    f"= {vmc_minimum_trial_blocks * self.vmc_bin_block + self.vmc_bin_block * self.vmc_warmupblocks}"
                                 )
                                 logger.warning(
-                                    f"vmcsteps = {self.vmc_trial_steps} is set to {vmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks = {vmc_minimum_trial_blocks * self.vmc_bin_block + self.vmc_bin_block * self.vmc_warmupblocks}"
+                                    f"vmcsteps = {self.vmc_trial_steps} is set to "
+                                    f"{vmc_minimum_trial_blocks} * bin_block + bin_block * warmupblocks "
+                                    f"= {vmc_minimum_trial_blocks * self.vmc_bin_block + self.vmc_bin_block * self.vmc_warmupblocks}"
                                 )
                                 self.vmc_trial_steps = (
                                     vmc_minimum_trial_blocks * self.vmc_bin_block
@@ -266,8 +269,6 @@ class VMC_workflow(Workflow):
                         force_calc_flag=self.vmc_force_calc_flag,
                         maxtime=self.vmc_maxtime,
                     )
-                    # manual k points!!
-                    # if len(self.vmc_kpoints) != 0 and self.vmc_twist_average == 2: vmc_genius.manual_kpoints=self.vmc_kpoints
 
                     vmc_genius.generate_input(
                         input_name=self.input_file,
@@ -292,7 +293,7 @@ class VMC_workflow(Workflow):
                         jobname="turbogenius",
                         input_file=self.input_file,
                         output_file=self.output_file,
-                        pkl_name=self.jobpkl,
+                        pkl_name=self.job_pkl,
                     )
                     job.generate_script(submission_script="submit.sh")
                     # job submission
@@ -314,7 +315,7 @@ class VMC_workflow(Workflow):
 
                 else:
                     logger.info(f"{self.vmc_pkl} exists.")
-                    with open(self.jobpkl, "rb") as f:
+                    with open(self.job_pkl, "rb") as f:
                         job = pickle.load(f)
                     with open(os.path.join(self.vmc_dir, self.vmc_pkl), "rb") as f:
                         vmc_genius = pickle.load(f)
@@ -344,11 +345,13 @@ class VMC_workflow(Workflow):
                         "fort.12",
                         "parminimized.d",
                     ]
-                    exclude_files = []
+                    exclude_patterns = []
                     if self.vmc_twist_average:
                         fetch_files += ["kp_info.dat", "turborvb.scratch"]
-                        exclude_files += ["kelcont*", "randseed*"]
-                    job.fetch_job(from_objects=fetch_files, exclude_list=exclude_files)
+                        exclude_patterns += ["kelcont.*", "randseed.*"]
+                    job.fetch_job(
+                        from_objects=fetch_files, exclude_patterns=exclude_patterns
+                    )
                     logger.info("Fetch finished.")
 
                     logger.info("Computing VMC forces")

@@ -35,17 +35,14 @@ class LRDMC_ext_workflow(Workflow):
         self,
         # job
         server_machine_name: str = "localhost",
-        cores: int = 1,
-        openmp: int = 1,
-        queue: Optional[str] = None,
+        queue_label: Optional[str] = None,
+        mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
-        jobpkl_name: str = "job_manager",
         # lrdmc
         lrdmc_input_files: Optional[list] = None,
         lrdmc_rerun: bool = False,
         lrdmc_max_continuation: int = 2,
-        lrdmc_pkl_name: str = "lrdmc_genius",
         lrdmc_target_error_bar: float = 2.0e-5,  # Ha
         lrdmc_trial_steps: int = 150,
         lrdmc_bin_block: int = 10,
@@ -70,17 +67,14 @@ class LRDMC_ext_workflow(Workflow):
             lrdmc_kpoints = []
         # job
         self.server_machine_name = server_machine_name
-        self.cores = cores
-        self.openmp = openmp
-        self.queue = queue
+        self.mpi = mpi
+        self.queue_label = queue_label
         self.version = version
         self.sleep_time = sleep_time
-        self.jobpkl_name = jobpkl_name
         # lrdmc
         self.lrdmc_input_files = lrdmc_input_files
         self.lrdmc_rerun = lrdmc_rerun
         self.lrdmc_max_continuation = lrdmc_max_continuation
-        self.lrdmc_pkl_name = lrdmc_pkl_name
         self.lrdmc_target_error_bar = lrdmc_target_error_bar
         self.lrdmc_trial_steps = lrdmc_trial_steps
         self.lrdmc_bin_block = lrdmc_bin_block
@@ -164,16 +158,13 @@ class LRDMC_ext_workflow(Workflow):
             lrdmc_workflow = LRDMC_workflow(
                 # job
                 server_machine_name=self.server_machine_name,
-                cores=self.cores,
-                openmp=self.openmp,
-                queue=self.queue,
+                mpi=self.mpi,
+                queue_label=self.queue_label,
                 version=self.version,
                 sleep_time=self.sleep_time,
-                jobpkl_name=self.jobpkl_name,
                 # lrdmc
                 lrdmc_rerun=self.lrdmc_rerun,
                 lrdmc_max_continuation=self.lrdmc_max_continuation,
-                lrdmc_pkl_name=self.lrdmc_pkl_name,
                 lrdmc_target_error_bar=self.lrdmc_target_error_bar,
                 lrdmc_trial_steps=self.lrdmc_trial_steps,
                 lrdmc_bin_block=self.lrdmc_bin_block,

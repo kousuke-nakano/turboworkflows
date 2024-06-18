@@ -1,0 +1,11 @@
+[default]
+    queue='small'
+    mpi=true
+    num_cores=48
+    omp_num_threads=1
+    nodes=1
+    cpns=48
+    cores_per_node=48
+    max_job_run=1
+    max_job_submit=1
+    max_time='10:00:00'

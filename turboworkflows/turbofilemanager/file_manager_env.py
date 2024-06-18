@@ -41,4 +41,3 @@ if __name__ == "__main__":
 
     logger.info(file_manager_source_dir)
     logger.info(file_manager_root)
-    logger.info(job_manager_env_dir)
