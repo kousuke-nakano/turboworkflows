@@ -7,7 +7,11 @@
 #PBS -V
 
 # Note:
-# The variables _xxx_ are replaced by job_manager.py.
+# The variables _xxx_ are replaced by job_manager.py. The pre-defined variables are
+# _INPUT_, _OUTPUT_, _PREOPTION_, _POSTOPTION_, _JOBNAME_, _BINARY_ROOT_, and _BINARY_.
+# Others defined in queue_data.toml (e.g. _NUM_CORE_) are also replaced by job_manager.py 
+# so that one can manually define other variables needed for submitting jobs to a queueing 
+# system.
 
 cd ${PBS_O_WORKDIR}
 

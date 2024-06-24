@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 file_manager_source_dir = os.path.abspath(os.path.dirname(os.path.abspath(__file__)))
 file_manager_root = os.path.abspath(os.path.join(file_manager_source_dir, "../"))
 file_manager_config_dir = os.path.join(
-    os.path.abspath(os.environ["HOME"]), "turbofilemanager_config"
+    os.path.abspath(os.environ["HOME"]), ".turbofilemanager_config"
 )
 file_manager_config_template_dir = os.path.join(
     file_manager_source_dir,
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     from logging import getLogger
 
     log_level = "DEBUG"
-    logger = getLogger("file-manager")
+    logger = getLogger("Turbo-Workflows")
     logger.setLevel(log_level)
     stream_handler = StreamHandler()
     stream_handler.setLevel(log_level)

@@ -146,9 +146,21 @@ class Job_submission:
 
         # check job template
         if mpi:
-            self.job_submission_template = self.package_data["job_template"]["mpi"]
+            try:
+                self.job_submission_template = self.package_data["job_template"]["mpi"]
+            except KeyError:
+                logger.error("mpi is not defined in job_template.")
+                logger.error(f"Please check {self.queue_data_toml}")
+                raise KeyError
         else:
-            self.job_submission_template = self.package_data["job_template"]["nompi"]
+            try:
+                self.job_submission_template = self.package_data["job_template"][
+                    "nompi"
+                ]
+            except KeyError:
+                logger.error("mpi is not defined in job_template.")
+                logger.error(f"Please check {self.queue_data_toml}")
+                raise KeyError
 
         # other input information
         self.jobname = jobname
@@ -161,7 +173,13 @@ class Job_submission:
         self.input_redirect = input_redirect
 
         # job information!!
-        self.max_job_submit = self.queue_data["max_job_submit"]
+        try:
+            self.max_job_submit = self.queue_data["max_job_submit"]
+        except KeyError:
+            logger.warning(
+                "max_job_submit is not defined in queue_data.toml. set 1000."
+            )
+            self.max_job_submit = 1000
         self.job_number = None  # job ID.
         self.job_running = False  # 0: end, 1 running.
         self.job_dir = None
