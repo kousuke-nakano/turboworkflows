@@ -207,9 +207,9 @@ class LRDMC_workflow(Workflow):
                         logger.info(
                             f"The errorbar of lrdmc energy {error:.5f} Ha per mcmc step={(mcmc_steps - self.lrdmc_bin_block * self.lrdmc_warmupblocks)}"
                         )
-                        if error < self.lrdmc_target_error_bar:
+                        if error < 1.1 * self.lrdmc_target_error_bar:
                             logger.warning(
-                                f"The target errorbar {self.lrdmc_target_error_bar} Ha has been already achieved!"
+                                f"The target errorbar {self.lrdmc_target_error_bar} Ha is almost achieved!"
                             )
                             logger.warning("Exiting from the lrdmc continuation loop.")
 

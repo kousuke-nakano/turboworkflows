@@ -307,9 +307,9 @@ class Job_submission:
                     ) = self.server_machine.run_command(
                         command=command, execute_dir=server_dir
                     )
-                    logger.debug(stdout.split())
+                    logger.info(stdout.split())
                     logger.debug(stderr.split())
-                    self.job_number = stdout.split()[self.server_machine.jobnum_index]
+                    self.job_number = stdout.strip().split()[self.server_machine.jobnum_index]
                     self.job_running = True
                     self.job_dir = server_dir
                     self.job_submit_date = datetime.today()

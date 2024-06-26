@@ -4,6 +4,7 @@
 import os
 import time
 
+import random
 import re
 import stat
 import paramiko
@@ -68,10 +69,9 @@ class Machine:
     def ssh_open(self):
         if self.machine_type == "remote":
             if not self.ssh_status:
-                # rw = random.randint(1, 5)
-                # logger.info(f"wait {rw} secs.")
-                # time.sleep(rw)
-                time.sleep(0.1)
+                rw = random.randint(1, 4)
+                logger.info(f"wait {rw} secs before opening a ssh connection to the remote machine.")
+                time.sleep(rw)
                 logger.info("A ssh connection is open via paramiko module.")
                 ssh_config = paramiko.SSHConfig()
                 try:
@@ -101,17 +101,29 @@ class Machine:
                 self.username = username
                 self.ssh = paramiko.SSHClient()
                 self.ssh.load_system_host_keys()
-                if proxy_flag:
-                    self.ssh.connect(
-                        hostname=hostname,
-                        username=username,
-                        key_filename=key_filename,
-                        sock=paramiko.ProxyCommand(proxy_command),
-                    )
-                else:
-                    self.ssh.connect(
-                        hostname=hostname, username=username, key_filename=key_filename
-                    )
+                for tt in range(self.ssh_retry_max_num):
+                    try:
+                        if proxy_flag:
+                            self.ssh.connect(
+                                hostname=hostname,
+                                username=username,
+                                key_filename=key_filename,
+                                sock=paramiko.ProxyCommand(proxy_command),
+                            )
+                        else:
+                            self.ssh.connect(
+                                hostname=hostname, username=username, key_filename=key_filename
+                            )
+                        logger.info(f'ssh using paramiko is successful.')
+                        break
+                    except paramiko.ssh_exception.SSHException:
+                        logger.warning(f'ssh using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial.')
+                        time.sleep(self.ssh_retry_time)
+                    
+                    if tt == self.ssh_retry_max_num - 1:
+                        logger.error(f'ssh using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials')
+                        raise paramiko.SSHException
+
                 self.sftp = self.ssh.open_sftp()
                 self.ssh_status = True
 
@@ -296,7 +308,7 @@ class Machine:
                 _, pstdout, pstderr = self.ssh.exec_command(command=command_r)
                 exit_status = pstdout.channel.recv_exit_status()
                 logger.debug(f"exit_status = {exit_status}")
-                stdout, stderr = str(pstdout.read()), str(pstderr.read())
+                stdout, stderr = str(pstdout.read().decode('utf-8').strip()), str(pstderr.read().decode('utf-8').strip())
 
                 if exit_status == 0:
                     logger.debug(f"command_r={command_r} was successful.")

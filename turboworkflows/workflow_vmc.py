@@ -198,9 +198,9 @@ class VMC_workflow(Workflow):
                         logger.info(
                             f"The error bar of the vmc energy {error:.5f} Ha per mcmc step={(mcmc_steps - self.vmc_bin_block * self.vmc_warmupblocks)}"
                         )
-                        if error < self.vmc_target_error_bar:
+                        if error < 1.1 * self.vmc_target_error_bar:
                             logger.warning(
-                                f"The target error bar {self.vmc_target_error_bar} Ha has been already achieved!"
+                                f"The target error bar {self.vmc_target_error_bar} Ha is almost achieved!"
                             )
                             logger.warning("Exiting from the VMC continuation loop.")
 
