@@ -32,10 +32,12 @@ class PySCF_workflow(Workflow):
         self,
         # structure file (mandatory)
         structure_file: str,
+        ghost_atoms_index: Optional[list] = None,
         trexio_filename: str = "trexio.hdf5",
         # job
         server_machine_name: str = "localhost",
         queue_label: Optional[str] = None,
+        mpi=False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
         # pyscf
@@ -65,6 +67,8 @@ class PySCF_workflow(Workflow):
         # conversion to trexio file
         force_wf_complex: bool = False,
     ):
+        if ghost_atoms_index is None:
+            ghost_atoms_index = []
         if kpt is None:
             kpt = [0.0, 0.0, 0.0]
         if kpt_grid is None:
@@ -72,10 +76,12 @@ class PySCF_workflow(Workflow):
 
         # structure
         self.structure_file = structure_file
+        self.ghost_atoms_index = ghost_atoms_index
         self.trexio_filename = trexio_filename
         # job
         self.server_machine_name = server_machine_name
         self.queue_label = queue_label
+        self.mpi = mpi
         self.version = version
         self.sleep_time = sleep_time
         # pyscf
@@ -158,11 +164,12 @@ class PySCF_workflow(Workflow):
                         return arg
 
                 run_py = f"""
-from pyscf_wrapper import Pyscf_wrapper
+from pyscf_wrapper import run_pyscf
 
 # input variables
 pyscf_chkfile={rg(self.pyscf_chkfile)}
 structure_file={rg(self.structure_file)}
+ghost_atoms_index={rg(self.ghost_atoms_index)}
 
 # input variables
 init_guess={rg(self.init_guess)}
@@ -187,38 +194,42 @@ kpt_grid={rg(self.kpt_grid)}
 smearing_method={rg(self.smearing_method)}
 smearing_sigma={rg(self.smearing_sigma)}
 
-pyscf_calc=Pyscf_wrapper(
-                        structure_file=structure_file,
-                        chkfile=pyscf_chkfile,
-                        )
-
-pyscf_calc.run_pyscf(
-                  init_guess=init_guess,
-                  cell_precision=cell_precision,
-                  multigrid_fftdf=multigrid_fftdf,
-                  level_shift_factor=level_shift_factor,
-                  charge=charge,
-                  spin=spin,
-                  spin_restricted=spin_restricted,
-                  basis=basis,
-                  ecp=ecp,
-                  scf_method=scf_method,
-                  dft_xc=dft_xc,
-                  solver_newton=solver_newton,
-                  MP2_flag=MP2_flag,
-                  CCSD_flag=CCSD_flag,
-                  pyscf_output=pyscf_output,
-                  twist_average=twist_average,
-                  exp_to_discard=exp_to_discard,
-                  kpt=kpt,
-                  kpt_grid=kpt_grid,
-                  smearing_method=smearing_method,
-                  smearing_sigma=smearing_sigma
-                  )
+run_pyscf(
+        structure_file=structure_file,
+        ghost_atoms_index=ghost_atoms_index,
+        chkfile=pyscf_chkfile,
+        init_guess=init_guess,
+        cell_precision=cell_precision,
+        multigrid_fftdf=multigrid_fftdf,
+        level_shift_factor=level_shift_factor,
+        charge=charge,
+        spin=spin,
+        spin_restricted=spin_restricted,
+        basis=basis,
+        ecp=ecp,
+        scf_method=scf_method,
+        dft_xc=dft_xc,
+        solver_newton=solver_newton,
+        MP2_flag=MP2_flag,
+        CCSD_flag=CCSD_flag,
+        pyscf_output=pyscf_output,
+        twist_average=twist_average,
+        exp_to_discard=exp_to_discard,
+        kpt=kpt,
+        kpt_grid=kpt_grid,
+        smearing_method=smearing_method,
+        smearing_sigma=smearing_sigma
+        )
                 """
 
                 with open(os.path.join(self.pyscf_dir, "run.py"), "w") as f:
                     f.write(run_py)
+
+                # binary set
+                if self.mpi:
+                    logger.error("mpi=True is not implemented for pyscf workflows.")
+                    logger.error("openmp is supported.")
+                    raise NotImplementedError
 
                 job = Job_submission(
                     client_machine_name="localhost",
@@ -293,7 +304,6 @@ pyscf_calc.run_pyscf(
                 pyscf_to_trexio(
                     pyscf_checkfile=self.pyscf_chkfile,
                     trexio_filename=os.path.join(self.pyscf_dir, self.trexio_filename),
-                    # twist_average_in=self.twist_average,
                     force_wf_complex=self.force_wf_complex,
                 )
                 logger.info("End: pyscf -> trexio conversion.")

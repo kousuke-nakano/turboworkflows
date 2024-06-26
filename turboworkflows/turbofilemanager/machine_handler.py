@@ -70,7 +70,9 @@ class Machine:
         if self.machine_type == "remote":
             if not self.ssh_status:
                 rw = random.randint(1, 4)
-                logger.info(f"wait {rw} secs before opening a ssh connection to the remote machine.")
+                logger.info(
+                    f"wait {rw} secs before opening a ssh connection to the remote machine."
+                )
                 time.sleep(rw)
                 logger.info("A ssh connection is open via paramiko module.")
                 ssh_config = paramiko.SSHConfig()
@@ -93,7 +95,7 @@ class Machine:
 
                 try:
                     proxy_command = lkup["proxycommand"]
-                    logger.info(f"paramiko ssh proxy-command = {proxy_command}")
+                    logger.debug(f"paramiko ssh proxy-command = {proxy_command}")
                     proxy_flag = True
                 except KeyError:
                     proxy_flag = False
@@ -112,23 +114,31 @@ class Machine:
                             )
                         else:
                             self.ssh.connect(
-                                hostname=hostname, username=username, key_filename=key_filename
+                                hostname=hostname,
+                                username=username,
+                                key_filename=key_filename,
                             )
-                        logger.info(f'ssh using paramiko is successful.')
+                        logger.info(f"ssh using paramiko is successful.")
                         break
                     except paramiko.ssh_exception.SSHException:
-                        logger.warning(f'ssh using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial.')
+                        logger.warning(
+                            f"ssh using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial."
+                        )
                         time.sleep(self.ssh_retry_time)
-                    
+
                     if tt == self.ssh_retry_max_num - 1:
-                        logger.error(f'ssh using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials')
+                        logger.error(
+                            f"ssh using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials"
+                        )
                         raise paramiko.SSHException
 
                 self.sftp = self.ssh.open_sftp()
                 self.ssh_status = True
 
             else:
-                logger.info("The ssh connection is already open via paramiko module.")
+                logger.info(
+                    "The ssh connection is already established using paramiko module."
+                )
                 logger.debug(f"self.ssh_status = {self.ssh_status}")
 
     def ssh_close(self):
@@ -268,7 +278,7 @@ class Machine:
                             proc.stdout,
                             proc.stderr,
                         )
-                        logger.info(f"exit_status={exit_status}")
+                        logger.debug(f"exit_status={exit_status}")
                         break
                     except subprocess.TimeoutExpired:
                         logger.warning(
@@ -286,9 +296,9 @@ class Machine:
                     break
                 else:
                     # failure run_command
-                    logger.debug(f"stdout = {stdout}")
-                    logger.debug(f"stderr = {stderr}")
-                    logger.debug(f"exit_status = {exit_status}")
+                    logger.warning(f"stdout = {stdout}")
+                    logger.warning(f"stderr = {stderr}")
+                    logger.warning(f"exit_status = {exit_status}")
                     logger.warning(f"command={command_r} did not work.")
                     logger.warning(
                         f"The command will be retried after {self.ssh_retry_time}s sleep."
@@ -304,11 +314,13 @@ class Machine:
 
             else:  # remote
                 self.ssh_open()
-                logger.info(f"command_r={command_r}")
+                logger.debug(f"command_r={command_r}")
                 _, pstdout, pstderr = self.ssh.exec_command(command=command_r)
                 exit_status = pstdout.channel.recv_exit_status()
                 logger.debug(f"exit_status = {exit_status}")
-                stdout, stderr = str(pstdout.read().decode('utf-8').strip()), str(pstderr.read().decode('utf-8').strip())
+                stdout, stderr = str(pstdout.read().decode("utf-8").strip()), str(
+                    pstderr.read().decode("utf-8").strip()
+                )
 
                 if exit_status == 0:
                     logger.debug(f"command_r={command_r} was successful.")
@@ -471,6 +483,7 @@ class Machines_handler:
         for item in sftp.listdir_attr(source):
             if any([re.match(p, os.path.basename(item)) for p in exclude_patterns]):
                 continue
+            logger.debug(f" transfered file or dir = {item}")
             fileattr = sftp.lstat(os.path.join(source, item))
             if stat.S_IFREG(fileattr.st_mode):
                 sftp.get(os.path.join(source, item), os.path.join(target, item))
@@ -491,7 +504,7 @@ class Machines_handler:
         for item in os.listdir(source):
             if any([re.match(p, os.path.basename(item)) for p in exclude_patterns]):
                 continue
-            logger.info(f"item={item}")
+            logger.debug(f" transfered file or dir = {item}")
             if os.path.isfile(os.path.join(source, item)):
                 sftp.put(os.path.join(source, item), os.path.join(target, item))
             else:
@@ -538,7 +551,7 @@ class Machines_handler:
             logger.error(f"to_object = {to_object} is not an absolute path")
             raise ValueError
 
-        logger.info(f"makedir {os.path.dirname(to_object)} on {to_machine.name}")
+        logger.debug(f"makedir {os.path.dirname(to_object)} on {to_machine.name}")
         to_dir = os.path.dirname(to_object)
         command = f"mkdir -p {to_dir}"
         to_machine.run_command(command)

@@ -307,12 +307,16 @@ class Job_submission:
                     ) = self.server_machine.run_command(
                         command=command, execute_dir=server_dir
                     )
-                    logger.info(stdout.split())
                     logger.debug(stderr.split())
-                    self.job_number = stdout.strip().split()[self.server_machine.jobnum_index]
+                    self.job_number = stdout.strip().split()[
+                        self.server_machine.jobnum_index
+                    ]
                     self.job_running = True
                     self.job_dir = server_dir
                     self.job_submit_date = datetime.today()
+                    logger.info(
+                        f"Job submission is successful with job_number = {self.job_number}."
+                    )
                 else:
                     self.server_machine.run_command(
                         command=command, execute_dir=server_dir
@@ -321,8 +325,7 @@ class Job_submission:
                     self.job_running = False
                     self.job_dir = server_dir
                     self.job_submit_date = datetime.today()
-
-                logger.info("Job submission is successful.")
+                    logger.info("Job submission is successful.")
 
                 self.client_machine.ssh_close()
                 self.server_machine.ssh_close()
@@ -370,7 +373,7 @@ class Job_submission:
                 self.job_running = True
                 flag = True
             else:
-                logger.info(f"job {self.job_number} has done.")
+                logger.info(f"job {self.job_number} is done.")
                 self.job_running = False
                 flag = False
             # else:
@@ -389,23 +392,17 @@ class Job_submission:
     def jobnum_check(self):
         if self.server_machine.queuing:
             job_list = self.server_machine.get_job_list_as_text()
-            logger.debug(
-                [
-                    line
-                    for line in job_list
-                    if re.match(
-                        f".*{self.server_machine.username}.*\s{self.queue_data['queue']}\s.*",
-                        line,
-                    )
-                ]
-            )
             bool_list = [
                 (
                     True
                     if re.match(
-                        f".*{self.server_machine.username}.*\s{self.queue_data['queue']}\s.*",
+                        f".*\s{self.server_machine.username}\s.*\s{self.queue_data['queue']}\s.*",
                         line,
-                    )
+                    )  # PBS case
+                    or re.match(
+                        f".*\s{self.queue_data['queue']}\s.*\s{self.server_machine.username}\s.*",
+                        line,
+                    )  # Slurm case
                     else False
                 )
                 for line in job_list

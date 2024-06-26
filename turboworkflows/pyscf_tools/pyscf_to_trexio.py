@@ -5,6 +5,7 @@
 
 # load python packages
 import os
+import re
 import numpy as np
 
 # load pyscf packages
@@ -559,6 +560,22 @@ def pyscf_to_trexio(
             for nuc_index, (chemical_symbol, atom_symbol) in enumerate(
                 zip(chemical_symbol_list, atom_symbol_list)
             ):
+
+                logger.debug(
+                    f"chemical_symbol={chemical_symbol}, atom_symbol={atom_symbol}"
+                )
+                if re.match(r"X-.*", chemical_symbol) or re.match(r"X-.*", atom_symbol):
+                    logger.debug("Ghost atoms!")
+                    ecp_num += 1
+                    ecp_max_ang_mom_plus_1.append(1)
+                    ecp_z_core.append(0)
+                    ecp_nucleus_index.append(nuc_index)
+                    ecp_ang_mom.append(0)
+                    ecp_coefficient.append(0.0)
+                    ecp_exponent.append(1.0)
+                    ecp_power.append(0)
+                    continue
+
                 # atom_symbol is superior to atom_pure_symbol!!
                 try:
                     z_core, ecp_list = mol._ecp[atom_symbol]

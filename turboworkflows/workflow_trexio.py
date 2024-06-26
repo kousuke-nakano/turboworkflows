@@ -37,7 +37,6 @@ class TREXIO_convert_to_turboWF(Workflow):
         only_mol: bool = True,
         nosymmetry: bool = False,
         trexio_rerun: float = False,
-        trexio_pkl_name: str = "trexio_genius",
     ):
         if jastrow_basis_dict is None:
             jastrow_basis_dict = {}
@@ -50,7 +49,8 @@ class TREXIO_convert_to_turboWF(Workflow):
         self.only_mol = only_mol
         self.nosymmetry = nosymmetry
         self.trexio_rerun = trexio_rerun
-        self.trexio_pkl_name = trexio_pkl_name
+        # pkl names
+        self.trexio_pkl_name = "trexio_genius"
         # return values
         self.status = "init"
         self.output_files = []
