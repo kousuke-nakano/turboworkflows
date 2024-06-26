@@ -281,7 +281,7 @@ class Machine:
                             text=True,
                             timeout=1200,
                         )
-                        logger.warning(
+                        logger.debug(
                             f"subprocess is successful (ii={ii}). break the loop"
                         )
                         exit_status, stdout, stderr = (
