@@ -181,6 +181,17 @@ class Machine:
         return value
 
     @property
+    def username(self):
+        try:
+            return self._username
+        except AttributeError:
+            return os.getlogin()
+
+    @username.setter
+    def username(self, value):
+        self._username = value
+
+    @property
     def ip(self):
         key = "ip"
         return self.get_value(key=key)
