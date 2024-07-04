@@ -534,7 +534,8 @@ class Conversion_wf_workflow(Workflow):
             os.chdir(self.conversion_wf_dir)
 
             # read WF
-            self.wavefunction.read_from_fort10(fort10="fort.10")
+            wavefunction = Wavefunction()
+            wavefunction.read_from_fort10(fort10="fort.10")
             if self.to_wf == "sd":
                 logger.error("Conversion to sd is not implemented yet.")
                 raise NotImplementedError
@@ -548,7 +549,7 @@ class Conversion_wf_workflow(Workflow):
                 else:
                     triplet = True
                 # WF conversion
-                self.wavefunction.to_agp(
+                wavefunction.to_agp(
                     triplet=triplet,
                     pfaffian_flag=False,
                     grid_size=self.grid_size,
@@ -557,6 +558,7 @@ class Conversion_wf_workflow(Workflow):
                     clean_flag=self.clean_flag,
                     only_generate_template=self.only_generate_template,
                 )
+                del wavefunction
             else:
                 raise NotImplementedError
 
