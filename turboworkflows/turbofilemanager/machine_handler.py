@@ -4,6 +4,7 @@
 import os
 import time
 
+import asyncio
 import random
 import re
 import stat
@@ -65,16 +66,17 @@ class Machine:
         logger.debug(self.machine_type)
 
         self.ssh_status = False
-
+    
     def ssh_open(self):
         if self.machine_type == "remote":
             if not self.ssh_status:
-                rw = random.randint(1, 4)
+                rw = random.randint(3, 6)
                 logger.info(
-                    f"wait {rw} secs before opening a ssh connection to the remote machine."
+                    f"wait {rw} secs before opening a new ssh connection to the remote machine."
                 )
                 time.sleep(rw)
-                logger.info("A ssh connection is open via paramiko module.")
+                #await asyncio.sleep(rw)
+                logger.info("A ssh connection will being established by paramiko module.")
                 ssh_config = paramiko.SSHConfig()
                 try:
                     config_file = os.path.join(os.getenv("HOME"), ".ssh/config")
@@ -118,34 +120,40 @@ class Machine:
                                 username=username,
                                 key_filename=key_filename,
                             )
-                        logger.info(f"ssh using paramiko is successful.")
+                        logger.info(f"Opening a new ssh connection using paramiko is successful.")
                         break
                     except paramiko.ssh_exception.SSHException:
                         logger.warning(
-                            f"ssh using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial."
+                            f"Opening a new ssh connection using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial."
                         )
                         time.sleep(self.ssh_retry_time)
 
                     if tt == self.ssh_retry_max_num - 1:
                         logger.error(
-                            f"ssh using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials"
+                            f"Opening a new ssh connection using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials"
                         )
                         raise paramiko.SSHException
-
+                
                 self.sftp = self.ssh.open_sftp()
+                logger.info(f'Opened ssh ID = {id(self.ssh)}')
+                logger.info(f'The opened sftp ID = {id(self.sftp)}')
                 self.ssh_status = True
 
             else:
                 logger.info(
                     "The ssh connection is already established using paramiko module."
                 )
+                logger.info(f'The opened ssh ID = {id(self.ssh)}')
+                logger.info(f'The opened sftp ID = {id(self.sftp)}')
                 logger.debug(f"self.ssh_status = {self.ssh_status}")
 
     def ssh_close(self):
         if self.machine_type == "remote":
             logger.debug(f"self.ssh_status = {self.ssh_status}")
             if self.ssh_status:
-                logger.info("The ssh connection is close via paramiko module.")
+                logger.info("The ssh connection will be closed using paramiko module.")
+                logger.info(f'The closed ssh ID = {id(self.ssh)}')
+                logger.info(f'The closed sftp ID = {id(self.sftp)}')
                 self.ssh.close()
                 self.sftp.close()
                 del self.ssh
