@@ -450,6 +450,8 @@ class Job_submission:
                 logger.error(
                     "server-client_manager.py works only in the local_home dir."
                 )
+                logger.error(f"client_home={client_home} is not in")
+                logger.error(f"local_current_dir={local_current_dir}")
                 raise ValueError
 
             else:

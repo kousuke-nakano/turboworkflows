@@ -169,9 +169,9 @@ class Machine:
         try:
             return self.data[key]
         except KeyError:
-            logger.error(f"{key} key is not defined in the database!!")
-            logger.error("Plz. edit the following file according to the template.")
-            logger.error(self.machine_info_yaml)
+            logger.warning(f"{key} key is not defined in the database!!")
+            # logger.error("Plz. edit the following file according to the template.")
+            # logger.error(self.machine_info_yaml)
             raise KeyError
 
     @property
@@ -202,12 +202,26 @@ class Machine:
     @property
     def ip(self):
         key = "ip"
-        return self.get_value(key=key)
+        try:
+            return self.get_value(key=key)
+        except KeyError:
+            logger.warning(
+                f"You may work on a local machine, for which {key} is not needed."
+            )
+            logger.warning(f"{key} is set to None")
+            return None
 
     @property
     def file_manager_root(self):
         key = "file_manager_root"
-        return self.get_value(key=key)
+        try:
+            return self.get_value(key=key)
+        except KeyError:
+            logger.warning(
+                f"You may work on a local machine, for which {key} is not needed."
+            )
+            logger.warning(f"{key} is set to None")
+            return None
 
     @property
     def queuing(self):
