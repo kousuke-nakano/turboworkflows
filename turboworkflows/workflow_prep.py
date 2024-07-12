@@ -3,6 +3,7 @@
 
 # python packages
 import os
+import sys
 import pickle
 import glob
 import asyncio
@@ -38,6 +39,7 @@ class DFT_workflow(Workflow):
         # prep
         dft_rerun: bool = False,
         dft_pkl_name: str = "prep",
+        dft_det_contraction_flag: Optional[bool] = None,
         dft_grid_size: Optional[list] = None,
         dft_lbox: Optional[list] = None,
         dft_smearing: float = 0.0,
@@ -72,6 +74,7 @@ class DFT_workflow(Workflow):
         # dft
         self.dft_rerun = dft_rerun
         self.dft_pkl_name = dft_pkl_name
+        self.dft_det_contraction_flag = dft_det_contraction_flag
         self.dft_grid_size = dft_grid_size
         self.dft_lbox = dft_lbox
         self.dft_smearing = dft_smearing
@@ -103,6 +106,11 @@ class DFT_workflow(Workflow):
         # dft
         # ******************
         os.chdir(self.root_dir)
+        
+        if not os.path.isfile(os.path.join(self.root_dir, 'fort.10')):
+            logger.error(f"{os.path.join(self.root_dir, 'fort.10')} is not found!")
+            sys.exit()
+
         self.dft_dir = os.path.join(self.root_dir)
         self.pkl_dir = os.path.join(self.dft_dir, "pkl")
         logger.info(f"Project root dir = {self.dft_dir}")
@@ -129,6 +137,7 @@ class DFT_workflow(Workflow):
                 # generate a DFT instance
                 dft_genius = DFT_genius(
                     grid_size=self.dft_grid_size,
+                    det_contraction_flag=self.dft_det_contraction_flag,
                     lbox=self.dft_lbox,
                     smearing=self.dft_smearing,
                     maxtime=self.dft_maxtime,
@@ -191,6 +200,9 @@ class DFT_workflow(Workflow):
 
             else:
                 logger.info(f"{self.dft_pkl} exists.")
+                if not os.path.isfile(self.jobpkl):
+                    logger.info(f'dft_dir={self.dft_dir}')
+                    sys.exit()
                 with open(self.jobpkl, "rb") as f:
                     job = pickle.load(f)
                 with open(os.path.join(self.dft_dir, self.dft_pkl), "rb") as f:
