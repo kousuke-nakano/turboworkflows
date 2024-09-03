@@ -195,22 +195,26 @@ def pyscf_to_trexio(
             for _ in range(len(mol.bas_exp(i))):
                 basis_shell_index.append(i)
 
-        # normalization factors
-        basis_shell_factor = [1.0 for _ in range(basis_shell_num)]  # 1.0 in pySCF
+        # shell normalization factors
+        # note: for contracted basis, pyscf computes thier normalization
+        # factors. Here, the normalization factors are already included in
+        # basis_coefficient, thus 1.0 is set here.
+        basis_shell_factor = [1.0 for _ in range(basis_shell_num)]
 
         # gto_norm(l, expnt) => l is angmom, expnt is exponent
-        # Note!! Here, the normalization factor of the spherical part
-        # are not included. The normalization factor is computed according
-        # to Eq.8 of the following paper
+        # Note!! The normalization factor of the spherical part
+        # are not included. The normalization factor is computed
+        # according to Eq.8 of the following paper
         # H.B.S and M.J.F, Int. J. Quant.  Chem., 54(1995), 83-87.
+        # see also its implementation in PySCF
+        # [https://pyscf.org/pyscf_api_docs/pyscf.gto.html#pyscf.gto.mole.gto_norm]
+
         basis_prim_factor = []
         for prim_i in range(basis_prim_num):
             coeff = basis_coefficient[prim_i]
             expnt = basis_exponent[prim_i]
             l_num = shell_ang_mom[basis_shell_index[prim_i]]
-            basis_prim_factor.append(
-                mol.gto_norm(l_num, expnt) / np.sqrt(4 * np.pi) * np.sqrt(2 * l_num + 1)
-            )
+            basis_prim_factor.append(mol.gto_norm(l_num, expnt))
 
         ##########################################
         # ao info
@@ -226,7 +230,7 @@ def pyscf_to_trexio(
                 ao_shell.append(i)
         ao_num = len(ao_shell)
 
-        # 1.0 in pyscf (because spherical)
+        # 1.0 in pyscf (because of the employed spherical GTOs)
         ao_normalization = [1.0 for _ in range(ao_num)]
 
         ##########################################
