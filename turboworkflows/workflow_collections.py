@@ -278,6 +278,7 @@ class Makefort10_workflow(Workflow):
         det_exp_to_discard: float = 0.00,
         jas_cut_basis_option: bool = False,
         jastrow_type: int = -6,
+        jastrow_4body: bool = False,
         complex: bool = False,
         phase_up: Optional[list] = None,
         phase_dn: Optional[list] = None,
@@ -307,6 +308,7 @@ class Makefort10_workflow(Workflow):
         self.det_exp_to_discard = det_exp_to_discard
         self.jas_cut_basis_option = jas_cut_basis_option
         self.jastrow_type = jastrow_type
+        self.jastrow_4body = jastrow_4body
         self.complex = complex
         self.phase_up = phase_up
         self.phase_dn = phase_dn
@@ -357,6 +359,7 @@ class Makefort10_workflow(Workflow):
                 det_exp_to_discard=self.det_exp_to_discard,
                 jas_cut_basis_option=self.jas_cut_basis_option,
                 jastrow_type=self.jastrow_type,
+                jastrow_4body=self.jastrow_4body,
                 complex=self.complex,
                 phase_up=self.phase_up,
                 phase_dn=self.phase_dn,
