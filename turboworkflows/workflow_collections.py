@@ -483,7 +483,6 @@ class Conversion_wf_workflow(Workflow):
     def __init__(
         self,
         conversion_wf_rerun: bool = False,
-        conversion_wf_pkl_name: str = "conversion_wf_genius",
         to_wf: str = "agps",  # ['sd','agps', 'agpu', 'pf']
         grid_size: float = 0.10,
         additional_hyb: Optional[list] = None,
@@ -495,7 +494,7 @@ class Conversion_wf_workflow(Workflow):
             additional_hyb = []
         # conversion_wf
         self.conversion_wf_rerun = conversion_wf_rerun
-        self.conversion_wf_pkl_name = conversion_wf_pkl_name
+        self.conversion_wf_pkl_name = "conversion_wf_genius"
         # variables
         self.to_wf = to_wf
         self.grid_size = grid_size

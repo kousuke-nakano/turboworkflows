@@ -187,8 +187,11 @@ def pyscf_to_trexio(
         for i in range(basis_shell_num):
             for bas_exp in mol.bas_exp(i):
                 basis_exponent.append(float(bas_exp))
+                print(bas_exp)
             for bas_ctr_coeff in mol.bas_ctr_coeff(i):
+                print(bas_ctr_coeff)
                 basis_coefficient.append(float(bas_ctr_coeff))
+                
 
         basis_shell_index = []
         for i in range(basis_shell_num):
@@ -202,19 +205,23 @@ def pyscf_to_trexio(
         basis_shell_factor = [1.0 for _ in range(basis_shell_num)]
 
         # gto_norm(l, expnt) => l is angmom, expnt is exponent
-        # Note!! The normalization factor of the spherical part
-        # are not included. The normalization factor is computed
+        # Note!! The normalization factor of the radial part
+        # in TREXIO is the solid harmonic notation, not the spherical
+        # harmonics notation. The above normalization factor is computed
         # according to Eq.8 of the following paper
         # H.B.S and M.J.F, Int. J. Quant.  Chem., 54(1995), 83-87.
         # see also its implementation in PySCF
         # [https://pyscf.org/pyscf_api_docs/pyscf.gto.html#pyscf.gto.mole.gto_norm]
+        # So, gto_norm(l, expnt) is the normalization factor in the spherical
+        # harmonics notation. To convert from sphrical to solid harmonics notation,
+        # a prefactor, np.sqrt(2 * l + 1) / np.sqrt(4 * np.pi), is needed. 
 
         basis_prim_factor = []
         for prim_i in range(basis_prim_num):
             coeff = basis_coefficient[prim_i]
             expnt = basis_exponent[prim_i]
             l_num = shell_ang_mom[basis_shell_index[prim_i]]
-            basis_prim_factor.append(mol.gto_norm(l_num, expnt))
+            basis_prim_factor.append(mol.gto_norm(l_num, expnt) * np.sqrt(2 * l_num + 1) / np.sqrt(4 * np.pi))
 
         ##########################################
         # ao info
