@@ -14,6 +14,7 @@ import shutil
 import pathlib
 import subprocess
 from subprocess import PIPE
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 # define logger
 from logging import getLogger, StreamHandler, Formatter
@@ -120,7 +121,7 @@ class Machine:
                                 username=username,
                                 key_filename=key_filename,
                             )
-                        logger.info(f"Opening a new ssh connection using paramiko is successful.")
+                        logger.info(f"Opening a new ssh connection using paramiko is successful with attempt = {tt+1}.")
                         break
                     except paramiko.ssh_exception.SSHException:
                         logger.warning(
@@ -152,10 +153,45 @@ class Machine:
             logger.debug(f"self.ssh_status = {self.ssh_status}")
             if self.ssh_status:
                 logger.info("The ssh connection will be closed using paramiko module.")
-                logger.info(f'The closed ssh ID = {id(self.ssh)}')
-                logger.info(f'The closed sftp ID = {id(self.sftp)}')
-                self.ssh.close()
-                self.sftp.close()
+                logger.info(f"The closed ssh ID = {id(self.ssh)}")
+                logger.info(f"The closed sftp ID = {id(self.sftp)}")
+
+                max_retries = 3
+                timeout_sec = 5.0
+                
+                for attempt in range(1, max_retries + 1):
+                    executor = ThreadPoolExecutor(max_workers=1)
+                    future = executor.submit(self.ssh.close)
+                    try:
+                        future.result(timeout=timeout_sec)
+                        logger.info(f"SSHClient.close() succeeded on attempt {attempt}")
+                        break
+                    except Exception as e:
+                        logger.warning(f"SSHClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
+                        if attempt < max_retries:
+                            time.sleep(1)  # ãªãã©ã¤åã®åæ
+                        else:
+                            logger.error(f"SSHClient.close() failed after {max_retries} attempts")
+                            raise ValueError('The job ends abnormally.')
+                    finally:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                
+                for attempt in range(1, max_retries + 1):
+                    executor = ThreadPoolExecutor(max_workers=1)
+                    future = executor.submit(self.sftp.close)
+                    try:
+                        future.result(timeout=timeout_sec)
+                        logger.info(f"SFTPClient.close() succeeded on attempt {attempt}")
+                        break
+                    except Exception as e:
+                        logger.warning(f"SFTPClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
+                        if attempt < max_retries:
+                            time.sleep(1)
+                        else:
+                            logger.error(f"SFTPClient.close() failed after {max_retries} attempts")
+                            raise ValueError('The job ends abnormally.')
+                    finally:
+                        executor.shutdown(wait=False, cancel_futures=True)
                 del self.ssh
                 del self.sftp
                 self.ssh_status = False
@@ -378,14 +414,32 @@ class Machine:
             else:
                 return False
         else:
+            max_retries = 3
+            timeout_sec = 5.0
+            
             self.ssh_open()
-            try:
-                fileattr = self.sftp.lstat(file_name)
-                if stat.S_ISREG(fileattr.st_mode):
-                    return True
-                else:
-                    return False
-            except IOError:
+            for attempt in range(1, max_retries + 1):
+                # Submit the lstat call for the target file
+                executor = ThreadPoolExecutor(max_workers=1)
+                future = executor.submit(self.sftp.lstat, file_name)
+                try:
+                    # Wait up to timeout_sec seconds for lstat to complete
+                    fileattr = future.result(timeout=timeout_sec)
+                    logger.info(f"SFTP lstat for file succeeded on attempt {attempt}")
+                    break
+                except Exception as e:
+                    logger.warning(f"SFTP lstat for file attempt {attempt} with {e.__class__.__name__}: {e}")
+                    if attempt < max_retries:
+                        time.sleep(1)  # Wait briefly before retrying
+                    else:
+                        logger.error(f"SFTP lstat for file failed after {max_retries} attempts")
+                        raise RuntimeError(f"Could not lstat file '{file_name}' via SFTP")
+                finally:
+                    executor.shutdown(wait=False, cancel_futures=True) 
+            # Check whether the path refers to a regular file
+            if stat.S_ISREG(fileattr.st_mode):
+                return True
+            else:
                 return False
 
     def is_dir(self, dir_name):
@@ -399,8 +453,29 @@ class Machine:
             else:
                 return False
         else:
+            # Configure timeout and retry parameters for SFTP lstat
+            max_retries = 3
+            timeout_sec = 5.0
+            
             self.ssh_open()
-            fileattr = self.sftp.lstat(dir_name)
+
+            for attempt in range(1, max_retries + 1):
+                executor = ThreadPoolExecutor(max_workers=1)
+                future = executor.submit(self.sftp.lstat, dir_name)
+                try:
+                    fileattr = future.result(timeout=timeout_sec)
+                    logger.info(f"SFTP lstat succeeded on attempt {attempt}")
+                    break
+                except Exception as e:
+                    logger.warning(f"SFTP lstat attempt {attempt} with {e.__class__.__name__}: {e}")
+                    if attempt < max_retries:
+                        time.sleep(1)  # Wait briefly before retrying
+                    else:
+                        logger.error(f"SFTP lstat failed after {max_retries} attempts")
+                        raise RuntimeError(f"Could not lstat '{dir_name}' via SFTP")
+                finally:
+                    executor.shutdown(wait=False, cancel_futures=True) 
+            # Determine if the path is a directory
             if stat.S_ISDIR(fileattr.st_mode):
                 return True
             else:
@@ -417,16 +492,34 @@ class Machine:
             else:
                 return False
         else:
+            # Configure timeout and retry parameters for SFTP lstat on an arbitrary object
+            max_retries = 3
+            timeout_sec = 5.0
+            
             self.ssh_open()
-            try:
-                fileattr = self.sftp.lstat(object_name)
-                if stat.S_ISDIR(fileattr.st_mode):
-                    return True
-                elif stat.S_ISREG(fileattr.st_mode):
-                    return True
-                else:
-                    return False
-            except FileNotFoundError:
+            for attempt in range(1, max_retries + 1):
+                executor = ThreadPoolExecutor(max_workers=1)
+                future = executor.submit(self.sftp.lstat, object_name)
+                try:
+                    # Wait up to timeout_sec seconds for lstat to complete
+                    fileattr = future.result(timeout=timeout_sec)
+                    logger.info(f"SFTP lstat for object succeeded on attempt {attempt}")
+                    break
+                except Exception as e:
+                    logger.warning(f"SFTP lstat for object attempt {attempt} with {e.__class__.__name__}: {e}")
+                    if attempt < max_retries:
+                        time.sleep(1)  # Wait briefly before retrying
+                    else:
+                        logger.error(f"SFTP lstat for object failed after {max_retries} attempts")
+                        raise RuntimeError(f"Could not lstat '{object_name}' via SFTP")
+                finally:
+                    executor.shutdown(wait=False, cancel_futures=True) 
+            # Check whether the object is a directory or a regular file
+            if stat.S_ISDIR(fileattr.st_mode):
+                return True
+            elif stat.S_ISREG(fileattr.st_mode):
+                return True
+            else:
                 return False
 
     def is_alive(self):
