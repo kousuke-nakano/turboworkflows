@@ -45,6 +45,7 @@ class VMCopt_workflow(Workflow):
         vmcopt_optimizer: str = "lr",
         vmcopt_learning_rate: float = 0.35,
         vmcopt_regularization: float = 0.001,
+        vmcopt_num_opt_param: int = 0,
         vmcopt_onebody: bool = True,
         vmcopt_twobody: bool = True,
         vmcopt_det_mat: bool = False,
@@ -80,6 +81,7 @@ class VMCopt_workflow(Workflow):
         self.vmcopt_optimizer = vmcopt_optimizer
         self.vmcopt_learning_rate = vmcopt_learning_rate
         self.vmcopt_regularization = vmcopt_regularization
+        self.vmcopt_num_opt_param = vmcopt_num_opt_param
         self.vmcopt_onebody = vmcopt_onebody
         self.vmcopt_twobody = vmcopt_twobody
         self.vmcopt_det_mat = vmcopt_det_mat
@@ -244,6 +246,7 @@ class VMCopt_workflow(Workflow):
                         optimizer=self.vmcopt_optimizer,
                         learning_rate=self.vmcopt_learning_rate,
                         regularization=self.vmcopt_regularization,
+                        num_opt_param=self.vmcopt_num_opt_param,
                         opt_onebody=self.vmcopt_onebody,
                         opt_twobody=self.vmcopt_twobody,
                         opt_det_mat=self.vmcopt_det_mat,
