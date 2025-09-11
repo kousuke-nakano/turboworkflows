@@ -56,6 +56,7 @@ class LRDMC_ext_workflow(Workflow):
         lrdmc_twist_average: float = False,
         lrdmc_kpoints: Optional[list] = None,
         lrdmc_force_calc_flag: bool = False,
+        lrdmc_pw_regularization: float = 0.0,
         lrdmc_maxtime: int = 172000,
         degree_poly: int = 2,
     ):
@@ -88,6 +89,7 @@ class LRDMC_ext_workflow(Workflow):
         self.lrdmc_twist_average = lrdmc_twist_average
         self.lrdmc_kpoints = lrdmc_kpoints
         self.lrdmc_force_calc_flag = lrdmc_force_calc_flag
+        self.lrdmc_pw_regularization = lrdmc_pw_regularization
         self.lrdmc_maxtime = lrdmc_maxtime
         self.degree_poly = degree_poly
         # return values
@@ -178,6 +180,7 @@ class LRDMC_ext_workflow(Workflow):
                 lrdmc_twist_average=self.lrdmc_twist_average,
                 lrdmc_kpoints=self.lrdmc_kpoints,
                 lrdmc_force_calc_flag=self.lrdmc_force_calc_flag,
+                lrdmc_pw_regularization=self.lrdmc_pw_regularization,
                 lrdmc_maxtime=self.lrdmc_maxtime,
             )
             await lrdmc_workflow.async_launch()

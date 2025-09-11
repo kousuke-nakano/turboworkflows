@@ -50,6 +50,7 @@ class LRDMC_workflow(Workflow):
         lrdmc_twist_average: bool = False,
         lrdmc_kpoints: Optional[list] = None,
         lrdmc_force_calc_flag: bool = False,
+        lrdmc_pw_regularization: float = 0.0,
         lrdmc_maxtime: int = 172000,
     ):
         if lrdmc_kpoints is None:
@@ -77,6 +78,7 @@ class LRDMC_workflow(Workflow):
         self.lrdmc_twist_average = lrdmc_twist_average
         self.lrdmc_kpoints = lrdmc_kpoints
         self.lrdmc_force_calc_flag = lrdmc_force_calc_flag
+        self.lrdmc_pw_regularization = lrdmc_pw_regularization
         self.lrdmc_maxtime = lrdmc_maxtime
         # pkl names
         self.job_pkl_name = "job_manager"
@@ -287,6 +289,7 @@ class LRDMC_workflow(Workflow):
                         twist_average=self.lrdmc_twist_average,
                         kpoints=self.lrdmc_kpoints,
                         force_calc_flag=self.lrdmc_force_calc_flag,
+                        pw_regularization= self.lrdmc_pw_regularization,
                         maxtime=self.lrdmc_maxtime,
                     )
                     # manual k points!!
