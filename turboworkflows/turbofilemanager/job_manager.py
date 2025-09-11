@@ -308,6 +308,10 @@ class Job_submission:
                         command=command, execute_dir=server_dir
                     )
                     logger.debug(stderr.split())
+                    if not stdout:
+                        logger.error(f"Empty stdout on command!!")
+                        logger.error(f'stdout = {stdout}')
+                        logger.error(f'stderr = {stderr}')
                     self.job_number = stdout.strip().split()[
                         self.server_machine.jobnum_index
                     ]
