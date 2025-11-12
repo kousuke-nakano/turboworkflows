@@ -31,6 +31,8 @@ class TREXIO_convert_to_turboWF(Workflow):
         self,
         trexio_filename: str = "trexio.hdf5",
         twist_average: bool = False,
+        jastrow_1body: Optional[str] = None,
+        jastrow_2body: Optional[str] = 'pade',
         jastrow_basis_dict: Optional[dict] = None,
         jastrow_4body: bool = False,
         max_occ_conv: int = 0,
@@ -44,6 +46,8 @@ class TREXIO_convert_to_turboWF(Workflow):
         # trexio variables
         self.trexio_filename = trexio_filename
         self.twist_average = twist_average
+        self.jastrow_1body = jastrow_1body
+        self.jastrow_2body = jastrow_2body
         self.jastrow_basis_dict = jastrow_basis_dict
         self.jastrow_4body = jastrow_4body
         self.max_occ_conv = max_occ_conv
@@ -110,6 +114,8 @@ class TREXIO_convert_to_turboWF(Workflow):
                 # trexio -> turborvb_wf
                 trexio_to_turborvb_wf(
                     trexio_file=os.path.join(self.trexio_dir, filename),
+                    jastrow_1body=self.jastrow_1body,
+                    jastrow_2body=self.jastrow_2body,
                     jas_basis_sets=jas_basis_sets,
                     jastrow_4body=self.jastrow_4body,
                     max_occ_conv=self.max_occ_conv,
