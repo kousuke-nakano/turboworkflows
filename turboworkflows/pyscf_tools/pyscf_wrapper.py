@@ -54,6 +54,7 @@ def run_pyscf(
     kpt_grid: Optional[list] = None,
     smearing_method: str = "fermi",
     smearing_sigma: float = 0.00,  # Ha
+    use_jkmethod: bool = False,
 ):
     # init list attributes
     if ghost_atoms_index is None:
@@ -226,6 +227,9 @@ def run_pyscf(
 
         else:
             raise NotImplementedError
+
+        if use_jkmethod:
+            mf = mf.jk_method('RS')
 
         # init guess
         mf.init_guess = init_guess
