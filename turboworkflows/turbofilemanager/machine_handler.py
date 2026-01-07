@@ -90,7 +90,7 @@ class Machine:
 
                 hostname = lkup["hostname"]
                 username = lkup["user"]
-                key_filename = lkup["identityfile"]
+                key_filename = lkup.get("identityfile")
 
                 logger.debug(f"paramiko ssh hostname = {hostname}")
                 logger.debug(f"paramiko ssh username = {username}")
