@@ -80,7 +80,8 @@ def run_pyscf(
         if len(ghost_atoms_index) != 0:
             logger.error("Ghost atoms are not supporeted for PBC calculations.")
             raise NotImplementedError
-        cell = gto_pbc.M()
+        #cell = gto_pbc.M()
+        cell = gto_pbc.Cell()
         cell.from_ase(atoms)
 
         cell.verbose = 5
@@ -91,8 +92,8 @@ def run_pyscf(
             spin_restricted = True
             logger.warning("spin_restricted is set True.")
         cell.symmetry = False
-        a = cell.a
-        cell.a = np.array([a[0], a[1], a[2]])  # otherwise, we cannot dump a
+        #a = cell.a
+        #cell.a = np.array([a[0], a[1], a[2]])  # otherwise, we cannot dump a
         # basis set
         cell.basis = basis
         if exp_to_discard != 0.0:
