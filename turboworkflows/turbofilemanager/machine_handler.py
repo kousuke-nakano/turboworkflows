@@ -43,7 +43,7 @@ class Machine:
             logger.info(
                 f"{file_manager_config_dir} is not found. Probably, this is the first run."
             )
-            os.makedirs(file_manager_config_dir, exist_ok=True)
+            #os.makedirs(file_manager_config_dir, exist_ok=True)
             shutil.copytree(file_manager_config_template_dir, file_manager_config_dir)
             logger.info(f"{file_manager_config_dir} has been generated.")
             logger.info(f"Please edit {self.machine_info_yaml}")

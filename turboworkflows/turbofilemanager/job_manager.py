@@ -70,7 +70,7 @@ class Job_submission:
         # check config dir exists.
         if not os.path.isdir(file_manager_config_dir):
             logger.info(f"{file_manager_config_dir} is not found.")
-            os.makedirs(file_manager_config_dir, exist_ok=True)
+            #os.makedirs(file_manager_config_dir, exist_ok=True)
             shutil.copytree(file_manager_config_template_dir, file_manager_config_dir)
             logger.info(f"{file_manager_config_dir} has been generated.")
             logger.info(
