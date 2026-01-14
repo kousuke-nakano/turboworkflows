@@ -273,7 +273,7 @@ def job_manager_cli():
             print(
                 f"{file_manager_config_dir} is not found. Probably, this is the first run."
             )
-            os.makedirs(file_manager_config_dir, exist_ok=True)
+            #os.makedirs(file_manager_config_dir, exist_ok=True)
             shutil.copytree(file_manager_config_template_dir, file_manager_config_dir)
             print(f"{file_manager_config_dir} has been generated.")
             print(f"plz. edit {machine_info_yaml}")
