@@ -36,7 +36,7 @@ class PySCF_workflow(Workflow):
         trexio_filename: str = "trexio.hdf5",
         # job
         server_machine_name: str = "localhost",
-        queue_label: Optional[str] = None,
+        queue_label: Optional[str] = "default",
         mpi=False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
