@@ -418,7 +418,7 @@ class Machine:
             logger.error(f"file_name={file_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            return os.path.isfile(file_name):
+            return os.path.isfile(file_name)
 
         else:
             self.ssh_open()
@@ -441,7 +441,7 @@ class Machine:
                 finally:
                     executor.shutdown(wait=False, cancel_futures=True) 
             # Check whether the path refers to a regular file
-            return stat.S_ISREG(fileattr.st_mode):
+            return stat.S_ISREG(fileattr.st_mode)
 
     def is_dir(self, dir_name):
         logger.debug(f"check if dir={dir_name} exists.")
@@ -449,7 +449,7 @@ class Machine:
             logger.error(f"dir_name={dir_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            return os.path.isdir(dir_name):
+            return os.path.isdir(dir_name)
 
         else:
             self.ssh_open()
@@ -470,7 +470,7 @@ class Machine:
                 finally:
                     executor.shutdown(wait=False, cancel_futures=True) 
             # Determine if the path is a directory
-            return stat.S_ISDIR(fileattr.st_mode):
+            return stat.S_ISDIR(fileattr.st_mode)
 
     def exist(self, object_name):
         logger.debug(f"check if file or dir={object_name} exists on {self.name}.")
@@ -478,7 +478,7 @@ class Machine:
             logger.error(f"dir_name={object_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            return os.path.exists(object_name):
+            return os.path.exists(object_name)
 
         else:
             self.ssh_open()
