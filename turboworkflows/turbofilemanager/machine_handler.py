@@ -166,7 +166,7 @@ class Machine:
             executor = ThreadPoolExecutor(max_workers=1)
             future = executor.submit(self.ssh.close)
             try:
-                future.result(timeout=timeout_sec)
+                future.result(timeout=ssh_io_timeout_sec)
                 logger.info(f"SSHClient.close() succeeded on attempt {attempt}")
                 break
             except Exception as e:
@@ -183,7 +183,7 @@ class Machine:
             executor = ThreadPoolExecutor(max_workers=1)
             future = executor.submit(self.sftp.close)
             try:
-                future.result(timeout=timeout_sec)
+                future.result(timeout=ssh_io_timeout_sec)
                 logger.info(f"SFTPClient.close() succeeded on attempt {attempt}")
                 break
             except Exception as e:
@@ -292,7 +292,7 @@ class Machine:
 
     def get_job_list(self):
         command = f"{self.jobcheck}"
-        stdout, stderr = self.run_command(command)
+        stdout, stderr = self.run_command(command, timeout=False)
         return stdout, stderr
 
     def get_job_list_as_text(self):
@@ -301,10 +301,10 @@ class Machine:
 
     def delete_job(self, jobid):
         command = f"{self.jobdel} {jobid}"
-        stdout, stderr = self.run_command(command)
+        stdout, stderr = self.run_command(command, timeout=False)
         return stdout.split("\n")
 
-    def _run_command_local(self, command, execute_dir=None):
+    def _run_command_local(self, command, execute_dir=None, timeout=None):
         if execute_dir is not None and not os.path.isdir(execute_dir):
             logger.error(f"{execute_dir} is not found.")
             raise FileNotFoundError
@@ -313,23 +313,26 @@ class Machine:
         # command_r=timeout_command(command=command_r)
         logger.debug(f"command = {command_r} in run_command")
 
-        if self.queuing is True:
-            #timeout = 1200
-            timeout = 60
+        if (timeout is None and self.queuing is True) or timeout is True:
+            #timeout_sec = 1200
+            timeout_sec = 60
             retry = 3
+            logger.debug(f"run_command_local: set timeout={timeout_sec}, retry={retry}")
         else:
-            timeout = None
+            timeout_sec = None
             retry = 1
+            logger.debug(f"run_command_local: disable timeout")
 
         for ii in range(retry):
             try:
+                logger.debug(f"start subprocess (ii={ii})")
                 proc = subprocess.run(
                     command_r,
                     shell=True,
                     stdout=PIPE,
                     stderr=PIPE,
                     text=True,
-                    timeout=timeout,
+                    timeout=timeout_sec,
                     cwd=execute_dir,
                 )
                 logger.debug(
@@ -366,7 +369,7 @@ class Machine:
 
         return stdout, stderr
 
-    def _run_command_remote(self, command, execute_dir=None):
+    def _run_command_remote(self, command, execute_dir=None, timeout=None):
         if execute_dir is None:
             command_r = f"{command}"
         else:
@@ -404,11 +407,11 @@ class Machine:
 
         return stdout, stderr
 
-    def run_command(self, command, execute_dir=None):
+    def run_command(self, command, execute_dir=None, timeout=None):
         if self.machine_type == "local":
-            return self._run_command_local(command, execute_dir)
+            return self._run_command_local(command, execute_dir, timeout)
         else:
-            return self._run_command_remote(command, execute_dir)
+            return self._run_command_remote(command, execute_dir, timeout)
 
     def is_file(self, file_name):
         if not pathlib.Path(file_name).is_absolute():
@@ -657,7 +660,7 @@ class Machines_handler:
         logger.debug(f"makedir {os.path.dirname(to_object)} on {to_machine.name}")
         to_dir = os.path.dirname(to_object)
         command = f"mkdir -p {to_dir}"
-        to_machine.run_command(command)
+        to_machine.run_command(command, timeout=False)
 
         if not to_machine.is_dir(dir_name=to_dir):
             logger.error(f"{to_dir} is not created.")
