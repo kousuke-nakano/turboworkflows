@@ -204,7 +204,7 @@ class Machine:
         return "\n".join(output)
 
     def get_value(self, key):
-        if key not in data:
+        if key not in self.data:
             logger.warning(f"{key} key is not defined in the database!!")
             # logger.error("Plz. edit the following file according to the template.")
             # logger.error(self.machine_info_yaml)
