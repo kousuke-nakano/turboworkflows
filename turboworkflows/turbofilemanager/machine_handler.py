@@ -102,17 +102,19 @@ class Machine:
 
         hostname = lkup["hostname"]
         username = lkup["user"]
+        portnum = int(lkup.get("port", 22))
         key_filename = lkup.get("identityfile")
 
         logger.debug(f"paramiko ssh hostname = {hostname}")
+        logger.debug(f"paramiko ssh port = {portnum}")
         logger.debug(f"paramiko ssh username = {username}")
         logger.debug(f"paramiko ssh key_filename = {key_filename}")
 
-        try:
-            proxy_command = lkup["proxycommand"]
+        proxy_command = lkup.get("proxycommand")
+        if proxy_command is not None:
             logger.debug(f"paramiko ssh proxy-command = {proxy_command}")
             proxy_flag = True
-        except KeyError:
+        else:
             proxy_flag = False
 
         self.username = username
@@ -120,19 +122,14 @@ class Machine:
         self.ssh.load_system_host_keys()
         for tt in range(self.ssh_retry_max_num):
             try:
-                if proxy_flag:
-                    self.ssh.connect(
-                        hostname=hostname,
-                        username=username,
-                        key_filename=key_filename,
-                        sock=paramiko.ProxyCommand(proxy_command),
-                    )
-                else:
-                    self.ssh.connect(
-                        hostname=hostname,
-                        username=username,
-                        key_filename=key_filename,
-                    )
+                proxy = paramiko.ProxyCommand(proxy_command) if proxy_flag else None
+                self.ssh.connect(
+                    hostname=hostname,
+                    username=username,
+                    port=portnum,
+                    key_filename=key_filename,
+                    sock=proxy,
+                )
                 logger.info(f"Opening a new ssh connection using paramiko is successful with attempt = {tt+1}.")
                 break
             except paramiko.ssh_exception.SSHException:
@@ -140,7 +137,6 @@ class Machine:
                     f"Opening a new ssh connection using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial."
                 )
                 time.sleep(self.ssh_retry_time)
-
         else:
             logger.error(
                 f"Opening a new ssh connection using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials"
