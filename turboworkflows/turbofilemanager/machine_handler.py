@@ -68,7 +68,7 @@ class Machine:
         logger.debug(self.machine_type)
 
         self.ssh_status = False
-    
+
     def ssh_open(self):
         if self.machine_type == "local":
             logger.debug("ssh_open: do nothing for local machine")
@@ -304,106 +304,111 @@ class Machine:
         stdout, stderr = self.run_command(command)
         return stdout.split("\n")
 
-    def run_command(self, command, execute_dir=None):
-        trial_num = 10
-        jjj = 0
-        while True:
-            if execute_dir is None:
-                command_r = f"{command}"
-            else:
-                if self.machine_type == "remote":
-                    self.ssh_open()
-                    fileattr = self.sftp.lstat(execute_dir)
-                    if not stat.S_ISDIR(fileattr.st_mode):
-                        logger.error(
-                            f"{execute_dir} is not found on the remote machine."
-                        )
-                        raise FileNotFoundError
-                else:
-                    if not os.path.isdir(execute_dir):
-                        logger.error(f"{execute_dir} is not found.")
-                        raise FileNotFoundError
+    def _run_command_local(self, command, execute_dir=None):
+        if execute_dir is not None and not os.path.isdir(execute_dir):
+            logger.error(f"{execute_dir} is not found.")
+            raise FileNotFoundError
 
-                command_r = f"cd {execute_dir}; {command}"
+        command_r = f"{command}"
+        # command_r=timeout_command(command=command_r)
+        logger.debug(f"command = {command_r} in run_command")
 
-            # command_r=timeout_command(command=command_r)
-            logger.debug(f"command = {command_r} in run_command")
+        if self.queuing is True:
+            #timeout = 1200
+            timeout = 60
+            retry = 3
+        else:
+            timeout = None
+            retry = 1
 
-            if self.machine_type == "local":
-                for ii in range(3):
-                    try:
-                        proc = subprocess.run(
-                            command_r,
-                            shell=True,
-                            stdout=PIPE,
-                            stderr=PIPE,
-                            text=True,
-                            timeout=1200,
-                        )
-                        logger.debug(
-                            f"subprocess is successful (ii={ii}). break the loop"
-                        )
-                        exit_status, stdout, stderr = (
-                            proc.returncode,
-                            proc.stdout,
-                            proc.stderr,
-                        )
-                        logger.debug(f"exit_status={exit_status}")
-                        break
-                    except subprocess.TimeoutExpired:
-                        logger.warning(
-                            f"subprocess is timeout (ii={ii}). iterate the loop."
-                        )
-                        exit_status = 99
-                    logger.warning("wait 60 secs.")
-                    time.sleep(60)
-
-                if exit_status == 0:
-                    # success run_command
-                    logger.debug(f"stdout = {stdout}")
-                    logger.debug(f"stderr = {stderr}")
-                    logger.debug(f"exit_status = {exit_status}")
-                    break
-                else:
-                    # failure run_command
-                    logger.warning(f"stdout = {stdout}")
-                    logger.warning(f"stderr = {stderr}")
-                    logger.warning(f"exit_status = {exit_status}")
-                    logger.warning(f"command={command_r} did not work.")
-                    logger.warning(
-                        f"The command will be retried after {self.ssh_retry_time}s sleep."
-                    )
-                    time.sleep(self.ssh_retry_time)
-                if jjj > trial_num:
-                    break
-                jjj += 1
-
-                if jjj > trial_num:
-                    logger.error("Something wrong in run_command!!")
-                    raise ValueError
-
-            else:  # remote
-                self.ssh_open()
-                logger.debug(f"command_r={command_r}")
-                _, pstdout, pstderr = self.ssh.exec_command(command=command_r)
-                exit_status = pstdout.channel.recv_exit_status()
-                logger.debug(f"exit_status = {exit_status}")
-                stdout, stderr = str(pstdout.read().decode("utf-8").strip()), str(
-                    pstderr.read().decode("utf-8").strip()
+        for ii in range(retry):
+            try:
+                proc = subprocess.run(
+                    command_r,
+                    shell=True,
+                    stdout=PIPE,
+                    stderr=PIPE,
+                    text=True,
+                    timeout=timeout,
+                    cwd=execute_dir,
                 )
+                logger.debug(
+                    f"subprocess is successful (ii={ii}). break the loop"
+                )
+                exit_status = proc.returncode
+                stdout = proc.stdout
+                stderr = proc.stderr
+                logger.debug(f"exit_status={exit_status}")
+                break
+            except subprocess.TimeoutExpired:
+                logger.warning(
+                    f"subprocess is timeout (ii={ii}). iterate the loop."
+                )
+                exit_status = 99
+                stdout = None
+                stderr = None
+            logger.warning("wait 60 secs.")
+            time.sleep(60)
 
-                if exit_status == 0:
-                    logger.debug(f"command_r={command_r} was successful.")
-                    logger.debug(f"stdout={stdout}")
-                    logger.debug(f"stderr={stderr}")
-                    break
-                else:
-                    logger.error(f"command_r={command_r} failed.")
-                    logger.error(f"stdout={stdout}")
-                    logger.error(f"stderr={stderr}")
-                    raise ValueError
+        if exit_status == 0:
+            # success run_command
+            logger.debug(f"stdout = {stdout}")
+            logger.debug(f"stderr = {stderr}")
+            logger.debug(f"exit_status = {exit_status}")
+        else:
+            # failure run_command
+            logger.warning(f"stdout = {stdout}")
+            logger.warning(f"stderr = {stderr}")
+            logger.warning(f"exit_status = {exit_status}")
+            logger.warning(f"command={command_r} did not work.")
+            logger.error("Something wrong in run_command!!")
+            raise RuntimeError(f"_run_command_local failed: status={exit_status}")
 
         return stdout, stderr
+
+    def _run_command_remote(self, command, execute_dir=None):
+        if execute_dir is None:
+            command_r = f"{command}"
+        else:
+            self.ssh_open()
+            fileattr = self.sftp.lstat(execute_dir)
+            if not stat.S_ISDIR(fileattr.st_mode):
+                logger.error(
+                    f"{execute_dir} is not found on the remote machine."
+                )
+                raise FileNotFoundError
+            command_r = f"cd {execute_dir} && {command}"
+
+        # command_r=timeout_command(command=command_r)
+        logger.debug(f"command = {command_r} in run_command")
+
+        self.ssh_open()
+        logger.debug(f"command_r={command_r}")
+
+        _, pstdout, pstderr = self.ssh.exec_command(command=command_r)
+        exit_status = pstdout.channel.recv_exit_status()
+        logger.debug(f"exit_status = {exit_status}")
+
+        stdout = str(pstdout.read().decode("utf-8").strip())
+        stderr = str(pstderr.read().decode("utf-8").strip())
+
+        if exit_status == 0:
+            logger.debug(f"command_r={command_r} was successful.")
+            logger.debug(f"stdout={stdout}")
+            logger.debug(f"stderr={stderr}")
+        else:
+            logger.error(f"command_r={command_r} failed.")
+            logger.error(f"stdout={stdout}")
+            logger.error(f"stderr={stderr}")
+            raise RuntimeError(f"_run_command_remort failed: status={exit_status}")
+
+        return stdout, stderr
+
+    def run_command(self, command, execute_dir=None):
+        if self.machine_type == "local":
+            return self._run_command_local(command, execute_dir)
+        else:
+            return self._run_command_remote(command, execute_dir)
 
     def is_file(self, file_name):
         if not pathlib.Path(file_name).is_absolute():
