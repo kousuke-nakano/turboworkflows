@@ -29,9 +29,10 @@ logger = getLogger("Turbo-Workflows").getChild(__name__)
 
 
 class Machine:
-
     ssh_retry_time = 120
     ssh_retry_max_num = 10
+    ssh_io_max_retries = 3
+    ssh_io_timeout_sec = 5.0
 
     def __init__(self, machine):
         self.machine_info_yaml = os.path.join(
@@ -165,10 +166,7 @@ class Machine:
         logger.info(f"The closed ssh ID = {id(self.ssh)}")
         logger.info(f"The closed sftp ID = {id(self.sftp)}")
 
-        max_retries = 3
-        timeout_sec = 5.0
-
-        for attempt in range(1, max_retries + 1):
+        for attempt in range(1, self.ssh_io_max_retries + 1):
             executor = ThreadPoolExecutor(max_workers=1)
             future = executor.submit(self.ssh.close)
             try:
@@ -177,15 +175,15 @@ class Machine:
                 break
             except Exception as e:
                 logger.warning(f"SSHClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
-                if attempt < max_retries:
+                if attempt < self.ssh_io_max_retries:
                     time.sleep(1)
                 else:
-                    logger.error(f"SSHClient.close() failed after {max_retries} attempts")
+                    logger.error(f"SSHClient.close() failed after {self.ssh_io_max_retries} attempts")
                     raise ValueError('The job ends abnormally.')
             finally:
                 executor.shutdown(wait=False, cancel_futures=True)
 
-        for attempt in range(1, max_retries + 1):
+        for attempt in range(1, self.ssh_io_max_retries + 1):
             executor = ThreadPoolExecutor(max_workers=1)
             future = executor.submit(self.sftp.close)
             try:
@@ -194,10 +192,10 @@ class Machine:
                 break
             except Exception as e:
                 logger.warning(f"SFTPClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
-                if attempt < max_retries:
+                if attempt < self.ssh_io_max_retries:
                     time.sleep(1)
                 else:
-                    logger.error(f"SFTPClient.close() failed after {max_retries} attempts")
+                    logger.error(f"SFTPClient.close() failed after {self.ssh_io_max_retries} attempts")
                     raise ValueError('The job ends abnormally.')
             finally:
                 executor.shutdown(wait=False, cancel_futures=True)
@@ -210,13 +208,12 @@ class Machine:
         return "\n".join(output)
 
     def get_value(self, key):
-        try:
-            return self.data[key]
-        except KeyError:
+        if key not in data:
             logger.warning(f"{key} key is not defined in the database!!")
             # logger.error("Plz. edit the following file according to the template.")
             # logger.error(self.machine_info_yaml)
             raise KeyError
+        return self.data[key]
 
     @property
     def name(self):
@@ -417,38 +414,30 @@ class Machine:
             logger.error(f"file_name={file_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            if os.path.isfile(file_name):
-                return True
-            else:
-                return False
+            return os.path.isfile(file_name):
+
         else:
-            max_retries = 3
-            timeout_sec = 5.0
-            
             self.ssh_open()
-            for attempt in range(1, max_retries + 1):
+            for attempt in range(1, self.ssh_io_max_retries + 1):
                 # Submit the lstat call for the target file
                 executor = ThreadPoolExecutor(max_workers=1)
                 future = executor.submit(self.sftp.lstat, file_name)
                 try:
-                    # Wait up to timeout_sec seconds for lstat to complete
-                    fileattr = future.result(timeout=timeout_sec)
+                    # Wait up to self.ssh_io_timeout_sec seconds for lstat to complete
+                    fileattr = future.result(timeout=self.ssh_io_timeout_sec)
                     logger.info(f"SFTP lstat for file succeeded on attempt {attempt}")
                     break
                 except Exception as e:
                     logger.warning(f"SFTP lstat for file attempt {attempt} with {e.__class__.__name__}: {e}")
-                    if attempt < max_retries:
+                    if attempt < self.ssh_io_max_retries:
                         time.sleep(1)  # Wait briefly before retrying
                     else:
-                        logger.error(f"SFTP lstat for file failed after {max_retries} attempts")
+                        logger.error(f"SFTP lstat for file failed after {self.ssh_io_max_retries} attempts")
                         raise RuntimeError(f"Could not lstat file '{file_name}' via SFTP")
                 finally:
                     executor.shutdown(wait=False, cancel_futures=True) 
             # Check whether the path refers to a regular file
-            if stat.S_ISREG(fileattr.st_mode):
-                return True
-            else:
-                return False
+            return stat.S_ISREG(fileattr.st_mode):
 
     def is_dir(self, dir_name):
         logger.debug(f"check if dir={dir_name} exists.")
@@ -456,38 +445,28 @@ class Machine:
             logger.error(f"dir_name={dir_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            if os.path.isdir(dir_name):
-                return True
-            else:
-                return False
-        else:
-            # Configure timeout and retry parameters for SFTP lstat
-            max_retries = 3
-            timeout_sec = 5.0
-            
-            self.ssh_open()
+            return os.path.isdir(dir_name):
 
-            for attempt in range(1, max_retries + 1):
+        else:
+            self.ssh_open()
+            for attempt in range(1, self.ssh_io_max_retries + 1):
                 executor = ThreadPoolExecutor(max_workers=1)
                 future = executor.submit(self.sftp.lstat, dir_name)
                 try:
-                    fileattr = future.result(timeout=timeout_sec)
+                    fileattr = future.result(timeout=self.ssh_io_timeout_sec)
                     logger.info(f"SFTP lstat succeeded on attempt {attempt}")
                     break
                 except Exception as e:
                     logger.warning(f"SFTP lstat attempt {attempt} with {e.__class__.__name__}: {e}")
-                    if attempt < max_retries:
+                    if attempt < self.ssh_io_max_retries:
                         time.sleep(1)  # Wait briefly before retrying
                     else:
-                        logger.error(f"SFTP lstat failed after {max_retries} attempts")
+                        logger.error(f"SFTP lstat failed after {self.ssh_io_max_retries} attempts")
                         raise RuntimeError(f"Could not lstat '{dir_name}' via SFTP")
                 finally:
                     executor.shutdown(wait=False, cancel_futures=True) 
             # Determine if the path is a directory
-            if stat.S_ISDIR(fileattr.st_mode):
-                return True
-            else:
-                return False
+            return stat.S_ISDIR(fileattr.st_mode):
 
     def exist(self, object_name):
         logger.debug(f"check if file or dir={object_name} exists on {self.name}.")
@@ -495,40 +474,29 @@ class Machine:
             logger.error(f"dir_name={object_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            if os.path.exists(object_name):
-                return True
-            else:
-                return False
+            return os.path.exists(object_name):
+
         else:
-            # Configure timeout and retry parameters for SFTP lstat on an arbitrary object
-            max_retries = 3
-            timeout_sec = 5.0
-            
             self.ssh_open()
-            for attempt in range(1, max_retries + 1):
+            for attempt in range(1, self.ssh_io_max_retries + 1):
                 executor = ThreadPoolExecutor(max_workers=1)
                 future = executor.submit(self.sftp.lstat, object_name)
                 try:
-                    # Wait up to timeout_sec seconds for lstat to complete
-                    fileattr = future.result(timeout=timeout_sec)
+                    # Wait up to self.ssh_io_timeout_sec seconds for lstat to complete
+                    fileattr = future.result(timeout=self.ssh_io_timeout_sec)
                     logger.info(f"SFTP lstat for object succeeded on attempt {attempt}")
                     break
                 except Exception as e:
                     logger.warning(f"SFTP lstat for object attempt {attempt} with {e.__class__.__name__}: {e}")
-                    if attempt < max_retries:
+                    if attempt < self.ssh_io_max_retries:
                         time.sleep(1)  # Wait briefly before retrying
                     else:
-                        logger.error(f"SFTP lstat for object failed after {max_retries} attempts")
+                        logger.error(f"SFTP lstat for object failed after {self.ssh_io_max_retries} attempts")
                         raise RuntimeError(f"Could not lstat '{object_name}' via SFTP")
                 finally:
                     executor.shutdown(wait=False, cancel_futures=True) 
             # Check whether the object is a directory or a regular file
-            if stat.S_ISDIR(fileattr.st_mode):
-                return True
-            elif stat.S_ISREG(fileattr.st_mode):
-                return True
-            else:
-                return False
+            return stat.S_ISDIR(fileattr.st_mode) or stat.S_ISREG(fileattr.st_mode)
 
     def is_alive(self):
         # logger.info("wait 1 sec.")
