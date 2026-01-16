@@ -69,135 +69,143 @@ class Machine:
         self.ssh_status = False
     
     def ssh_open(self):
-        if self.machine_type == "remote":
-            if not self.ssh_status:
-                rw = random.randint(3, 6)
-                logger.info(
-                    f"wait {rw} secs before opening a new ssh connection to the remote machine."
-                )
-                time.sleep(rw)
-                #await asyncio.sleep(rw)
-                logger.info("A ssh connection will being established by paramiko module.")
-                ssh_config = paramiko.SSHConfig()
-                try:
-                    config_file = os.path.join(os.getenv("HOME"), ".ssh/config")
-                    ssh_config.parse(open(config_file, "r"))
-                except FileNotFoundError:
-                    logger.error(
-                        f"TurboWorkflows needs the ssh config file ({config_file})"
+        if self.machine_type == "local":
+            logger.debug("ssh_open: do nothing for local machine")
+            return
+
+        if self.ssh_status:
+            logger.info(
+                "The ssh connection is already established using paramiko module."
+            )
+            logger.info(f'The opened ssh ID = {id(self.ssh)}')
+            logger.info(f'The opened sftp ID = {id(self.sftp)}')
+            logger.debug(f"self.ssh_status = {self.ssh_status}")
+            return
+
+        rw = random.randint(3, 6)
+        logger.info(
+            f"wait {rw} secs before opening a new ssh connection to the remote machine."
+        )
+        time.sleep(rw)
+        #await asyncio.sleep(rw)
+        logger.info("A ssh connection will being established by paramiko module.")
+        ssh_config = paramiko.SSHConfig()
+        try:
+            config_file = os.path.join(os.getenv("HOME"), ".ssh/config")
+            ssh_config.parse(open(config_file, "r"))
+        except FileNotFoundError:
+            logger.error(
+                f"TurboWorkflows needs the ssh config file ({config_file})"
+            )
+        lkup = ssh_config.lookup(self.__name)
+
+        hostname = lkup["hostname"]
+        username = lkup["user"]
+        key_filename = lkup.get("identityfile")
+
+        logger.debug(f"paramiko ssh hostname = {hostname}")
+        logger.debug(f"paramiko ssh username = {username}")
+        logger.debug(f"paramiko ssh key_filename = {key_filename}")
+
+        try:
+            proxy_command = lkup["proxycommand"]
+            logger.debug(f"paramiko ssh proxy-command = {proxy_command}")
+            proxy_flag = True
+        except KeyError:
+            proxy_flag = False
+
+        self.username = username
+        self.ssh = paramiko.SSHClient()
+        self.ssh.load_system_host_keys()
+        for tt in range(self.ssh_retry_max_num):
+            try:
+                if proxy_flag:
+                    self.ssh.connect(
+                        hostname=hostname,
+                        username=username,
+                        key_filename=key_filename,
+                        sock=paramiko.ProxyCommand(proxy_command),
                     )
-                lkup = ssh_config.lookup(self.__name)
-
-                hostname = lkup["hostname"]
-                username = lkup["user"]
-                key_filename = lkup.get("identityfile")
-
-                logger.debug(f"paramiko ssh hostname = {hostname}")
-                logger.debug(f"paramiko ssh username = {username}")
-                logger.debug(f"paramiko ssh key_filename = {key_filename}")
-
-                try:
-                    proxy_command = lkup["proxycommand"]
-                    logger.debug(f"paramiko ssh proxy-command = {proxy_command}")
-                    proxy_flag = True
-                except KeyError:
-                    proxy_flag = False
-
-                self.username = username
-                self.ssh = paramiko.SSHClient()
-                self.ssh.load_system_host_keys()
-                for tt in range(self.ssh_retry_max_num):
-                    try:
-                        if proxy_flag:
-                            self.ssh.connect(
-                                hostname=hostname,
-                                username=username,
-                                key_filename=key_filename,
-                                sock=paramiko.ProxyCommand(proxy_command),
-                            )
-                        else:
-                            self.ssh.connect(
-                                hostname=hostname,
-                                username=username,
-                                key_filename=key_filename,
-                            )
-                        logger.info(f"Opening a new ssh connection using paramiko is successful with attempt = {tt+1}.")
-                        break
-                    except paramiko.ssh_exception.SSHException:
-                        logger.warning(
-                            f"Opening a new ssh connection using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial."
-                        )
-                        time.sleep(self.ssh_retry_time)
-
-                    if tt == self.ssh_retry_max_num - 1:
-                        logger.error(
-                            f"Opening a new ssh connection using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials"
-                        )
-                        raise paramiko.SSHException
-                
-                self.sftp = self.ssh.open_sftp()
-                logger.info(f'Opened ssh ID = {id(self.ssh)}')
-                logger.info(f'The opened sftp ID = {id(self.sftp)}')
-                self.ssh_status = True
-
-            else:
-                logger.info(
-                    "The ssh connection is already established using paramiko module."
+                else:
+                    self.ssh.connect(
+                        hostname=hostname,
+                        username=username,
+                        key_filename=key_filename,
+                    )
+                logger.info(f"Opening a new ssh connection using paramiko is successful with attempt = {tt+1}.")
+                break
+            except paramiko.ssh_exception.SSHException:
+                logger.warning(
+                    f"Opening a new ssh connection using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial."
                 )
-                logger.info(f'The opened ssh ID = {id(self.ssh)}')
-                logger.info(f'The opened sftp ID = {id(self.sftp)}')
-                logger.debug(f"self.ssh_status = {self.ssh_status}")
+                time.sleep(self.ssh_retry_time)
+
+        else:
+            logger.error(
+                f"Opening a new ssh connection using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials"
+            )
+            raise paramiko.SSHException
+
+        self.sftp = self.ssh.open_sftp()
+        logger.info(f'Opened ssh ID = {id(self.ssh)}')
+        logger.info(f'The opened sftp ID = {id(self.sftp)}')
+        self.ssh_status = True
 
     def ssh_close(self):
-        if self.machine_type == "remote":
-            logger.debug(f"self.ssh_status = {self.ssh_status}")
-            if self.ssh_status:
-                logger.info("The ssh connection will be closed using paramiko module.")
-                logger.info(f"The closed ssh ID = {id(self.ssh)}")
-                logger.info(f"The closed sftp ID = {id(self.sftp)}")
+        if self.machine_type == "local":
+            logger.debug("ssh_close: do nothing for local machine")
+            return
 
-                max_retries = 3
-                timeout_sec = 5.0
-                
-                for attempt in range(1, max_retries + 1):
-                    executor = ThreadPoolExecutor(max_workers=1)
-                    future = executor.submit(self.ssh.close)
-                    try:
-                        future.result(timeout=timeout_sec)
-                        logger.info(f"SSHClient.close() succeeded on attempt {attempt}")
-                        break
-                    except Exception as e:
-                        logger.warning(f"SSHClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
-                        if attempt < max_retries:
-                            time.sleep(1)  # ãªãã©ã¤åã®åæ
-                        else:
-                            logger.error(f"SSHClient.close() failed after {max_retries} attempts")
-                            raise ValueError('The job ends abnormally.')
-                    finally:
-                        executor.shutdown(wait=False, cancel_futures=True)
-                
-                for attempt in range(1, max_retries + 1):
-                    executor = ThreadPoolExecutor(max_workers=1)
-                    future = executor.submit(self.sftp.close)
-                    try:
-                        future.result(timeout=timeout_sec)
-                        logger.info(f"SFTPClient.close() succeeded on attempt {attempt}")
-                        break
-                    except Exception as e:
-                        logger.warning(f"SFTPClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
-                        if attempt < max_retries:
-                            time.sleep(1)
-                        else:
-                            logger.error(f"SFTPClient.close() failed after {max_retries} attempts")
-                            raise ValueError('The job ends abnormally.')
-                    finally:
-                        executor.shutdown(wait=False, cancel_futures=True)
-                del self.ssh
-                del self.sftp
-                self.ssh_status = False
+        logger.debug(f"self.ssh_status = {self.ssh_status}")
+        if not self.ssh.status:
+            logger.debug("ssh_close: connection not established")
+            return
+
+        logger.info("The ssh connection will be closed using paramiko module.")
+        logger.info(f"The closed ssh ID = {id(self.ssh)}")
+        logger.info(f"The closed sftp ID = {id(self.sftp)}")
+
+        max_retries = 3
+        timeout_sec = 5.0
+
+        for attempt in range(1, max_retries + 1):
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(self.ssh.close)
+            try:
+                future.result(timeout=timeout_sec)
+                logger.info(f"SSHClient.close() succeeded on attempt {attempt}")
+                break
+            except Exception as e:
+                logger.warning(f"SSHClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
+                if attempt < max_retries:
+                    time.sleep(1)
+                else:
+                    logger.error(f"SSHClient.close() failed after {max_retries} attempts")
+                    raise ValueError('The job ends abnormally.')
+            finally:
+                executor.shutdown(wait=False, cancel_futures=True)
+
+        for attempt in range(1, max_retries + 1):
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(self.sftp.close)
+            try:
+                future.result(timeout=timeout_sec)
+                logger.info(f"SFTPClient.close() succeeded on attempt {attempt}")
+                break
+            except Exception as e:
+                logger.warning(f"SFTPClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
+                if attempt < max_retries:
+                    time.sleep(1)
+                else:
+                    logger.error(f"SFTPClient.close() failed after {max_retries} attempts")
+                    raise ValueError('The job ends abnormally.')
+            finally:
+                executor.shutdown(wait=False, cancel_futures=True)
+        del self.ssh
+        del self.sftp
+        self.ssh_status = False
 
     def __str__(self):
-
         output = [f"Machine obj. {self.name}"]
         return "\n".join(output)
 
