@@ -154,7 +154,7 @@ class Machine:
             return
 
         logger.debug(f"self.ssh_status = {self.ssh_status}")
-        if not self.ssh.status:
+        if not self.ssh_status:
             logger.debug("ssh_close: connection not established")
             return
 
@@ -166,7 +166,7 @@ class Machine:
             executor = ThreadPoolExecutor(max_workers=1)
             future = executor.submit(self.ssh.close)
             try:
-                future.result(timeout=ssh_io_timeout_sec)
+                future.result(timeout=self.ssh_io_timeout_sec)
                 logger.info(f"SSHClient.close() succeeded on attempt {attempt}")
                 break
             except Exception as e:
@@ -183,7 +183,7 @@ class Machine:
             executor = ThreadPoolExecutor(max_workers=1)
             future = executor.submit(self.sftp.close)
             try:
-                future.result(timeout=ssh_io_timeout_sec)
+                future.result(timeout=self.ssh_io_timeout_sec)
                 logger.info(f"SFTPClient.close() succeeded on attempt {attempt}")
                 break
             except Exception as e:
