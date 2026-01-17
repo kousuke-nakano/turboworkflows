@@ -93,85 +93,10 @@ class Monitor:
 
         current = os.path.basename(path)
 
-        if layer == 0:
-            if not is_job_path(path):
+        if not is_job_path(path):
+            if layer == 0:
                 logger.info("<" + current + "> <--- current dir")
             else:
-                job_pkl_list = glob.glob(os.path.join(path, "job_manager*.pkl"))
-                job_pkl_list.sort()
-                jobid_same_dir_list = []
-                for ii, job_manager_pkl_file in enumerate(job_pkl_list):
-                    match = re.search(
-                        r"job_manager_(\d+)\.pkl",
-                        os.path.basename(job_manager_pkl_file),
-                    )
-                    if match:
-                        genius_index = int(match.group(1))
-                        file_pattern = os.path.join(
-                            path, f"*_genius_{genius_index}.pkl"
-                        )
-                    else:
-                        file_pattern = os.path.join(path, "*_genius.pkl")
-
-                    genius_pkl_file_list = glob.glob(file_pattern)
-                    if not genius_pkl_file_list:
-                        logger.debug(f'file not found: {file_pattern}')
-                        genius_pkl_file = None
-                    else:
-                        genius_pkl_file = genius_pkl_file_list[0]
-
-                    with open(job_manager_pkl_file, "rb") as f:
-                        job_handler = pickle.load(f)
-                        server_machine_name = job_handler.server_machine.name
-                        job_number = job_handler.job_number
-                        job_running = job_handler.job_running
-
-                        if genius_pkl_file is None:
-                            job_comment = "is in queue"
-                        elif job_running:
-                            job_comment = "is running"
-                        else:
-                            job_comment = "is done"
-                        if ii == 0:
-                            logger.info(
-                                "<{dirname}>-{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
-                                    dirname=current,
-                                    job_comment=job_comment,
-                                    server_machine_name=server_machine_name,
-                                    job_number=job_number,
-                                    job_index=self.job_list_conter,
-                                    genius_pkl_file=os.path.basename(genius_pkl_file) if genius_pkl_file else None,
-                                )
-                            )
-                        else:
-                            if ii == len(
-                                glob.glob(os.path.join(path, "job_manager*.pkl"))
-                            ):
-                                branch = "├"
-                            else:
-                                branch = "└"
-                            logger.info(
-                                "{indent}{branch}{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
-                                    indent="　" * (len(current) + 2),
-                                    branch=branch,
-                                    job_comment=job_comment,
-                                    server_machine_name=server_machine_name,
-                                    job_number=job_number,
-                                    job_index=self.job_list_conter,
-                                    genius_pkl_file=os.path.basename(genius_pkl_file) if genius_pkl_file else None,
-                                )
-                            )
-
-                        jobid_same_dir_list.append(self.job_list_conter)
-                        self.job_pkl_list.append(job_manager_pkl_file)
-                        self.genius_pkl_list.append(genius_pkl_file)
-                        self.job_dir_list.append(path)
-                        self.job_list_conter += 1
-
-                self.jobid_same_dir_dict[path] = jobid_same_dir_list
-        else:
-            #branch = "└" if is_last else "├"
-            if not is_job_path(path):
                 job_pkl_list = glob.glob(f"{path}/**/job_manager*.pkl", recursive=True)
                 job_pkl_list.sort()
                 if len(job_pkl_list) != 0:
@@ -183,77 +108,72 @@ class Monitor:
                             dirname=current,
                         )
                     )
-            else:
-                jobid_same_dir_list = []
-                job_pkl_list = glob.glob(os.path.join(path, "job_manager*.pkl"))
-                job_pkl_list.sort()
-                for kk, job_manager_pkl_file in enumerate(job_pkl_list):
-                    is_last_item = True if kk == len(job_pkl_list) - 1 else False
-                    match = re.search(
-                        r"job_manager_(\d+)\.pkl",
-                        os.path.basename(job_manager_pkl_file),
+        else:
+            jobid_same_dir_list = []
+            job_pkl_list = glob.glob(os.path.join(path, "job_manager*.pkl"))
+            job_pkl_list.sort()
+            for ii, job_manager_pkl_file in enumerate(job_pkl_list):
+                is_last_item = True if ii == len(job_pkl_list) - 1 else False
+                match = re.search(
+                    r"job_manager_(\d+)\.pkl",
+                    os.path.basename(job_manager_pkl_file),
+                )
+                if match:
+                    genius_index = int(match.group(1))
+                    file_pattern = os.path.join(
+                        path, f"*_genius_{genius_index}.pkl"
                     )
-                    if match:
-                        genius_index = int(match.group(1))
-                        file_pattern = os.path.join(
-                            path, f"*_genius_{genius_index}.pkl"
-                        )
-                    else:
-                        file_pattern = os.path.join(path, "*_genius.pkl")
+                else:
+                    file_pattern = os.path.join(path, "*_genius.pkl")
 
-                    genius_pkl_file_list = glob.glob(file_pattern)
-                    if not genius_pkl_file_list:
-                        logger.debug(f'file not found: {file_pattern}')
-                        genius_pkl_file = None
-                    else:
-                        genius_pkl_file = genius_pkl_file_list[0]
+                genius_pkl_file_list = glob.glob(file_pattern)
+                if not genius_pkl_file_list:
+                    logger.debug(f'file not found: {file_pattern}')
+                    genius_pkl_file = None
+                else:
+                    genius_pkl_file = genius_pkl_file_list[0]
 
-                    with open(job_manager_pkl_file, "rb") as f:
-                        job_handler = pickle.load(f)
-                        server_machine_name = job_handler.server_machine.name
-                        job_number = job_handler.job_number
-                        job_running = job_handler.job_running
+                with open(job_manager_pkl_file, "rb") as f:
+                    job_handler = pickle.load(f)
+                    server_machine_name = job_handler.server_machine.name
+                    job_number = job_handler.job_number
+                    job_running = job_handler.job_running
 
-                        if genius_pkl_file is None:
-                            job_comment = "is in queue"
-                        elif job_running:
-                            job_comment = "is running"
-                        else:
-                            job_comment = "is done"
+                if genius_pkl_file is None:
+                    job_comment = "is in queue"
+                elif job_running:
+                    job_comment = "is running"
+                else:
+                    job_comment = "is done"
 
-                        branch = "└" if is_last and is_last_item else "├"
+                if layer == 0 and ii == 0:
+                    indent = ""
+                    branch = ""
+                else:
+                    indent = " " * (len(current) + 2) if layer == 0 else indent_current
+                    branch = "└" if (is_last or layer == 0) and is_last_item else "├"
 
-                        logger.info(
-                            "{indent}{branch}<{dirname}>-{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
-                                indent=indent_current,
-                                branch=branch,
-                                dirname=current,
-                                job_comment=job_comment,
-                                server_machine_name=server_machine_name,
-                                job_number=job_number,
-                                job_index=self.job_list_conter,
-                                genius_pkl_file=os.path.basename(genius_pkl_file) if genius_pkl_file else None,
-                            )
-                        )
+                logger.info(
+                    "{indent}{branch}<{dirname}>-{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
+                        indent=indent,
+                        branch=branch,
+                        dirname=current,
+                        job_comment=job_comment,
+                        server_machine_name=server_machine_name,
+                        job_number=job_number,
+                        job_index=self.job_list_conter,
+                        genius_pkl_file=os.path.basename(genius_pkl_file) if genius_pkl_file else None,
+                    )
+                )
 
-                        jobid_same_dir_list.append(self.job_list_conter)
-                        self.job_pkl_list.append(job_manager_pkl_file)
-                        self.job_dir_list.append(path)
-                        self.genius_pkl_list.append(genius_pkl_file)
+                jobid_same_dir_list.append(self.job_list_conter)
+                self.job_pkl_list.append(job_manager_pkl_file)
+                self.genius_pkl_list.append(genius_pkl_file)
+                self.job_dir_list.append(path)
+                self.job_list_conter += 1
 
-                        self.job_list_conter += 1
+            self.jobid_same_dir_dict[path] = jobid_same_dir_list
 
-                self.jobid_same_dir_dict[path] = jobid_same_dir_list
-
-        # paths = sorted(
-        #     [p for p in glob.glob(path + "/*") if os.path.isdir(p) or os.path.isfile(p)]
-        # )
-        # logger.debug(f"paths={paths}")
-
-        # paths = [
-        #     p for p in paths if glob.glob(f"{p}/**/job_manager*.pkl", recursive=True)
-        # ]
-        # logger.debug(f"paths={paths}")
         paths = sorted([
             p for p in glob.glob(path + "/*") if os.path.isdir(p) and glob.glob(f"{p}/**/job_manager*.pkl", recursive=True)
         ])
