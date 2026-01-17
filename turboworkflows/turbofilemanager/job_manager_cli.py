@@ -170,11 +170,12 @@ class Monitor:
 
                 self.jobid_same_dir_dict[path] = jobid_same_dir_list
         else:
-            branch = "└" if is_last else "├"
+            #branch = "└" if is_last else "├"
             if not is_job_path(path):
                 job_pkl_list = glob.glob(f"{path}/**/job_manager*.pkl", recursive=True)
                 job_pkl_list.sort()
                 if len(job_pkl_list) != 0:
+                    branch = "└" if is_last else "├"
                     logger.info(
                         "{indent}{branch}<{dirname}>".format(
                             indent=indent_current,
@@ -187,6 +188,7 @@ class Monitor:
                 job_pkl_list = glob.glob(os.path.join(path, "job_manager*.pkl"))
                 job_pkl_list.sort()
                 for kk, job_manager_pkl_file in enumerate(job_pkl_list):
+                    is_last_item = True if kk == len(job_pkl_list) - 1 else False
                     match = re.search(
                         r"job_manager_(\d+)\.pkl",
                         os.path.basename(job_manager_pkl_file),
@@ -219,6 +221,8 @@ class Monitor:
                         else:
                             job_comment = "is done"
 
+                        branch = "└" if is_last and is_last_item else "├"
+
                         logger.info(
                             "{indent}{branch}<{dirname}>-{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
                                 indent=indent_current,
@@ -241,21 +245,24 @@ class Monitor:
 
                 self.jobid_same_dir_dict[path] = jobid_same_dir_list
 
-        paths = sorted(
-            [p for p in glob.glob(path + "/*") if os.path.isdir(p) or os.path.isfile(p)]
-        )
-        logger.debug(f"paths={paths}")
+        # paths = sorted(
+        #     [p for p in glob.glob(path + "/*") if os.path.isdir(p) or os.path.isfile(p)]
+        # )
+        # logger.debug(f"paths={paths}")
 
-        paths = [
-            p for p in paths if glob.glob(f"{p}/**/job_manager*.pkl", recursive=True)
-        ]
+        # paths = [
+        #     p for p in paths if glob.glob(f"{p}/**/job_manager*.pkl", recursive=True)
+        # ]
+        # logger.debug(f"paths={paths}")
+        paths = sorted([
+            p for p in glob.glob(path + "/*") if os.path.isdir(p) and glob.glob(f"{p}/**/job_manager*.pkl", recursive=True)
+        ])
         logger.debug(f"paths={paths}")
 
         def is_last_path(i):
             return i == len(paths) - 1
 
         for i, p in enumerate(paths):
-
             indent_lower = indent_current
             if layer != 0:
                 indent_lower += "　　" if is_last else "│　"
