@@ -664,49 +664,35 @@ class Machines_handler:
 
         if not to_machine.is_dir(dir_name=to_dir):
             logger.error(f"{to_dir} is not created.")
-            raise FileNotFoundError
+            raise RuntimeError
 
         if from_machine.machine_type == "local" and to_machine.machine_type == "local":
             logger.debug("No data transfer is needed.")
-        elif (
-            from_machine.machine_type == "local" and to_machine.machine_type == "remote"
-        ) or (
-            from_machine.machine_type == "remote" and to_machine.machine_type == "local"
-        ):
+
+        elif (from_machine.machine_type == "local" and to_machine.machine_type == "remote"):
             logger.info(f"From:: {from_object}")
             logger.info(f"To:: {to_object}")
 
-            # file transfer
-            if (
-                from_machine.machine_type == "local"
-                and to_machine.machine_type == "remote"
-            ):  # local -> remote
-                logger.info(
-                    f"Transfer data from local machine ({from_machine.name}) to remote machine ({to_machine.name}) using paramiko."
-                )
-                if dir_transfer:  # dir
-                    self.put_sftp_dir(
-                        from_object, to_object, exclude_patterns=exclude_patterns
-                    )
-                else:  # file
-                    self.put_sftp_file(
-                        from_object, to_object, exclude_patterns=exclude_patterns
-                    )
+            # local -> remote
+            logger.info(f"Transfer data from local machine ({from_machine.name}) to remote machine ({to_machine.name}) using paramiko.")
+            if dir_transfer:  # dir
+                self.put_sftp_dir(from_object, to_object, exclude_patterns=exclude_patterns)
+            else:  # file
+                self.put_sftp_file(from_object, to_object, exclude_patterns=exclude_patterns)
 
-            else:  # remote -> local
-                logger.info(
-                    f"Transfer data from remote machine ({from_machine.name}) to local machine ({to_machine.name}) using paramiko."
-                )
-                if dir_transfer:  # dir
-                    self.get_sftp_dir(
-                        from_object, to_object, exclude_patterns=exclude_patterns
-                    )
-                else:  # file
-                    self.get_sftp_file(
-                        from_object, to_object, exclude_patterns=exclude_patterns
-                    )
+        elif (from_machine.machine_type == "remote" and to_machine.machine_type == "local"):
+            logger.info(f"From:: {from_object}")
+            logger.info(f"To:: {to_object}")
+
+            # remote -> local
+            logger.info(f"Transfer data from remote machine ({from_machine.name}) to local machine ({to_machine.name}) using paramiko.")
+            if dir_transfer:  # dir
+                self.get_sftp_dir(from_object, to_object, exclude_patterns=exclude_patterns)
+            else:  # file
+                self.get_sftp_file(from_object, to_object, exclude_patterns=exclude_patterns)
 
         else:
+            logger.error("Transfer data from remote machine to remote machine is not supported.")
             raise NotImplementedError
 
 
