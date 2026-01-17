@@ -152,7 +152,7 @@ class Monitor:
                                 branch = "└"
                             logger.info(
                                 "{indent}{branch}{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
-                                    indent=" " * (len(current) + 2),
+                                    indent="　" * (len(current) + 2),
                                     branch=branch,
                                     job_comment=job_comment,
                                     server_machine_name=server_machine_name,
