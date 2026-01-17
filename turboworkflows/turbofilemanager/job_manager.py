@@ -307,7 +307,7 @@ class Job_submission:
                     ) = self.server_machine.run_command(
                         command=command, execute_dir=server_dir
                     )
-                    logger.debug(stderr.split())
+                    logger.debug(f"stderr={stderr.split()}")
                     if not stdout:
                         logger.error(f"Empty stdout on command!!")
                         logger.error(f'stdout = {stdout}')
