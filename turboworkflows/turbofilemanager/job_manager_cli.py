@@ -93,82 +93,14 @@ class Monitor:
 
         current = os.path.basename(path)
 
-        if layer == 0:
-            if not is_job_path(path):
+        if not is_job_path(path):
+            if layer == 0:
                 logger.info("<" + current + "> <--- current dir")
             else:
-                job_pkl_list = glob.glob(os.path.join(path, "job_manager*.pkl"))
-                job_pkl_list.sort()
-                jobid_same_dir_list = []
-                for ii, job_manager_pkl_file in enumerate(job_pkl_list):
-                    match = re.search(
-                        r"job_manager_(\d+)\.pkl",
-                        os.path.basename(job_manager_pkl_file),
-                    )
-                    if match:
-                        genius_index = int(match.group(1))
-                        file_pattern = os.path.join(
-                            path, f"*_genius_{genius_index}.pkl"
-                        )
-                    else:
-                        file_pattern = os.path.join(path, "*_genius.pkl")
-                    genius_pkl_file_list = glob.glob(file_pattern)
-                    if not len(genius_pkl_file_list) != 0:
-                        raise ValueError
-                    genius_pkl_file = genius_pkl_file_list[0]
-
-                    with open(job_manager_pkl_file, "rb") as f:
-                        job_handler = pickle.load(f)
-                        server_machine_name = job_handler.server_machine.name
-                        job_number = job_handler.job_number
-                        job_running = job_handler.job_running
-                        if job_running:
-                            job_comment = "is running"
-                        else:
-                            job_comment = "is done"
-                        if ii == 0:
-                            logger.info(
-                                "<{dirname}>-{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
-                                    dirname=current,
-                                    job_comment=job_comment,
-                                    server_machine_name=server_machine_name,
-                                    job_number=job_number,
-                                    job_index=self.job_list_conter,
-                                    genius_pkl_file=os.path.basename(genius_pkl_file),
-                                )
-                            )
-                        else:
-                            if ii == len(
-                                glob.glob(os.path.join(path, "job_manager*.pkl"))
-                            ):
-                                branch = "├"
-                            else:
-                                branch = "└"
-                            logger.info(
-                                "{indent}{branch}{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
-                                    indent=" " * (len(current) + 2),
-                                    branch=branch,
-                                    job_comment=job_comment,
-                                    server_machine_name=server_machine_name,
-                                    job_number=job_number,
-                                    job_index=self.job_list_conter,
-                                    genius_pkl_file=os.path.basename(genius_pkl_file),
-                                )
-                            )
-
-                        jobid_same_dir_list.append(self.job_list_conter)
-                        self.job_pkl_list.append(job_manager_pkl_file)
-                        self.genius_pkl_list.append(genius_pkl_file)
-                        self.job_dir_list.append(path)
-                        self.job_list_conter += 1
-
-                self.jobid_same_dir_dict[path] = jobid_same_dir_list
-        else:
-            branch = "└" if is_last else "├"
-            if not is_job_path(path):
                 job_pkl_list = glob.glob(f"{path}/**/job_manager*.pkl", recursive=True)
                 job_pkl_list.sort()
                 if len(job_pkl_list) != 0:
+                    branch = "└" if is_last else "├"
                     logger.info(
                         "{indent}{branch}<{dirname}>".format(
                             indent=indent_current,
@@ -176,73 +108,81 @@ class Monitor:
                             dirname=current,
                         )
                     )
-            else:
-                jobid_same_dir_list = []
-                job_pkl_list = glob.glob(os.path.join(path, "job_manager*.pkl"))
-                job_pkl_list.sort()
-                for kk, job_manager_pkl_file in enumerate(job_pkl_list):
-                    match = re.search(
-                        r"job_manager_(\d+)\.pkl",
-                        os.path.basename(job_manager_pkl_file),
+        else:
+            jobid_same_dir_list = []
+            job_pkl_list = glob.glob(os.path.join(path, "job_manager*.pkl"))
+            job_pkl_list.sort()
+            for ii, job_manager_pkl_file in enumerate(job_pkl_list):
+                is_last_item = True if ii == len(job_pkl_list) - 1 else False
+                match = re.search(
+                    r"job_manager_(\d+)\.pkl",
+                    os.path.basename(job_manager_pkl_file),
+                )
+                if match:
+                    genius_index = int(match.group(1))
+                    file_pattern = os.path.join(
+                        path, f"*_genius_{genius_index}.pkl"
                     )
-                    if match:
-                        genius_index = int(match.group(1))
-                        file_pattern = os.path.join(
-                            path, f"*_genius_{genius_index}.pkl"
-                        )
-                    else:
-                        file_pattern = os.path.join(path, "*_genius.pkl")
-                    genius_pkl_file_list = glob.glob(file_pattern)
-                    if not len(genius_pkl_file_list) != 0:
-                        logger.error("len(genius_pkl_file_list) !=0")
-                        logger.info(f"genius_pkl_file_list ={genius_pkl_file_list}")
-                        raise ValueError
+                else:
+                    file_pattern = os.path.join(path, "*_genius.pkl")
+
+                genius_pkl_file_list = glob.glob(file_pattern)
+                if not genius_pkl_file_list:
+                    logger.debug(f'file not found: {file_pattern}')
+                    genius_pkl_file = None
+                else:
                     genius_pkl_file = genius_pkl_file_list[0]
 
-                    with open(job_manager_pkl_file, "rb") as f:
-                        job_handler = pickle.load(f)
-                        server_machine_name = job_handler.server_machine.name
-                        job_number = job_handler.job_number
-                        job_running = job_handler.job_running
-                        if job_running:
-                            job_comment = "is running"
-                        else:
-                            job_comment = "is done"
-                        logger.info(
-                            "{indent}{branch}<{dirname}>-{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
-                                indent=indent_current,
-                                branch=branch,
-                                dirname=current,
-                                job_comment=job_comment,
-                                server_machine_name=server_machine_name,
-                                job_number=job_number,
-                                job_index=self.job_list_conter,
-                                genius_pkl_file=os.path.basename(genius_pkl_file),
-                            )
-                        )
+                with open(job_manager_pkl_file, "rb") as f:
+                    job_handler = pickle.load(f)
+                    server_machine_name = job_handler.server_machine.name
+                    job_number = job_handler.job_number
+                    job_running = job_handler.job_running
 
-                        jobid_same_dir_list.append(self.job_list_conter)
-                        self.job_pkl_list.append(job_manager_pkl_file)
-                        self.job_dir_list.append(path)
-                        self.genius_pkl_list.append(genius_pkl_file)
+                if genius_pkl_file is None:
+                    job_comment = "is in queue"
+                elif job_running:
+                    job_comment = "is running"
+                else:
+                    job_comment = "is done"
 
-                        self.job_list_conter += 1
+                if layer == 0 and ii == 0:
+                    indent = ""
+                    branch = ""
+                else:
+                    indent = " " * (len(current) + 2) if layer == 0 else indent_current
+                    branch = "└" if (is_last or layer == 0) and is_last_item else "├"
 
-                self.jobid_same_dir_dict[path] = jobid_same_dir_list
+                logger.info(
+                    "{indent}{branch}<{dirname}>-{job_number}({genius_pkl_file}) {job_comment} on {server_machine_name} (JOB-ID:{job_index})".format(
+                        indent=indent,
+                        branch=branch,
+                        dirname=current,
+                        job_comment=job_comment,
+                        server_machine_name=server_machine_name,
+                        job_number=job_number,
+                        job_index=self.job_list_conter,
+                        genius_pkl_file=os.path.basename(genius_pkl_file) if genius_pkl_file else None,
+                    )
+                )
 
-        paths = sorted(
-            [p for p in glob.glob(path + "/*") if os.path.isdir(p) or os.path.isfile(p)]
-        )
+                jobid_same_dir_list.append(self.job_list_conter)
+                self.job_pkl_list.append(job_manager_pkl_file)
+                self.genius_pkl_list.append(genius_pkl_file)
+                self.job_dir_list.append(path)
+                self.job_list_conter += 1
 
-        paths = [
-            p for p in paths if glob.glob(f"{p}/**/job_manager*.pkl", recursive=True)
-        ]
+            self.jobid_same_dir_dict[path] = jobid_same_dir_list
+
+        paths = sorted([
+            p for p in glob.glob(path + "/*") if os.path.isdir(p) and glob.glob(f"{p}/**/job_manager*.pkl", recursive=True)
+        ])
+        logger.debug(f"paths={paths}")
 
         def is_last_path(i):
             return i == len(paths) - 1
 
         for i, p in enumerate(paths):
-
             indent_lower = indent_current
             if layer != 0:
                 indent_lower += "　　" if is_last else "│　"
@@ -255,6 +195,171 @@ class Monitor:
                     indent_current=indent_lower,
                 )
 
+def do_show(monitor, jobid):
+    monitor.show_tree()
+    if jobid != -1:
+        monitor.show_detail(id=jobid)
+
+def do_check(monitor, jobid):
+    monitor.show_tree()
+
+    pkls = []
+    if jobid != -1:
+        pkls = [monitor.job_pkl_list[jobid]]
+    else:
+        pkls = glob.glob("job_manager*.pkl")
+
+    for pkl in pkls:
+        with open(pkl, "rb") as f:
+            submission = pickle.load(f)
+            status = submission.jobcheck()
+
+            if status:
+                logger.info(f"JobNumber {submission.job_number} is still running on {submission.server_machine.name}.")
+            else:
+                logger.info(f"JobNumber {submission.job_number} is done. Plz. fetch from {submission.server_machine.name}.")
+
+def do_del(monitor, jobid, dry_run=True):
+    monitor.show_tree()
+
+    if jobid == -1:
+        logger.info("Please specify a Job-ID you want to remove by -id JOB-ID")
+        return
+
+    if dry_run:
+        logger.info("[dry_run]")
+
+    for key, item in monitor.jobid_same_dir_dict.items():
+        if jobid in item:
+            target_dir = key
+            # jobid_same_dir_list = item
+            break
+    else:
+        logger.error(f"JOB-ID {jobid} not found.")
+        return
+
+    # no continuation genius jobs
+    if os.path.isfile(os.path.join(target_dir, "job_manager.pkl")):
+
+        logger.info(f'remove {os.path.join(target_dir, "job_manager.pkl")}')
+        if not dry_run:
+            os.remove(os.path.join(target_dir, "job_manager.pkl"))
+
+        file_pattern = os.path.join(target_dir, "*_genius.pkl")
+        genius_pkl_file_list = glob.glob(file_pattern)
+
+        for genius_pkl_file in genius_pkl_file_list:
+            logger.info(f'remove {genius_pkl_file}')
+            if not dry_run:
+                os.remove(genius_pkl_file)
+
+        if os.path.isdir(os.path.join(target_dir, "pkl")):
+            logger.info(f'remove directory {os.path.join(target_dir, "pkl")}')
+            if not dry_run:
+                shutil.rmtree(os.path.join(target_dir, "pkl"))
+
+    # continuation genius jobs
+    else:
+        if (
+            os.path.basename(monitor.job_pkl_list[jobid])
+            == "job_manager_0.pkl"
+        ):
+            logger.info("Remove all jobs!")
+
+            removed_job_pkl_file_list = glob.glob(
+                os.path.join(target_dir, "job_manager*.pkl")
+            )
+
+            removed_genius_pkl_file_list = glob.glob(
+                os.path.join(target_dir, "*_genius_*.pkl")
+            )
+
+            for removed_job_pkl_file in removed_job_pkl_file_list:
+                logger.info(f'remove {removed_job_pkl_file}')
+                if not dry_run:
+                    os.remove(removed_job_pkl_file)
+
+            for removed_genius_pkl_file in removed_genius_pkl_file_list:
+                logger.info(f'remove {removed_genius_pkl_file}')
+                if not dry_run:
+                    os.remove(removed_genius_pkl_file)
+
+            if os.path.isdir(os.path.join(target_dir, "pkl")):
+                logger.info(f'remove directory {os.path.join(target_dir, "pkl")}')
+                if not dry_run:
+                    shutil.rmtree(os.path.join(target_dir, "pkl"))
+
+        else:
+            match = re.search(
+                r"job_manager_(\d+)\.pkl",
+                os.path.basename(monitor.job_pkl_list[jobid]),
+            )
+            if match:
+                removed_genius_index = int(match.group(1))
+                logger.info(f"removed_genius_index={removed_genius_index}")
+                new_latest_genius_index = removed_genius_index - 1
+            else:
+                logger.error("not found: job_manager_(\d+)\.pkl")
+                return
+                #raise ValueError
+
+            removed_job_pkl_file_list = []
+            removed_genius_pkl_file_list = []
+
+            job_pkl_file_list = glob.glob(
+                os.path.join(target_dir, "job_manager*.pkl")
+            )
+            for job_pkl_file in job_pkl_file_list:
+                match = re.search(
+                    r"job_manager_(\d+)\.pkl",
+                    os.path.basename(job_pkl_file),
+                )
+                if match:
+                    genius_index = int(match.group(1))
+                    if genius_index >= removed_genius_index:
+                        removed_job_pkl_file_list.append(job_pkl_file)
+
+            genius_pkl_file_list = glob.glob(
+                os.path.join(target_dir, "*_genius_*.pkl")
+            )
+            for genius_pkl_file in genius_pkl_file_list:
+                match = re.search(
+                    r"(.*)_genius_(\d+)\.pkl",
+                    os.path.basename(genius_pkl_file),
+                )
+                if match:
+                    genius_prefix = str(match.group(1))
+                    genius_index = int(match.group(2))
+                    if genius_index >= removed_genius_index:
+                        removed_genius_pkl_file_list.append(genius_pkl_file)
+
+            for removed_job_pkl_file in removed_job_pkl_file_list:
+                logger.info(f'remove {removed_job_pkl_file}')
+                if not dry_run:
+                    os.remove(removed_job_pkl_file)
+
+            for removed_genius_pkl_file in removed_genius_pkl_file_list:
+                logger.info(f'remove {removed_genius_pkl_file}')
+                if not dry_run:
+                    os.remove(removed_genius_pkl_file)
+
+            if os.path.isdir(os.path.join(target_dir, "pkl")):
+
+                for removed_genius_pkl_file in removed_genius_pkl_file_list:
+                    pkl = os.path.join(target_dir, "pkl", os.path.basename(removed_genius_pkl_file))
+                    if os.path.isfile(pkl):
+                        logger.info(f'remove {pkl}')
+                        if not dry_run:
+                            os.remove(pkl)
+
+                pklsrc = os.path.join(target_dir, "pkl", f"{genius_prefix}_genius_{new_latest_genius_index}.pkl")
+                pkldst = os.path.join(target_dir, "pkl", f"{genius_prefix}_genius_latest.pkl")
+                if os.path.isfile(pklsrc):
+                    logger.info(f'copy {pklsrc} to {pkldst}')
+                    if not dry_run:
+                        shutil.copy(pklsrc, pkldst)
+
+    logger.warning(f"Deleted JOB-ID = {jobid}!!")
 
 def job_manager_cli():
     root_dir = os.getcwd()
@@ -306,6 +411,13 @@ def job_manager_cli():
     parser.add_argument(
         "-log", "--log_level", choices=["DEBUG", "INFO"], default="INFO"
     )
+    # dry_run
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Dry-run. does not actually delete pkl files.",
+    )
 
     # parse the input values
     args = parser.parse_args()
@@ -321,6 +433,7 @@ def job_manager_cli():
         handler_format = Formatter("%(message)s")
     stream_handler.setFormatter(handler_format)
     logger.addHandler(stream_handler)
+
     logger.info("--------------------------------------------------------------")
     logger.info(f"turbo-jobmanager {turbofilemanager_version}")
     logger.info(f"Start {datetime.today().strftime('%Y-%m-%d %H:%M:%S')}")
@@ -331,170 +444,13 @@ def job_manager_cli():
     monitor = Monitor(root_dir=root_dir)
 
     if args.job == "show":
-        if args.jobid == -1:
-            monitor.show_tree()
-        else:
-            monitor.show_tree()
-            monitor.show_detail(id=args.jobid)
-    else:
-        monitor.show_tree()
+        do_show(monitor, args.jobid)
 
-        if args.job == "check":
-            if args.jobid != -1:
-                with open(os.path.join(monitor.job_pkl_list[args.jobid]), "rb") as f:
-                    submission = pickle.load(f)
+    elif args.job == "check":
+        do_check(monitor, args.jobid)
 
-                    if submission.jobcheck():
-                        logger.info(
-                            f"JobNumber {submission.job_number} is still running on {submission.server_machine.name}."
-                        )
-                    else:
-                        logger.info(
-                            f"JobNumber {submission.job_number} is done. Plz. fetch from {submission.server_machine.name}."
-                        )
-            else:
-                if glob.glob("job_manager*.pkl"):
-                    for job_manager_pkl_file in glob.glob("job_manager*.pkl"):
-                        with open(job_manager_pkl_file, mode="rb") as f:
-                            submission = pickle.load(f)
-
-                    if submission.jobcheck():
-                        logger.info(
-                            f"JobNumber {submission.job_number} is still running on {submission.server_machine.name}."
-                        )
-                    else:
-                        logger.info(
-                            f"JobNumber {submission.job_number} is done. Plz. fetch from {submission.server_machine.name}."
-                        )
-
-        elif args.job == "del":
-            if args.jobid != -1:
-                for key, item in monitor.jobid_same_dir_dict.items():
-                    if args.jobid in item:
-                        target_dir = key
-                        # jobid_same_dir_list = item
-                        break
-
-                # no continuation genius jobs
-                if os.path.isfile(os.path.join(target_dir, "job_manager.pkl")):
-                    os.remove(os.path.join(target_dir, "job_manager.pkl"))
-                    file_pattern = os.path.join(target_dir, "*_genius.pkl")
-                    genius_pkl_file_list = glob.glob(file_pattern)
-                    for genius_pkl_file in genius_pkl_file_list:
-                        os.remove(genius_pkl_file)
-                    if os.path.isdir(os.path.join(target_dir, "pkl")):
-                        shutil.rmtree(os.path.join(target_dir, "pkl"))
-
-                # continuation genius jobs
-                else:
-                    if (
-                        os.path.basename(monitor.job_pkl_list[args.jobid])
-                        == "job_manager_0.pkl"
-                    ):
-                        logger.info("Remove all jobs!")
-
-                        removed_job_pkl_file_list = glob.glob(
-                            os.path.join(target_dir, "job_manager*.pkl")
-                        )
-
-                        removed_genius_pkl_file_list = glob.glob(
-                            os.path.join(target_dir, "*_genius_*.pkl")
-                        )
-
-                        for removed_job_pkl_file in removed_job_pkl_file_list:
-                            os.remove(removed_job_pkl_file)
-                        for removed_genius_pkl_file in removed_genius_pkl_file_list:
-                            os.remove(removed_genius_pkl_file)
-                        if os.path.isdir(os.path.join(target_dir, "pkl")):
-                            shutil.rmtree(os.path.join(target_dir, "pkl"))
-
-                    else:
-                        match = re.search(
-                            r"job_manager_(\d+)\.pkl",
-                            os.path.basename(monitor.job_pkl_list[args.jobid]),
-                        )
-                        if match:
-                            removed_genius_index = int(match.group(1))
-                            logger.info(f"removed_genius_index={removed_genius_index}")
-                            new_latest_genius_index = removed_genius_index - 1
-
-                        else:
-                            raise ValueError
-
-                        removed_job_pkl_file_list = []
-                        removed_genius_pkl_file_list = []
-
-                        job_pkl_file_list = glob.glob(
-                            os.path.join(target_dir, "job_manager*.pkl")
-                        )
-                        for job_pkl_file in job_pkl_file_list:
-                            match = re.search(
-                                r"job_manager_(\d+)\.pkl",
-                                os.path.basename(job_pkl_file),
-                            )
-                            if match:
-                                genius_index = int(match.group(1))
-                                if genius_index >= removed_genius_index:
-                                    removed_job_pkl_file_list.append(job_pkl_file)
-
-                        genius_pkl_file_list = glob.glob(
-                            os.path.join(target_dir, "*_genius_*.pkl")
-                        )
-                        for genius_pkl_file in genius_pkl_file_list:
-                            match = re.search(
-                                r"(.*)_genius_(\d+)\.pkl",
-                                os.path.basename(genius_pkl_file),
-                            )
-                            if match:
-                                genius_prefix = str(match.group(1))
-                                genius_index = int(match.group(2))
-                                if genius_index >= removed_genius_index:
-                                    removed_genius_pkl_file_list.append(genius_pkl_file)
-
-                        for removed_job_pkl_file in removed_job_pkl_file_list:
-                            os.remove(removed_job_pkl_file)
-                        for removed_genius_pkl_file in removed_genius_pkl_file_list:
-                            os.remove(removed_genius_pkl_file)
-                        if os.path.isdir(os.path.join(target_dir, "pkl")):
-
-                            for removed_genius_pkl_file in removed_genius_pkl_file_list:
-                                if os.path.isfile(
-                                    os.path.join(
-                                        target_dir,
-                                        "pkl",
-                                        os.path.basename(removed_genius_pkl_file),
-                                    )
-                                ):
-                                    os.remove(
-                                        os.path.join(
-                                            target_dir,
-                                            "pkl",
-                                            os.path.basename(removed_genius_pkl_file),
-                                        )
-                                    )
-
-                            if os.path.isfile(
-                                os.path.join(
-                                    target_dir,
-                                    "pkl",
-                                    f"{genius_prefix}_genius_{new_latest_genius_index}.pkl",
-                                )
-                            ):
-                                shutil.copy(
-                                    os.path.join(
-                                        target_dir,
-                                        "pkl",
-                                        f"{genius_prefix}_genius_{new_latest_genius_index}.pkl",
-                                    ),
-                                    os.path.join(
-                                        target_dir,
-                                        "pkl",
-                                        f"{genius_prefix}_genius_latest.pkl",
-                                    ),
-                                )
-                logger.warning(f"Deleted JOB-ID = {args.jobid}!!")
-            else:
-                logger.info("Please specify a Job-ID you want to remove by -id JOB-ID")
+    elif args.job == "del":
+        do_del(monitor, args.jobid, dry_run=args.dry_run)
 
     logger.info("--------------------------------------------------------------")
     logger.info(
