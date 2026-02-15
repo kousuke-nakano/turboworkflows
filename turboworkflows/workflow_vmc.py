@@ -42,7 +42,8 @@ class VMC_workflow(Workflow):
         vmc_safe_trial_steps: bool = True,
         vmc_bin_block: int = 10,
         vmc_warmupblocks: int = 5,
-        vmc_num_walkers: int = -1,  # default -1 -> num of MPI process.
+        vmc_num_walkers: int = -1,
+        vmc_num_mcmc_per_measurement: int = -1,
         vmc_twist_average: bool = False,
         vmc_kpoints: Optional[list] = None,
         vmc_force_calc_flag: bool = False,
@@ -65,6 +66,7 @@ class VMC_workflow(Workflow):
         self.vmc_bin_block = vmc_bin_block
         self.vmc_warmupblocks = vmc_warmupblocks
         self.vmc_num_walkers = vmc_num_walkers
+        self.vmc_num_mcmc_per_measurement = vmc_num_mcmc_per_measurement
         self.vmc_twist_average = vmc_twist_average
         self.vmc_kpoints = vmc_kpoints
         self.vmc_force_calc_flag = vmc_force_calc_flag
@@ -264,6 +266,7 @@ class VMC_workflow(Workflow):
                     vmc_genius = VMC_genius(
                         vmcsteps=vmc_steps,
                         num_walkers=self.vmc_num_walkers,
+                        num_mcmc_per_measurement = self.vmc_num_mcmc_per_measurement,
                         twist_average=self.vmc_twist_average,
                         kpoints=self.vmc_kpoints,
                         force_calc_flag=self.vmc_force_calc_flag,

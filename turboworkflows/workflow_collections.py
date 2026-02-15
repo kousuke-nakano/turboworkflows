@@ -117,6 +117,7 @@ class Init_occ_workflow(Workflow):
         mo_num_conv: int = -1,
         mo_occ: Optional[list] = None,
         mo_occ_delta: float = 0.05,
+        mo_occ_decay: bool = False,
     ):
         if mo_occ_fixed_list is None:
             mo_occ_fixed_list = []
@@ -130,6 +131,7 @@ class Init_occ_workflow(Workflow):
         self.mo_num_conv = mo_num_conv
         self.mo_occ = mo_occ
         self.mo_occ_delta = mo_occ_delta
+        self.mo_occ_decay = mo_occ_decay
 
         # return values
         self.status = "init"
@@ -212,6 +214,10 @@ class Init_occ_workflow(Workflow):
             # for the time being, it seems ok...
             sym_const_num_list = io_fort10.f10detmat_sym.constraint_num
             coeff_real = io_fort10.f10detmatrix.coeff_real
+            max_fixed = np.max(self.mo_occ_fixed_list)
+            start_i  = max_fixed + 1
+            end_i    = mo_index[-1]
+            decay_coeff = np.log(1e5 - 1.0) / (end_i - start_i)
             for i in range(len(mo_index)):
                 if i in self.mo_occ_fixed_list:
                     coeff_real[i] = 1.0
@@ -219,9 +225,17 @@ class Init_occ_workflow(Workflow):
                     continue
                 sym_const_num_list[i] = np.abs(sym_const_num_list[i])
                 if coeff_real[i] > 0.5:
-                    coeff_real[i] = 1.0 - self.mo_occ_delta
+                    if self.mo_occ_decay:
+                        x = i - start_i
+                        coeff_real[i] = 1.0 - self.mo_occ_delta * 1.0/(1.0+np.exp(decay_coeff * x))
+                    else:
+                        coeff_real[i] = 1.0 - self.mo_occ_delta
                 else:
-                    coeff_real[i] = 0.0 + self.mo_occ_delta
+                    if self.mo_occ_decay:
+                        x = i - start_i
+                        coeff_real[i] = 0.0 + self.mo_occ_delta * 1.0/(1.0+np.exp(decay_coeff * x))
+                    else:
+                        coeff_real[i] = 0.0 + self.mo_occ_delta
 
             """ commented out for the time being
             for i in range(len(mo_index), len(self.mo_occ)):
@@ -481,7 +495,7 @@ class Convertfort10mol_workflow(Workflow):
         return self.status, self.output_files, self.output_values
 
 
-# convertfort10mol
+# conversion of wf
 class Conversion_wf_workflow(Workflow):
     def __init__(
         self,
@@ -542,8 +556,17 @@ class Conversion_wf_workflow(Workflow):
                 logger.error("Conversion to sd is not implemented yet.")
                 raise NotImplementedError
             elif self.to_wf == "pf":
-                logger.error("Conversion to pf is not implemented yet.")
-                raise NotImplementedError
+                # WF conversion
+                wavefunction.to_agp(
+                    triplet=True,
+                    pfaffian_flag=True,
+                    grid_size=self.grid_size,
+                    additional_hyb=self.additional_hyb,
+                    nosym=self.nosym,
+                    clean_flag=self.clean_flag,
+                    only_generate_template=self.only_generate_template,
+                )
+                del wavefunction
             elif self.to_wf in {"agps", "agpu"}:
                 # singlet or triplet
                 if self.to_wf == "agps":

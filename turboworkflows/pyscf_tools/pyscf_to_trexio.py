@@ -187,9 +187,7 @@ def pyscf_to_trexio(
         for i in range(basis_shell_num):
             for bas_exp in mol.bas_exp(i):
                 basis_exponent.append(float(bas_exp))
-                print(bas_exp)
             for bas_ctr_coeff in mol.bas_ctr_coeff(i):
-                print(bas_ctr_coeff)
                 basis_coefficient.append(float(bas_ctr_coeff))
                 
 

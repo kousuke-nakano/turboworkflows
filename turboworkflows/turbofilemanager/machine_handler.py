@@ -511,6 +511,7 @@ class Machine:
                         time.sleep(1)  # Wait briefly before retrying
                     else:
                         logger.error(f"SFTP lstat for object failed after {max_retries} attempts")
+                        logger.error(f"Could not lstat '{object_name}' via SFTP")
                         raise RuntimeError(f"Could not lstat '{object_name}' via SFTP")
                 finally:
                     executor.shutdown(wait=False, cancel_futures=True) 
