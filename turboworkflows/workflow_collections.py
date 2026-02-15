@@ -506,6 +506,7 @@ class Conversion_wf_workflow(Workflow):
         nosym: bool = False,
         clean_flag: bool = True,
         only_generate_template: bool = False,
+        change_contr: bool = True,
     ):
         if additional_hyb is None:
             additional_hyb = []
@@ -519,6 +520,7 @@ class Conversion_wf_workflow(Workflow):
         self.nosym = nosym
         self.clean_flag = clean_flag
         self.only_generate_template = only_generate_template
+        self.change_contr = change_contr
         self.wavefunction = Wavefunction()
 
         # return values
@@ -582,6 +584,7 @@ class Conversion_wf_workflow(Workflow):
                     nosym=self.nosym,
                     clean_flag=self.clean_flag,
                     only_generate_template=self.only_generate_template,
+                    change_contr=self.change_contr,
                 )
                 del wavefunction
             else:
