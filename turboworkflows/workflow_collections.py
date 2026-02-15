@@ -541,8 +541,10 @@ class Conversion_wf_workflow(Workflow):
             wavefunction = Wavefunction()
             wavefunction.read_from_fort10(fort10="fort.10")
             if self.to_wf == "sd":
-                logger.error("Conversion to sd is not implemented yet.")
-                raise NotImplementedError
+                wavefunction.to_sd(
+                    grid_size=self.grid_size,
+                    clean_flag=self.clean_flag,
+                )
             elif self.to_wf == "pf":
                 logger.error("Conversion to pf is not implemented yet.")
                 raise NotImplementedError

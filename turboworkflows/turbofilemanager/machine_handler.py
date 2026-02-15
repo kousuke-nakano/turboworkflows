@@ -71,7 +71,7 @@ class Machine:
     def ssh_open(self):
         if self.machine_type == "remote":
             if not self.ssh_status:
-                rw = random.randint(3, 6)
+                rw = random.randint(1, 4)
                 logger.info(
                     f"wait {rw} secs before opening a new ssh connection to the remote machine."
                 )

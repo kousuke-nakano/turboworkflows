@@ -54,6 +54,7 @@ class VMCopt_workflow(Workflow):
         vmcopt_jas_basis_exp: bool = False,
         vmcopt_det_basis_coeff: bool = False,
         vmcopt_jas_basis_coeff: bool = False,
+        vmcopt_molecular_orbitals: bool = False,
         vmcopt_num_walkers: int = -1,  # default -1 -> num of MPI process.
         vmcopt_twist_average: bool = False,
         vmcopt_kpoints: Optional[list] = None,
@@ -90,6 +91,7 @@ class VMCopt_workflow(Workflow):
         self.vmcopt_jas_basis_exp = vmcopt_jas_basis_exp
         self.vmcopt_det_basis_coeff = vmcopt_det_basis_coeff
         self.vmcopt_jas_basis_coeff = vmcopt_jas_basis_coeff
+        self.vmcopt_molecular_orbitals = vmcopt_molecular_orbitals
         self.vmcopt_num_walkers = vmcopt_num_walkers
         self.vmcopt_twist_average = vmcopt_twist_average
         self.vmcopt_kpoints = vmcopt_kpoints
@@ -255,6 +257,7 @@ class VMCopt_workflow(Workflow):
                         opt_jas_basis_exp=self.vmcopt_jas_basis_exp,
                         opt_det_basis_coeff=self.vmcopt_det_basis_coeff,
                         opt_jas_basis_coeff=self.vmcopt_jas_basis_coeff,
+                        opt_molecular_orbitals=self.vmcopt_molecular_orbitals,
                         twist_average=self.vmcopt_twist_average,
                         kpoints=self.vmcopt_kpoints,
                         maxtime=self.vmcopt_maxtime,

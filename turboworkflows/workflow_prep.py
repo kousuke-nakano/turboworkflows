@@ -34,6 +34,7 @@ class DFT_workflow(Workflow):
         # prep
         dft_rerun: bool = False,
         dft_grid_size: Optional[list] = None,
+        dft_double_mesh = False,
         dft_lbox: Optional[list] = None,
         dft_smearing: float = 0.0,
         dft_maxtime: int = 172800,
@@ -65,6 +66,7 @@ class DFT_workflow(Workflow):
         # dft
         self.dft_rerun = dft_rerun
         self.dft_grid_size = dft_grid_size
+        self.dft_double_mesh = dft_double_mesh
         self.dft_lbox = dft_lbox
         self.dft_smearing = dft_smearing
         self.dft_maxtime = dft_maxtime
@@ -124,6 +126,7 @@ class DFT_workflow(Workflow):
                 # generate a DFT instance
                 dft_genius = DFT_genius(
                     grid_size=self.dft_grid_size,
+                    double_mesh=self.dft_double_mesh,
                     lbox=self.dft_lbox,
                     smearing=self.dft_smearing,
                     maxtime=self.dft_maxtime,
