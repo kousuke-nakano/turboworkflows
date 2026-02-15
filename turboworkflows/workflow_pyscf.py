@@ -36,7 +36,7 @@ class PySCF_workflow(Workflow):
         trexio_filename: str = "trexio.hdf5",
         # job
         server_machine_name: str = "localhost",
-        queue_label: Optional[str] = None,
+        queue_label: Optional[str] = "default",
         mpi=False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
@@ -66,6 +66,7 @@ class PySCF_workflow(Workflow):
         smearing_sigma: float = 0.00,  # Ha
         # conversion to trexio file
         force_wf_complex: bool = False,
+        use_jkmethod: bool = False,
     ):
         if ghost_atoms_index is None:
             ghost_atoms_index = []
@@ -108,6 +109,7 @@ class PySCF_workflow(Workflow):
         self.kpt_grid = kpt_grid
         self.smearing_method = smearing_method
         self.smearing_sigma = smearing_sigma
+        self.use_jkmethod = use_jkmethod
         # conversion to trexio file
         self.force_wf_complex = force_wf_complex
         # pkl names
@@ -193,6 +195,7 @@ kpt={rg(self.kpt)}
 kpt_grid={rg(self.kpt_grid)}
 smearing_method={rg(self.smearing_method)}
 smearing_sigma={rg(self.smearing_sigma)}
+use_jkmethod={rg(self.use_jkmethod)}
 
 run_pyscf(
         structure_file=structure_file,
@@ -218,7 +221,8 @@ run_pyscf(
         kpt=kpt,
         kpt_grid=kpt_grid,
         smearing_method=smearing_method,
-        smearing_sigma=smearing_sigma
+        smearing_sigma=smearing_sigma,
+        use_jkmethod=use_jkmethod
         )
                 """
 
@@ -234,11 +238,11 @@ run_pyscf(
                 job = Job_submission(
                     client_machine_name="localhost",
                     server_machine_name=self.server_machine_name,
-                    package="python",
+                    package="python-pyscf-2.4.0",
                     queue_label=self.queue_label,
                     version=self.version,
                     mpi=False,
-                    jobname="pyscf",
+                    jobname="pyscf-2.4.0",
                     input_file="run.py",
                     input_redirect=False,
                     pkl_name=self.job_pkl,

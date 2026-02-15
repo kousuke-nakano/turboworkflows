@@ -28,7 +28,7 @@ class VMCopt_workflow(Workflow):
         self,
         # job
         server_machine_name: str = "localhost",
-        queue_label: Optional[str] = None,
+        queue_label: Optional[str] = "default",
         mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
@@ -55,7 +55,8 @@ class VMCopt_workflow(Workflow):
         vmcopt_det_basis_coeff: bool = False,
         vmcopt_jas_basis_coeff: bool = False,
         vmcopt_molecular_orbitals: bool = False,
-        vmcopt_num_walkers: int = -1,  # default -1 -> num of MPI process.
+        vmcopt_num_walkers: int = -1,
+        vmcopt_num_mcmc_per_measurement: int = -1,
         vmcopt_twist_average: bool = False,
         vmcopt_kpoints: Optional[list] = None,
         vmcopt_maxtime: int = 172000,
@@ -93,6 +94,7 @@ class VMCopt_workflow(Workflow):
         self.vmcopt_jas_basis_coeff = vmcopt_jas_basis_coeff
         self.vmcopt_molecular_orbitals = vmcopt_molecular_orbitals
         self.vmcopt_num_walkers = vmcopt_num_walkers
+        self.vmcopt_num_mcmc_per_measurement = vmcopt_num_mcmc_per_measurement
         self.vmcopt_twist_average = vmcopt_twist_average
         self.vmcopt_kpoints = vmcopt_kpoints
         self.vmcopt_maxtime = vmcopt_maxtime
@@ -245,6 +247,7 @@ class VMCopt_workflow(Workflow):
                         bin_block=self.vmcopt_bin_block,
                         warmupblocks=self.vmcopt_warmupblocks,
                         num_walkers=self.vmcopt_num_walkers,
+                        num_mcmc_per_measurement = self.vmcopt_num_mcmc_per_measurement,
                         optimizer=self.vmcopt_optimizer,
                         learning_rate=self.vmcopt_learning_rate,
                         regularization=self.vmcopt_regularization,

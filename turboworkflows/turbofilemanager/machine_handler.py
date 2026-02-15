@@ -29,9 +29,10 @@ logger = getLogger("Turbo-Workflows").getChild(__name__)
 
 
 class Machine:
-
     ssh_retry_time = 120
     ssh_retry_max_num = 10
+    ssh_io_max_retries = 3
+    ssh_io_timeout_sec = 5.0
 
     def __init__(self, machine):
         self.machine_info_yaml = os.path.join(
@@ -43,7 +44,7 @@ class Machine:
             logger.info(
                 f"{file_manager_config_dir} is not found. Probably, this is the first run."
             )
-            os.makedirs(file_manager_config_dir, exist_ok=True)
+            #os.makedirs(file_manager_config_dir, exist_ok=True)
             shutil.copytree(file_manager_config_template_dir, file_manager_config_dir)
             logger.info(f"{file_manager_config_dir} has been generated.")
             logger.info(f"Please edit {self.machine_info_yaml}")
@@ -67,148 +68,148 @@ class Machine:
         logger.debug(self.machine_type)
 
         self.ssh_status = False
-    
+
     def ssh_open(self):
-        if self.machine_type == "remote":
-            if not self.ssh_status:
-                rw = random.randint(1, 4)
-                logger.info(
-                    f"wait {rw} secs before opening a new ssh connection to the remote machine."
+        if self.machine_type == "local":
+            logger.debug("ssh_open: do nothing for local machine")
+            return
+
+        if self.ssh_status:
+            logger.info(
+                "The ssh connection is already established using paramiko module."
+            )
+            logger.info(f'The opened ssh ID = {id(self.ssh)}')
+            logger.info(f'The opened sftp ID = {id(self.sftp)}')
+            logger.debug(f"self.ssh_status = {self.ssh_status}")
+            return
+
+        rw = random.randint(3, 6)
+        logger.info(
+            f"wait {rw} secs before opening a new ssh connection to the remote machine."
+        )
+        time.sleep(rw)
+        #await asyncio.sleep(rw)
+        logger.info("A ssh connection will being established by paramiko module.")
+        ssh_config = paramiko.SSHConfig()
+        try:
+            config_file = os.path.join(os.getenv("HOME"), ".ssh/config")
+            ssh_config.parse(open(config_file, "r"))
+        except FileNotFoundError:
+            logger.error(
+                f"TurboWorkflows needs the ssh config file ({config_file})"
+            )
+        lkup = ssh_config.lookup(self.__name)
+
+        hostname = lkup["hostname"]
+        username = lkup["user"]
+        portnum = int(lkup.get("port", 22))
+        key_filename = lkup.get("identityfile")
+
+        logger.debug(f"paramiko ssh hostname = {hostname}")
+        logger.debug(f"paramiko ssh port = {portnum}")
+        logger.debug(f"paramiko ssh username = {username}")
+        logger.debug(f"paramiko ssh key_filename = {key_filename}")
+
+        proxy_command = lkup.get("proxycommand")
+        if proxy_command is not None:
+            logger.debug(f"paramiko ssh proxy-command = {proxy_command}")
+            proxy_flag = True
+        else:
+            proxy_flag = False
+
+        self.username = username
+        self.ssh = paramiko.SSHClient()
+        self.ssh.load_system_host_keys()
+        for tt in range(self.ssh_retry_max_num):
+            try:
+                proxy = paramiko.ProxyCommand(proxy_command) if proxy_flag else None
+                self.ssh.connect(
+                    hostname=hostname,
+                    username=username,
+                    port=portnum,
+                    key_filename=key_filename,
+                    sock=proxy,
                 )
-                time.sleep(rw)
-                #await asyncio.sleep(rw)
-                logger.info("A ssh connection will being established by paramiko module.")
-                ssh_config = paramiko.SSHConfig()
-                try:
-                    config_file = os.path.join(os.getenv("HOME"), ".ssh/config")
-                    ssh_config.parse(open(config_file, "r"))
-                except FileNotFoundError:
-                    logger.error(
-                        f"TurboWorkflows needs the ssh config file ({config_file})"
-                    )
-                lkup = ssh_config.lookup(self.__name)
-
-                hostname = lkup["hostname"]
-                username = lkup["user"]
-                key_filename = lkup["identityfile"]
-
-                logger.debug(f"paramiko ssh hostname = {hostname}")
-                logger.debug(f"paramiko ssh username = {username}")
-                logger.debug(f"paramiko ssh key_filename = {key_filename}")
-
-                try:
-                    proxy_command = lkup["proxycommand"]
-                    logger.debug(f"paramiko ssh proxy-command = {proxy_command}")
-                    proxy_flag = True
-                except KeyError:
-                    proxy_flag = False
-
-                self.username = username
-                self.ssh = paramiko.SSHClient()
-                self.ssh.load_system_host_keys()
-                for tt in range(self.ssh_retry_max_num):
-                    try:
-                        if proxy_flag:
-                            self.ssh.connect(
-                                hostname=hostname,
-                                username=username,
-                                key_filename=key_filename,
-                                sock=paramiko.ProxyCommand(proxy_command),
-                            )
-                        else:
-                            self.ssh.connect(
-                                hostname=hostname,
-                                username=username,
-                                key_filename=key_filename,
-                            )
-                        logger.info(f"Opening a new ssh connection using paramiko is successful with attempt = {tt+1}.")
-                        break
-                    except paramiko.ssh_exception.SSHException:
-                        logger.warning(
-                            f"Opening a new ssh connection using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial."
-                        )
-                        time.sleep(self.ssh_retry_time)
-
-                    if tt == self.ssh_retry_max_num - 1:
-                        logger.error(
-                            f"Opening a new ssh connection using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials"
-                        )
-                        raise paramiko.SSHException
-                
-                self.sftp = self.ssh.open_sftp()
-                logger.info(f'Opened ssh ID = {id(self.ssh)}')
-                logger.info(f'The opened sftp ID = {id(self.sftp)}')
-                self.ssh_status = True
-
-            else:
-                logger.info(
-                    "The ssh connection is already established using paramiko module."
+                logger.info(f"Opening a new ssh connection using paramiko is successful with attempt = {tt+1}.")
+                break
+            except paramiko.ssh_exception.SSHException:
+                logger.warning(
+                    f"Opening a new ssh connection using paramiko failed. Wait {self.ssh_retry_time} sec before the next trial."
                 )
-                logger.info(f'The opened ssh ID = {id(self.ssh)}')
-                logger.info(f'The opened sftp ID = {id(self.sftp)}')
-                logger.debug(f"self.ssh_status = {self.ssh_status}")
+                time.sleep(self.ssh_retry_time)
+        else:
+            logger.error(
+                f"Opening a new ssh connection using paramiko failed in all {self.ssh_retry_max_num}-times ssh trials"
+            )
+            raise paramiko.SSHException
+
+        self.sftp = self.ssh.open_sftp()
+        logger.info(f'Opened ssh ID = {id(self.ssh)}')
+        logger.info(f'The opened sftp ID = {id(self.sftp)}')
+        self.ssh_status = True
 
     def ssh_close(self):
-        if self.machine_type == "remote":
-            logger.debug(f"self.ssh_status = {self.ssh_status}")
-            if self.ssh_status:
-                logger.info("The ssh connection will be closed using paramiko module.")
-                logger.info(f"The closed ssh ID = {id(self.ssh)}")
-                logger.info(f"The closed sftp ID = {id(self.sftp)}")
+        if self.machine_type == "local":
+            logger.debug("ssh_close: do nothing for local machine")
+            return
 
-                max_retries = 3
-                timeout_sec = 5.0
-                
-                for attempt in range(1, max_retries + 1):
-                    executor = ThreadPoolExecutor(max_workers=1)
-                    future = executor.submit(self.ssh.close)
-                    try:
-                        future.result(timeout=timeout_sec)
-                        logger.info(f"SSHClient.close() succeeded on attempt {attempt}")
-                        break
-                    except Exception as e:
-                        logger.warning(f"SSHClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
-                        if attempt < max_retries:
-                            time.sleep(1)  # ãªãã©ã¤åã®åæ
-                        else:
-                            logger.error(f"SSHClient.close() failed after {max_retries} attempts")
-                            raise ValueError('The job ends abnormally.')
-                    finally:
-                        executor.shutdown(wait=False, cancel_futures=True)
-                
-                for attempt in range(1, max_retries + 1):
-                    executor = ThreadPoolExecutor(max_workers=1)
-                    future = executor.submit(self.sftp.close)
-                    try:
-                        future.result(timeout=timeout_sec)
-                        logger.info(f"SFTPClient.close() succeeded on attempt {attempt}")
-                        break
-                    except Exception as e:
-                        logger.warning(f"SFTPClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
-                        if attempt < max_retries:
-                            time.sleep(1)
-                        else:
-                            logger.error(f"SFTPClient.close() failed after {max_retries} attempts")
-                            raise ValueError('The job ends abnormally.')
-                    finally:
-                        executor.shutdown(wait=False, cancel_futures=True)
-                del self.ssh
-                del self.sftp
-                self.ssh_status = False
+        logger.debug(f"self.ssh_status = {self.ssh_status}")
+        if not self.ssh_status:
+            logger.debug("ssh_close: connection not established")
+            return
+
+        logger.info("The ssh connection will be closed using paramiko module.")
+        logger.info(f"The closed ssh ID = {id(self.ssh)}")
+        logger.info(f"The closed sftp ID = {id(self.sftp)}")
+
+        for attempt in range(1, self.ssh_io_max_retries + 1):
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(self.ssh.close)
+            try:
+                future.result(timeout=self.ssh_io_timeout_sec)
+                logger.info(f"SSHClient.close() succeeded on attempt {attempt}")
+                break
+            except Exception as e:
+                logger.warning(f"SSHClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
+                if attempt < self.ssh_io_max_retries:
+                    time.sleep(1)
+                else:
+                    logger.error(f"SSHClient.close() failed after {self.ssh_io_max_retries} attempts")
+                    raise ValueError('The job ends abnormally.')
+            finally:
+                executor.shutdown(wait=False, cancel_futures=True)
+
+        for attempt in range(1, self.ssh_io_max_retries + 1):
+            executor = ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(self.sftp.close)
+            try:
+                future.result(timeout=self.ssh_io_timeout_sec)
+                logger.info(f"SFTPClient.close() succeeded on attempt {attempt}")
+                break
+            except Exception as e:
+                logger.warning(f"SFTPClient.close() attempt {attempt} with {e.__class__.__name__}: {e}")
+                if attempt < self.ssh_io_max_retries:
+                    time.sleep(1)
+                else:
+                    logger.error(f"SFTPClient.close() failed after {self.ssh_io_max_retries} attempts")
+                    raise ValueError('The job ends abnormally.')
+            finally:
+                executor.shutdown(wait=False, cancel_futures=True)
+        del self.ssh
+        del self.sftp
+        self.ssh_status = False
 
     def __str__(self):
-
         output = [f"Machine obj. {self.name}"]
         return "\n".join(output)
 
     def get_value(self, key):
-        try:
-            return self.data[key]
-        except KeyError:
+        if key not in self.data:
             logger.warning(f"{key} key is not defined in the database!!")
             # logger.error("Plz. edit the following file according to the template.")
             # logger.error(self.machine_info_yaml)
             raise KeyError
+        return self.data[key]
 
     @property
     def name(self):
@@ -291,7 +292,7 @@ class Machine:
 
     def get_job_list(self):
         command = f"{self.jobcheck}"
-        stdout, stderr = self.run_command(command)
+        stdout, stderr = self.run_command(command, timeout=False)
         return stdout, stderr
 
     def get_job_list_as_text(self):
@@ -300,147 +301,147 @@ class Machine:
 
     def delete_job(self, jobid):
         command = f"{self.jobdel} {jobid}"
-        stdout, stderr = self.run_command(command)
+        stdout, stderr = self.run_command(command, timeout=False)
         return stdout.split("\n")
 
-    def run_command(self, command, execute_dir=None):
-        trial_num = 10
-        jjj = 0
-        while True:
-            if execute_dir is None:
-                command_r = f"{command}"
-            else:
-                if self.machine_type == "remote":
-                    self.ssh_open()
-                    fileattr = self.sftp.lstat(execute_dir)
-                    if not stat.S_ISDIR(fileattr.st_mode):
-                        logger.error(
-                            f"{execute_dir} is not found on the remote machine."
-                        )
-                        raise FileNotFoundError
-                else:
-                    if not os.path.isdir(execute_dir):
-                        logger.error(f"{execute_dir} is not found.")
-                        raise FileNotFoundError
+    def _run_command_local(self, command, execute_dir=None, timeout=None):
+        if execute_dir is not None and not os.path.isdir(execute_dir):
+            logger.error(f"{execute_dir} is not found.")
+            raise FileNotFoundError
 
-                command_r = f"cd {execute_dir}; {command}"
+        command_r = f"{command}"
+        # command_r=timeout_command(command=command_r)
+        logger.debug(f"command = {command_r} in run_command")
 
-            # command_r=timeout_command(command=command_r)
-            logger.debug(f"command = {command_r} in run_command")
+        if (timeout is None and self.queuing is True) or timeout is True:
+            #timeout_sec = 1200
+            timeout_sec = 60
+            retry = 3
+            logger.debug(f"run_command_local: set timeout={timeout_sec}, retry={retry}")
+        else:
+            timeout_sec = None
+            retry = 1
+            logger.debug(f"run_command_local: disable timeout")
 
-            if self.machine_type == "local":
-                for ii in range(3):
-                    try:
-                        proc = subprocess.run(
-                            command_r,
-                            shell=True,
-                            stdout=PIPE,
-                            stderr=PIPE,
-                            text=True,
-                            timeout=1200,
-                        )
-                        logger.debug(
-                            f"subprocess is successful (ii={ii}). break the loop"
-                        )
-                        exit_status, stdout, stderr = (
-                            proc.returncode,
-                            proc.stdout,
-                            proc.stderr,
-                        )
-                        logger.debug(f"exit_status={exit_status}")
-                        break
-                    except subprocess.TimeoutExpired:
-                        logger.warning(
-                            f"subprocess is timeout (ii={ii}). iterate the loop."
-                        )
-                        exit_status = 99
-                    logger.warning("wait 60 secs.")
-                    time.sleep(60)
-
-                if exit_status == 0:
-                    # success run_command
-                    logger.debug(f"stdout = {stdout}")
-                    logger.debug(f"stderr = {stderr}")
-                    logger.debug(f"exit_status = {exit_status}")
-                    break
-                else:
-                    # failure run_command
-                    logger.warning(f"stdout = {stdout}")
-                    logger.warning(f"stderr = {stderr}")
-                    logger.warning(f"exit_status = {exit_status}")
-                    logger.warning(f"command={command_r} did not work.")
-                    logger.warning(
-                        f"The command will be retried after {self.ssh_retry_time}s sleep."
-                    )
-                    time.sleep(self.ssh_retry_time)
-                if jjj > trial_num:
-                    break
-                jjj += 1
-
-                if jjj > trial_num:
-                    logger.error("Something wrong in run_command!!")
-                    raise ValueError
-
-            else:  # remote
-                self.ssh_open()
-                logger.debug(f"command_r={command_r}")
-                _, pstdout, pstderr = self.ssh.exec_command(command=command_r)
-                exit_status = pstdout.channel.recv_exit_status()
-                logger.debug(f"exit_status = {exit_status}")
-                stdout, stderr = str(pstdout.read().decode("utf-8").strip()), str(
-                    pstderr.read().decode("utf-8").strip()
+        for ii in range(retry):
+            try:
+                logger.debug(f"start subprocess (ii={ii})")
+                proc = subprocess.run(
+                    command_r,
+                    shell=True,
+                    stdout=PIPE,
+                    stderr=PIPE,
+                    text=True,
+                    timeout=timeout_sec,
+                    cwd=execute_dir,
                 )
+                logger.debug(
+                    f"subprocess is successful (ii={ii}). break the loop"
+                )
+                exit_status = proc.returncode
+                stdout = proc.stdout
+                stderr = proc.stderr
+                logger.debug(f"exit_status={exit_status}")
+                break
+            except subprocess.TimeoutExpired:
+                logger.warning(
+                    f"subprocess is timeout (ii={ii}). iterate the loop."
+                )
+                exit_status = 99
+                stdout = None
+                stderr = None
+            logger.warning("wait 60 secs.")
+            time.sleep(60)
 
-                if exit_status == 0:
-                    logger.debug(f"command_r={command_r} was successful.")
-                    logger.debug(f"stdout={stdout}")
-                    logger.debug(f"stderr={stderr}")
-                    break
-                else:
-                    logger.error(f"command_r={command_r} failed.")
-                    logger.error(f"stdout={stdout}")
-                    logger.error(f"stderr={stderr}")
-                    raise ValueError
+        if exit_status == 0:
+            # success run_command
+            logger.debug(f"stdout = {stdout}")
+            logger.debug(f"stderr = {stderr}")
+            logger.debug(f"exit_status = {exit_status}")
+        else:
+            # failure run_command
+            logger.warning(f"stdout = {stdout}")
+            logger.warning(f"stderr = {stderr}")
+            logger.warning(f"exit_status = {exit_status}")
+            logger.warning(f"command={command_r} did not work.")
+            logger.error("Something wrong in run_command!!")
+            raise RuntimeError(f"_run_command_local failed: status={exit_status}")
 
         return stdout, stderr
+
+    def _run_command_remote(self, command, execute_dir=None, timeout=None):
+        if execute_dir is None:
+            command_r = f"{command}"
+        else:
+            self.ssh_open()
+            fileattr = self.sftp.lstat(execute_dir)
+            if not stat.S_ISDIR(fileattr.st_mode):
+                logger.error(
+                    f"{execute_dir} is not found on the remote machine."
+                )
+                raise FileNotFoundError
+            command_r = f"cd {execute_dir} && {command}"
+
+        # command_r=timeout_command(command=command_r)
+        logger.debug(f"command = {command_r} in run_command")
+
+        self.ssh_open()
+        logger.debug(f"command_r={command_r}")
+
+        _, pstdout, pstderr = self.ssh.exec_command(command=command_r)
+        exit_status = pstdout.channel.recv_exit_status()
+        logger.debug(f"exit_status = {exit_status}")
+
+        stdout = str(pstdout.read().decode("utf-8").strip())
+        stderr = str(pstderr.read().decode("utf-8").strip())
+
+        if exit_status == 0:
+            logger.debug(f"command_r={command_r} was successful.")
+            logger.debug(f"stdout={stdout}")
+            logger.debug(f"stderr={stderr}")
+        else:
+            logger.error(f"command_r={command_r} failed.")
+            logger.error(f"stdout={stdout}")
+            logger.error(f"stderr={stderr}")
+            raise RuntimeError(f"_run_command_remort failed: status={exit_status}")
+
+        return stdout, stderr
+
+    def run_command(self, command, execute_dir=None, timeout=None):
+        if self.machine_type == "local":
+            return self._run_command_local(command, execute_dir, timeout)
+        else:
+            return self._run_command_remote(command, execute_dir, timeout)
 
     def is_file(self, file_name):
         if not pathlib.Path(file_name).is_absolute():
             logger.error(f"file_name={file_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            if os.path.isfile(file_name):
-                return True
-            else:
-                return False
+            return os.path.isfile(file_name)
+
         else:
-            max_retries = 3
-            timeout_sec = 5.0
-            
             self.ssh_open()
-            for attempt in range(1, max_retries + 1):
+            for attempt in range(1, self.ssh_io_max_retries + 1):
                 # Submit the lstat call for the target file
                 executor = ThreadPoolExecutor(max_workers=1)
                 future = executor.submit(self.sftp.lstat, file_name)
                 try:
-                    # Wait up to timeout_sec seconds for lstat to complete
-                    fileattr = future.result(timeout=timeout_sec)
+                    # Wait up to self.ssh_io_timeout_sec seconds for lstat to complete
+                    fileattr = future.result(timeout=self.ssh_io_timeout_sec)
                     logger.info(f"SFTP lstat for file succeeded on attempt {attempt}")
                     break
                 except Exception as e:
                     logger.warning(f"SFTP lstat for file attempt {attempt} with {e.__class__.__name__}: {e}")
-                    if attempt < max_retries:
+                    if attempt < self.ssh_io_max_retries:
                         time.sleep(1)  # Wait briefly before retrying
                     else:
-                        logger.error(f"SFTP lstat for file failed after {max_retries} attempts")
+                        logger.error(f"SFTP lstat for file failed after {self.ssh_io_max_retries} attempts")
                         raise RuntimeError(f"Could not lstat file '{file_name}' via SFTP")
                 finally:
                     executor.shutdown(wait=False, cancel_futures=True) 
             # Check whether the path refers to a regular file
-            if stat.S_ISREG(fileattr.st_mode):
-                return True
-            else:
-                return False
+            return stat.S_ISREG(fileattr.st_mode)
 
     def is_dir(self, dir_name):
         logger.debug(f"check if dir={dir_name} exists.")
@@ -448,38 +449,28 @@ class Machine:
             logger.error(f"dir_name={dir_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            if os.path.isdir(dir_name):
-                return True
-            else:
-                return False
-        else:
-            # Configure timeout and retry parameters for SFTP lstat
-            max_retries = 3
-            timeout_sec = 5.0
-            
-            self.ssh_open()
+            return os.path.isdir(dir_name)
 
-            for attempt in range(1, max_retries + 1):
+        else:
+            self.ssh_open()
+            for attempt in range(1, self.ssh_io_max_retries + 1):
                 executor = ThreadPoolExecutor(max_workers=1)
                 future = executor.submit(self.sftp.lstat, dir_name)
                 try:
-                    fileattr = future.result(timeout=timeout_sec)
+                    fileattr = future.result(timeout=self.ssh_io_timeout_sec)
                     logger.info(f"SFTP lstat succeeded on attempt {attempt}")
                     break
                 except Exception as e:
                     logger.warning(f"SFTP lstat attempt {attempt} with {e.__class__.__name__}: {e}")
-                    if attempt < max_retries:
+                    if attempt < self.ssh_io_max_retries:
                         time.sleep(1)  # Wait briefly before retrying
                     else:
-                        logger.error(f"SFTP lstat failed after {max_retries} attempts")
+                        logger.error(f"SFTP lstat failed after {self.ssh_io_max_retries} attempts")
                         raise RuntimeError(f"Could not lstat '{dir_name}' via SFTP")
                 finally:
                     executor.shutdown(wait=False, cancel_futures=True) 
             # Determine if the path is a directory
-            if stat.S_ISDIR(fileattr.st_mode):
-                return True
-            else:
-                return False
+            return stat.S_ISDIR(fileattr.st_mode)
 
     def exist(self, object_name):
         logger.debug(f"check if file or dir={object_name} exists on {self.name}.")
@@ -487,40 +478,29 @@ class Machine:
             logger.error(f"dir_name={object_name} is not an absolute path.")
 
         if self.machine_type == "local":
-            if os.path.exists(object_name):
-                return True
-            else:
-                return False
+            return os.path.exists(object_name)
+
         else:
-            # Configure timeout and retry parameters for SFTP lstat on an arbitrary object
-            max_retries = 3
-            timeout_sec = 5.0
-            
             self.ssh_open()
-            for attempt in range(1, max_retries + 1):
+            for attempt in range(1, self.ssh_io_max_retries + 1):
                 executor = ThreadPoolExecutor(max_workers=1)
                 future = executor.submit(self.sftp.lstat, object_name)
                 try:
-                    # Wait up to timeout_sec seconds for lstat to complete
-                    fileattr = future.result(timeout=timeout_sec)
+                    # Wait up to self.ssh_io_timeout_sec seconds for lstat to complete
+                    fileattr = future.result(timeout=self.ssh_io_timeout_sec)
                     logger.info(f"SFTP lstat for object succeeded on attempt {attempt}")
                     break
                 except Exception as e:
                     logger.warning(f"SFTP lstat for object attempt {attempt} with {e.__class__.__name__}: {e}")
-                    if attempt < max_retries:
+                    if attempt < self.ssh_io_max_retries:
                         time.sleep(1)  # Wait briefly before retrying
                     else:
-                        logger.error(f"SFTP lstat for object failed after {max_retries} attempts")
+                        logger.error(f"SFTP lstat for object failed after {self.ssh_io_max_retries} attempts")
                         raise RuntimeError(f"Could not lstat '{object_name}' via SFTP")
                 finally:
                     executor.shutdown(wait=False, cancel_futures=True) 
             # Check whether the object is a directory or a regular file
-            if stat.S_ISDIR(fileattr.st_mode):
-                return True
-            elif stat.S_ISREG(fileattr.st_mode):
-                return True
-            else:
-                return False
+            return stat.S_ISDIR(fileattr.st_mode) or stat.S_ISREG(fileattr.st_mode)
 
     def is_alive(self):
         # logger.info("wait 1 sec.")
@@ -680,53 +660,39 @@ class Machines_handler:
         logger.debug(f"makedir {os.path.dirname(to_object)} on {to_machine.name}")
         to_dir = os.path.dirname(to_object)
         command = f"mkdir -p {to_dir}"
-        to_machine.run_command(command)
+        to_machine.run_command(command, timeout=False)
 
         if not to_machine.is_dir(dir_name=to_dir):
             logger.error(f"{to_dir} is not created.")
-            raise FileNotFoundError
+            raise RuntimeError
 
         if from_machine.machine_type == "local" and to_machine.machine_type == "local":
             logger.debug("No data transfer is needed.")
-        elif (
-            from_machine.machine_type == "local" and to_machine.machine_type == "remote"
-        ) or (
-            from_machine.machine_type == "remote" and to_machine.machine_type == "local"
-        ):
+
+        elif (from_machine.machine_type == "local" and to_machine.machine_type == "remote"):
             logger.info(f"From:: {from_object}")
             logger.info(f"To:: {to_object}")
 
-            # file transfer
-            if (
-                from_machine.machine_type == "local"
-                and to_machine.machine_type == "remote"
-            ):  # local -> remote
-                logger.info(
-                    f"Transfer data from local machine ({from_machine.name}) to remote machine ({to_machine.name}) using paramiko."
-                )
-                if dir_transfer:  # dir
-                    self.put_sftp_dir(
-                        from_object, to_object, exclude_patterns=exclude_patterns
-                    )
-                else:  # file
-                    self.put_sftp_file(
-                        from_object, to_object, exclude_patterns=exclude_patterns
-                    )
+            # local -> remote
+            logger.info(f"Transfer data from local machine ({from_machine.name}) to remote machine ({to_machine.name}) using paramiko.")
+            if dir_transfer:  # dir
+                self.put_sftp_dir(from_object, to_object, exclude_patterns=exclude_patterns)
+            else:  # file
+                self.put_sftp_file(from_object, to_object, exclude_patterns=exclude_patterns)
 
-            else:  # remote -> local
-                logger.info(
-                    f"Transfer data from remote machine ({from_machine.name}) to local machine ({to_machine.name}) using paramiko."
-                )
-                if dir_transfer:  # dir
-                    self.get_sftp_dir(
-                        from_object, to_object, exclude_patterns=exclude_patterns
-                    )
-                else:  # file
-                    self.get_sftp_file(
-                        from_object, to_object, exclude_patterns=exclude_patterns
-                    )
+        elif (from_machine.machine_type == "remote" and to_machine.machine_type == "local"):
+            logger.info(f"From:: {from_object}")
+            logger.info(f"To:: {to_object}")
+
+            # remote -> local
+            logger.info(f"Transfer data from remote machine ({from_machine.name}) to local machine ({to_machine.name}) using paramiko.")
+            if dir_transfer:  # dir
+                self.get_sftp_dir(from_object, to_object, exclude_patterns=exclude_patterns)
+            else:  # file
+                self.get_sftp_file(from_object, to_object, exclude_patterns=exclude_patterns)
 
         else:
+            logger.error("Transfer data from remote machine to remote machine is not supported.")
             raise NotImplementedError
 
 

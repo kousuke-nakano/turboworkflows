@@ -28,7 +28,7 @@ class LRDMCopt_workflow(Workflow):
         self,
         # job
         server_machine_name: str = "localhost",
-        queue_label: Optional[str] = None,
+        queue_label: Optional[str] = "default",
         mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.
@@ -45,8 +45,10 @@ class LRDMCopt_workflow(Workflow):
         lrdmcopt_optimizer: str = "sr",
         lrdmcopt_learning_rate: float = 0.002,
         lrdmcopt_regularization: float = 0.001,
+        lrdmcopt_num_opt_param: int = 0,
         lrdmcopt_alat: float = -0.20,
         lrdmcopt_time_branching: float = 0.10,
+        lrdmc_num_branching: int = 0,
         lrdmcopt_trial_etry: float = 0.0,
         lrdmcopt_nonlocalmoves: str = "dla",  # tmove, dla, dlatm
         lrdmcopt_onebody: bool = False,
@@ -84,8 +86,10 @@ class LRDMCopt_workflow(Workflow):
         self.lrdmcopt_optimizer = lrdmcopt_optimizer
         self.lrdmcopt_learning_rate = lrdmcopt_learning_rate
         self.lrdmcopt_regularization = lrdmcopt_regularization
+        self.lrdmcopt_num_opt_param = lrdmcopt_num_opt_param
         self.lrdmcopt_alat = lrdmcopt_alat
         self.lrdmcopt_time_branching = lrdmcopt_time_branching
+        self.lrdmcopt_num_branching = lrdmc_num_branching
         self.lrdmcopt_trial_etry = lrdmcopt_trial_etry
         self.lrdmcopt_nonlocalmoves = lrdmcopt_nonlocalmoves
         self.lrdmcopt_onebody = lrdmcopt_onebody
@@ -260,8 +264,10 @@ class LRDMCopt_workflow(Workflow):
                         optimizer=self.lrdmcopt_optimizer,
                         learning_rate=self.lrdmcopt_learning_rate,
                         regularization=self.lrdmcopt_regularization,
+                        num_opt_param=self.lrdmcopt_num_opt_param,
                         alat=self.lrdmcopt_alat,
                         time_branching=self.lrdmcopt_time_branching,
+                        num_branching=self.lrdmcopt_num_branching,
                         etry=self.lrdmcopt_trial_etry,
                         nonlocalmoves=self.lrdmcopt_nonlocalmoves,
                         opt_onebody=self.lrdmcopt_onebody,

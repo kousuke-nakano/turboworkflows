@@ -61,7 +61,7 @@ class Launcher:
         global loggers
         name = "Turbo-Workflows"
         handler_format_w = Formatter(
-            "%(name)s - %(levelname)s - %(lineno)d - %(message)s"
+            "%(asctime)s %(name)s - %(levelname)s - %(lineno)d - %(message)s"
         )
         if loggers.get(name):
             logger_w = loggers.get(name)

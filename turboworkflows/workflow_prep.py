@@ -27,7 +27,7 @@ class DFT_workflow(Workflow):
         self,
         # job
         server_machine_name: str = "localhost",
-        queue_label: Optional[str] = None,
+        queue_label: Optional[str] = "default",
         mpi: bool = False,
         version: str = "stable",
         sleep_time: int = 1800,  # sec.

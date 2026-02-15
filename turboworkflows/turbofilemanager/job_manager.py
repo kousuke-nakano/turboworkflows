@@ -70,7 +70,7 @@ class Job_submission:
         # check config dir exists.
         if not os.path.isdir(file_manager_config_dir):
             logger.info(f"{file_manager_config_dir} is not found.")
-            os.makedirs(file_manager_config_dir, exist_ok=True)
+            #os.makedirs(file_manager_config_dir, exist_ok=True)
             shutil.copytree(file_manager_config_template_dir, file_manager_config_dir)
             logger.info(f"{file_manager_config_dir} has been generated.")
             logger.info(
@@ -307,7 +307,7 @@ class Job_submission:
                     ) = self.server_machine.run_command(
                         command=command, execute_dir=server_dir
                     )
-                    logger.debug(stderr.split())
+                    logger.debug(f"stderr={stderr.split()}")
                     if not stdout:
                         logger.error(f"Empty stdout on command!!")
                         logger.error(f'stdout = {stdout}')
