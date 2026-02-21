@@ -238,11 +238,11 @@ run_pyscf(
                 job = Job_submission(
                     client_machine_name="localhost",
                     server_machine_name=self.server_machine_name,
-                    package="python-pyscf-2.4.0",
+                    package="python",
                     queue_label=self.queue_label,
                     version=self.version,
                     mpi=False,
-                    jobname="pyscf-2.4.0",
+                    jobname="pyscf",
                     input_file="run.py",
                     input_redirect=False,
                     pkl_name=self.job_pkl,
