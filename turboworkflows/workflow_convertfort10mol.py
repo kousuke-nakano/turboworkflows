@@ -99,7 +99,7 @@ class Convertfort10mol_workflow(Workflow):
                 if self.mpi:
                     binary = "convertfort10mol-mpi.x"
                 else:
-                    binary = "convertfort10mol.x"
+                    binary = "convertfort10mol-serial.x"
 
                 # Job submission by the job-manager package
                 job = Job_submission(
