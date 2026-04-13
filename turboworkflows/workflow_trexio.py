@@ -30,7 +30,7 @@ class TREXIO_convert_to_turboWF(Workflow):
     def __init__(
         self,
         trexio_filename: str = "trexio.hdf5",
-        twist_average: bool = False,
+        twist_average: bool = False,  # deprecated, kept for backward compatibility
         jastrow_1body: Optional[str] = None,
         jastrow_2body: Optional[str] = 'pade',
         jastrow_basis_dict: Optional[dict] = None,
@@ -85,35 +85,44 @@ class TREXIO_convert_to_turboWF(Workflow):
             os.makedirs(self.pkl_dir, exist_ok=True)
             os.chdir(self.trexio_dir)
 
-            if self.twist_average:
-                with open(os.path.join(self.trexio_dir, "kp_info.dat"), "r") as f:
-                    lines = f.readlines()
-                k_num = len(lines) - 1
+            filename = os.path.basename(self.trexio_filename)
+            trexio_filepath = os.path.join(self.trexio_dir, filename)
+
+            # auto-detect number of k-points from the TREXIO file
+            trexio_r = Trexio_wrapper_r(trexio_file=trexio_filepath)
+            if trexio_r.periodic:
+                k_num = trexio_r.k_point_num
             else:
                 k_num = 1
+            logger.info(f"Number of k-points: {k_num}")
 
-            for num in range(k_num):
-                if self.twist_average:
-                    filename = f"k{num}_" + os.path.basename(self.trexio_filename)
-                else:
-                    filename = os.path.basename(self.trexio_filename)
-                if len(self.jastrow_basis_dict) != 0:
-                    trexio_r = Trexio_wrapper_r(
-                        trexio_file=os.path.join(self.trexio_dir, filename)
-                    )
-                    jastrow_basis_list = [
-                        self.jastrow_basis_dict[element]
-                        for element in trexio_r.labels_r
-                    ]
-                    jas_basis_sets = Jas_Basis_sets.parse_basis_sets_from_texts(
-                        jastrow_basis_list, format="gamess"
-                    )
-                else:
-                    jas_basis_sets = Jas_Basis_sets()
+            # generate kp_info.dat for downstream use
+            if k_num > 1:
+                k_points = trexio_r.k_point
+                with open(os.path.join(self.trexio_dir, "kp_info.dat"), "w") as f:
+                    f.write(f"# k_index  kx  ky  kz\n")
+                    for k_idx, kp in enumerate(k_points):
+                        f.write(f"{k_idx}  {kp[0]:.10f}  {kp[1]:.10f}  {kp[2]:.10f}\n")
+                logger.info(f"kp_info.dat has been generated with {k_num} k-points.")
 
+            # jastrow basis sets (common for all k-points)
+            if len(self.jastrow_basis_dict) != 0:
+                jastrow_basis_list = [
+                    self.jastrow_basis_dict[element]
+                    for element in trexio_r.labels_r
+                ]
+                jas_basis_sets = Jas_Basis_sets.parse_basis_sets_from_texts(
+                    jastrow_basis_list, format="gamess"
+                )
+            else:
+                jas_basis_sets = Jas_Basis_sets()
+
+            for k_idx in range(k_num):
+                logger.info(f"Converting k-point {k_idx}/{k_num}...")
                 # trexio -> turborvb_wf
                 trexio_to_turborvb_wf(
-                    trexio_file=os.path.join(self.trexio_dir, filename),
+                    trexio_file=trexio_filepath,
+                    k_index=k_idx,
                     jastrow_1body=self.jastrow_1body,
                     jastrow_2body=self.jastrow_2body,
                     jas_basis_sets=jas_basis_sets,
@@ -124,7 +133,7 @@ class TREXIO_convert_to_turboWF(Workflow):
                     nosymmetry=self.nosymmetry,
                 )
 
-                if self.twist_average:
+                if k_num > 1:
                     turborvb_scratch_dir = os.path.join(
                         self.trexio_dir, "turborvb.scratch"
                     )
@@ -132,17 +141,18 @@ class TREXIO_convert_to_turboWF(Workflow):
                     shutil.move(
                         os.path.join(self.trexio_dir, "fort.10"),
                         os.path.join(
-                            turborvb_scratch_dir, "fort.10_{:0>6}".format(num)
+                            turborvb_scratch_dir, "fort.10_{:0>6}".format(k_idx)
                         ),
                     )
 
-            if self.twist_average:
+            if k_num > 1:
                 shutil.copy(
                     os.path.join(turborvb_scratch_dir, "fort.10_{:0>6}".format(0)),
                     os.path.join(self.trexio_dir, "fort.10"),
                 )
 
-            if self.twist_average:
+            # read kp_info.dat for output_values
+            if k_num > 1:
                 with open(os.path.join(self.trexio_dir, "kp_info.dat"), "r") as f:
                     lines = f.readlines()
                     kpoints_up = []
@@ -156,14 +166,7 @@ class TREXIO_convert_to_turboWF(Workflow):
                     self.output_values["kpoints"] = self.kpoints
 
             # mo occ
-            if self.twist_average:
-                pass  # to be implemented!!
-            else:
-                filename = os.path.basename(self.trexio_filename)
-                trexio_r = Trexio_wrapper_r(
-                    trexio_file=os.path.join(self.trexio_dir, filename)
-                )
-                self.output_values["mo_occ"] = trexio_r.mo_occupation
+            self.output_values["mo_occ"] = trexio_r.mo_occupation
 
             with open(os.path.join(self.trexio_dir, self.trexio_pkl), "wb") as f:
                 pickle.dump("dummy", f)
@@ -171,7 +174,14 @@ class TREXIO_convert_to_turboWF(Workflow):
         else:
             logger.info(f"{self.trexio_pkl} exists.")
             logger.info("Skip: TREXIO calculation")
-            if self.twist_average:
+            filename = os.path.basename(self.trexio_filename)
+            trexio_filepath = os.path.join(self.trexio_dir, filename)
+            trexio_r = Trexio_wrapper_r(trexio_file=trexio_filepath)
+            if trexio_r.periodic:
+                k_num = trexio_r.k_point_num
+            else:
+                k_num = 1
+            if k_num > 1:
                 with open(os.path.join(self.trexio_dir, "kp_info.dat"), "r") as f:
                     lines = f.readlines()
                     kpoints_up = []
@@ -183,15 +193,7 @@ class TREXIO_convert_to_turboWF(Workflow):
                         kpoints_dn.append([float(kx), float(ky), float(kz), float(wk)])
                     self.kpoints = [kpoints_up, kpoints_dn]
                     self.output_values["kpoints"] = self.kpoints
-            # mo occ
-            if self.twist_average:
-                pass  # to be implemented!!
-            else:
-                filename = os.path.basename(self.trexio_filename)
-                trexio_r = Trexio_wrapper_r(
-                    trexio_file=os.path.join(self.trexio_dir, filename)
-                )
-                self.output_values["mo_occ"] = trexio_r.mo_occupation
+            self.output_values["mo_occ"] = trexio_r.mo_occupation
 
         with open(os.path.join(self.trexio_dir, self.trexio_pkl), "wb") as f:
             pickle.dump("dummy", f)

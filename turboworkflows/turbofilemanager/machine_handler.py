@@ -587,16 +587,17 @@ class Machines_handler:
         sftp = self.server_machine.sftp
 
         for item in sftp.listdir_attr(source):
-            if any([re.match(p, os.path.basename(item)) for p in exclude_patterns]):
+            filename = item.filename
+            if any([re.match(p, filename) for p in exclude_patterns]):
                 continue
-            logger.debug(f" transfered file or dir = {item}")
-            fileattr = sftp.lstat(os.path.join(source, item))
-            if stat.S_IFREG(fileattr.st_mode):
-                sftp.get(os.path.join(source, item), os.path.join(target, item))
+            logger.debug(f" transfered file or dir = {filename}")
+            if stat.S_ISREG(item.st_mode):
+                sftp.get(os.path.join(source, filename), os.path.join(target, filename))
             else:
-                os.makedirs("%s/%s" % (target, item), exists_ok=True)
+                os.makedirs(os.path.join(target, filename), exist_ok=True)
                 self.get_sftp_dir(
-                    os.path.join(source, item), os.path.join(target, item)
+                    os.path.join(source, filename), os.path.join(target, filename),
+                    exclude_patterns=exclude_patterns,
                 )
 
     def put_sftp_dir(self, source, target, exclude_patterns=[]):

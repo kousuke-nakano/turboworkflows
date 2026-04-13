@@ -16,7 +16,6 @@ from logging import getLogger, StreamHandler, Formatter
 # turboworkflow packages
 from .turbofilemanager.job_manager import Job_submission
 from .workflow_encapsulated import Workflow
-from .pyscf_tools.pyscf_to_trexio import pyscf_to_trexio
 from .utils_turboworkflows.turboworkflows_env import (
     turbo_workflows_source_root,
 )
@@ -170,6 +169,7 @@ from pyscf_wrapper import run_pyscf
 
 # input variables
 pyscf_chkfile={rg(self.pyscf_chkfile)}
+trexio_filename={rg(self.trexio_filename)}
 structure_file={rg(self.structure_file)}
 ghost_atoms_index={rg(self.ghost_atoms_index)}
 
@@ -201,6 +201,7 @@ run_pyscf(
         structure_file=structure_file,
         ghost_atoms_index=ghost_atoms_index,
         chkfile=pyscf_chkfile,
+        trexio_filename=trexio_filename,
         init_guess=init_guess,
         cell_precision=cell_precision,
         multigrid_fftdf=multigrid_fftdf,
@@ -290,7 +291,7 @@ run_pyscf(
                 logger.info("Job finished.")
                 # job fecth
                 logger.info("Fetch files.")
-                fetch_files = [self.pyscf_output, self.pyscf_chkfile, "int1e_ovlp.npy"]
+                fetch_files = [self.pyscf_output, self.pyscf_chkfile, self.trexio_filename, "int1e_ovlp.npy"]
                 job.fetch_job(from_objects=fetch_files)
                 logger.info("Fetch finished.")
 
@@ -301,16 +302,7 @@ run_pyscf(
                 self.output_values["energy"] = energy
                 logger.info(f"PySCF energy = {energy}")
 
-                ####
-                # conversion to the TREXIO format
-                ####
-                logger.info("Start: pyscf -> trexio conversion.")
-                pyscf_to_trexio(
-                    pyscf_checkfile=self.pyscf_chkfile,
-                    trexio_filename=os.path.join(self.pyscf_dir, self.trexio_filename),
-                    force_wf_complex=self.force_wf_complex,
-                )
-                logger.info("End: pyscf -> trexio conversion.")
+                # TREXIO file is now generated directly by pyscf-forge in run_pyscf()
 
             with open(os.path.join(self.pyscf_dir, self.pyscf_pkl), "wb") as f:
                 pickle.dump("dummy", f)

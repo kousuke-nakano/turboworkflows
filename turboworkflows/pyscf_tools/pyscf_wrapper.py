@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # pySCF -> TREX-IO (Water molecule)
+# # pySCF-forge -> TREX-IO
 
 
 # load python packages
@@ -19,6 +19,7 @@ from pyscf.pbc import dft as pbcdft
 from pyscf.pbc import scf as pbcscf
 from pyscf.scf.chkfile import dump_scf
 from pyscf.pbc.dft import multigrid
+from pyscf.tools import trexio as trexio_tools
 
 # Logger
 from logging import getLogger, StreamHandler, Formatter
@@ -30,6 +31,7 @@ def run_pyscf(
     structure_file: str,
     ghost_atoms_index: Optional[list] = None,
     chkfile: str = "pyscf.chk",
+    trexio_filename: str = "trexio.hdf5",
     init_guess: str = "minao",
     cell_precision: float = 1.0e-8,
     multigrid_fftdf: bool = False,
@@ -534,6 +536,11 @@ def run_pyscf(
 
     logger.info("PySCF calculation is done.")
 
+    # dump to TREXIO file via pyscf-forge
+    logger.info(f"Dumping to TREXIO file: {trexio_filename}")
+    trexio_tools.to_trexio(mf, trexio_filename)
+    logger.info(f"TREXIO file generated: {trexio_filename}")
+
     logger.debug(mf.mo_coeff)
     logger.debug(mf.mo_occ)
     logger.debug(mf.mo_energy)
@@ -570,6 +577,9 @@ def cli():
     )
     parser.add_argument(
         "-c", "--chkfile", help="chkfile", type=str, default="pyscf.chk"
+    )
+    parser.add_argument(
+        "--trexio_filename", help="trexio_filename", type=str, default="trexio.hdf5"
     )
     parser.add_argument(
         "-o",
@@ -632,6 +642,7 @@ def cli():
     run_pyscf(
         structure_file=args.structure_file,
         chkfile=args.chkfile,
+        trexio_filename=args.trexio_filename,
         charge=args.charge,
         spin=args.spin,
         basis=args.basis,
